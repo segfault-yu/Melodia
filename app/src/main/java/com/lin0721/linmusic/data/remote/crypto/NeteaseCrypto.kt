@@ -33,8 +33,7 @@ object NeteaseCrypto {
      * WeApi 加密
      * 适用于 Web 端、小程序等
      */
-    fun weapi(params: Map<String, Any?>): Map<String, String> {
-        val text = json.encodeToString(params)
+    fun weapi(text: String): Map<String, String> {
         val secretKey = generateRandomString(16)
         
         val paramsEncrypted = aesEncrypt(aesEncrypt(text, WEAPI_NONCE), secretKey)
@@ -50,8 +49,7 @@ object NeteaseCrypto {
      * LinuxApi 加密
      * 适用于部分特殊接口
      */
-    fun linuxapi(params: Map<String, Any?>): Map<String, String> {
-        val text = json.encodeToString(params)
+    fun linuxapi(text: String): Map<String, String> {
         return mapOf(
             "eparams" to aesEncryptHex(text, LINUX_API_KEY, mode = "AES/ECB/PKCS5Padding").uppercase()
         )
