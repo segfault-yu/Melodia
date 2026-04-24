@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -39,7 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.data.remote.api.RecommendPlaylist
+import com.lin0721.linmusic.data.remote.api.PersonalizedPlaylist
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -60,7 +58,7 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "每日推荐",
+                        text = "推荐歌单",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -80,10 +78,10 @@ fun HomeScreen(
                 is HomeUiState.Loading -> LoadingContent()
                 is HomeUiState.Error -> ErrorContent(
                     message = state.message,
-                    onRetry = { viewModel.loadDailyRecommend() }
+                    onRetry = { viewModel.loadPersonalizedPlaylists() }
                 )
                 is HomeUiState.Success -> SuccessContent(
-                    playlists = state.data.recommend
+                    playlists = state.data.playlists
                 )
             }
         }
@@ -162,7 +160,7 @@ private fun ErrorContent(
 
 @Composable
 private fun SuccessContent(
-    playlists: List<RecommendPlaylist>
+    playlists: List<PersonalizedPlaylist>
 ) {
     if (playlists.isEmpty()) {
         Box(
@@ -200,11 +198,14 @@ private fun SuccessContent(
  * 推荐歌单卡片
  *
  * 使用 Coil 的 [AsyncImage] 加载封面图并应用圆角裁剪，
- * 底部显示歌单名称与播放次数。
+ * 底部显示歌单名称。
+ *
+ * 图片加载时追加 `?param=300y300` 参数，利用网易云 CDN 进行
+ * 服务端缩放，大幅减少客户端内存占用。
  */
 @Composable
 fun PlaylistItemCard(
-    playlist: RecommendPlaylist,
+    playlist: PersonalizedPlaylist,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -216,9 +217,9 @@ fun PlaylistItemCard(
         )
     ) {
         Column {
-            // ── 封面图 ──
+            // ── 封面图（追加网易云图片压缩后缀） ──
             AsyncImage(
-                model = playlist.picUrl,
+                model = "${playlist.picUrl}?param=300y300",
                 contentDescription = playlist.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -239,40 +240,7 @@ fun PlaylistItemCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = formatPlayCount(playlist.playcount),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    if (playlist.trackCount > 0) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${playlist.trackCount}首",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
             }
         }
     }
-}
-
-// ─────────────────── 工具函数 ──────────────────────────
-
-/**
- * 将播放次数格式化为可读字符串
- * - >= 100_000_000 → "x.x亿"
- * - >= 10_000       → "x.x万"
- * - 其他            → 原始数字
- */
-private fun formatPlayCount(count: Long): String = when {
-    count >= 100_000_000 -> String.format("%.1f亿次播放", count / 100_000_000.0)
-    count >= 10_000      -> String.format("%.1f万次播放", count / 10_000.0)
-    else                 -> "${count}次播放"
 }

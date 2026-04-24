@@ -147,12 +147,61 @@ app/src/main/java/com/lin0721/linmusic/
 
 ---
 
+### 2026-04-23 Session 7 — 首页数据源切换为免登录公开接口
+#### 背景
+真机调试时 `getDailyRecommendPlaylists` 因未登录导致网易云返回空 body，`kotlinx.serialization` 抛出 EOF 异常。为测试 UI 将首页数据源切换为免登录的 `/weapi/personalized` 公开接口。
+
+#### `[MODIFY] data/remote/api/NeteaseApiService.kt`
+- 新增 `getPersonalizedPlaylists()` 接口 (`@POST("/weapi/personalized")`)，返回 `PersonalizedResponse`。
+- 新增数据类 `PersonalizedResponse`（`code` + `result` 列表）、`PersonalizedData`（`playlists` 列表）、`PersonalizedPlaylist`（`id`, `name`, `picUrl`）。
+- 保留原有 `getDailyRecommendPlaylists` 接口供后续登录功能使用。
+
+#### `[MODIFY] data/repository/MusicRepository.kt` & `MusicRepositoryImpl.kt`
+- 接口方法由 `getDailyRecommendPlaylists()` 改为 `getPersonalizedPlaylists()`，返回 `Flow<Result<PersonalizedData>>`。
+- 实现层调用 `apiService.getPersonalizedPlaylists()` 并将 `response.result` 映射到 `PersonalizedData`。
+
+#### `[MODIFY] ui/home/HomeUiState.kt`
+- `Success` 状态泛型由 `RecommendPlaylistData` 改为 `PersonalizedData`。
+
+#### `[MODIFY] ui/home/HomeViewModel.kt`
+- 方法名由 `loadDailyRecommend()` 改为 `loadPersonalizedPlaylists()`，调用新的 Repository 方法。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- 数据类型由 `RecommendPlaylist` 改为 `PersonalizedPlaylist`。
+- `SuccessContent` 读取 `state.data.playlists` 而非 `state.data.recommend`。
+- `AsyncImage` 加载图片追加 `?param=300y300` 网易云 CDN 图片压缩后缀，优化内存占用。
+- 移除 `playcount` / `trackCount` 展示（新数据类不含这些字段），TopAppBar 标题改为"推荐歌单"。
+
+---
+
+### 2026-04-23 Session 8 — 增强网络层容错能力（处理空响应体）
+#### 背景
+当服务端返回 200 OK 但响应体为空时，直接传给 `kotlinx.serialization` 会导致反序列化崩溃（抛出 `EOFException`）。为增强 App 鲁棒性，在网络层加入统一拦截，避免 Crash。
+
+#### `[NEW] data/remote/network/ApiException.kt`
+- 自定义异常 `ApiException` 继承自 `IOException`。OkHttp 拦截器抛出 `IOException` 子类时可以被 Retrofit 安全捕获并向外传递。
+
+#### `[NEW] data/remote/network/EmptyBodyInterceptor.kt`
+- 新增 `EmptyBodyInterceptor` 拦截器。
+- 利用 `response.peekBody(Long.MAX_VALUE).string().isBlank()` 不消费数据流的前提下安全探测响应体内容。
+- 遇空直接抛出 `ApiException("API body is empty, possibly auth failed")`。
+
+#### `[MODIFY] di/NetworkModule.kt`
+- 将 `EmptyBodyInterceptor` 注册到 Koin。
+- 在构建 `OkHttpClient` 时通过 `.addInterceptor()` 引入该拦截器，使其阻断所有网络层的空包反序列化异常。
+
+由于之前 `MusicRepositoryImpl` 已经使用 `catch` 捕获异常，此改进可以顺着原有的异常流（`Result.failure` -> `HomeUiState.Error`）直达 UI 层，并触发标准的失败/重试状态展示。
+
+---
+
 ## 待办事项 / 下一步
 
 - [x] Repository 层封装 (数据仓库模式)
 - [x] Gradle Sync 验证编译通过并完成单元测试
 - [x] ViewModel 层 (架构搭建与 UI State 数据收发)
 - [x] UI 层集成 (使用 Jetpack Compose 显示数据状态)
+- [x] 首页切换为免登录公开接口 (personalized)
 - [ ] Cookie / Token 管理 (拦截器抓取登录态响应参数，配合 DataStore/Preferences 进行持久化保存并在请求中复用)
 - [ ] 更多 API 接口补充 (搜索、歌曲详情、播放链接等)
 - [ ] 错误处理统一封装 (集中分发业务码映射弹窗和过滤)
+

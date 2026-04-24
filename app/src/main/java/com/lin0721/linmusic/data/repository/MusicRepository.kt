@@ -1,6 +1,6 @@
 package com.lin0721.linmusic.data.repository
 
-import com.lin0721.linmusic.data.remote.api.RecommendPlaylistData
+import com.lin0721.linmusic.data.remote.api.PersonalizedData
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
 interface MusicRepository {
 
     /**
-     * 获取每日推荐歌单
+     * 获取个性化推荐歌单（公开接口，无需登录）
      */
-    fun getDailyRecommendPlaylists(): Flow<Result<RecommendPlaylistData>>
+    fun getPersonalizedPlaylists(): Flow<Result<PersonalizedData>>
 
 }

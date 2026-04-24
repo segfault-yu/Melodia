@@ -2,6 +2,7 @@ package com.lin0721.linmusic.di
 
 import com.lin0721.linmusic.data.remote.api.NeteaseApiService
 import com.lin0721.linmusic.data.remote.network.CryptoInterceptor
+import com.lin0721.linmusic.data.remote.network.EmptyBodyInterceptor
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -37,9 +38,13 @@ val networkModule = module {
     // ─── 加密拦截器 ───
     single { CryptoInterceptor() }
 
+    // ─── 空响应体拦截器 ───
+    single { EmptyBodyInterceptor() }
+
     // ─── OkHttpClient ───
     single {
         OkHttpClient.Builder()
+            .addInterceptor(get<EmptyBodyInterceptor>())
             .addInterceptor(get<CryptoInterceptor>())
             .addInterceptor(
                 HttpLoggingInterceptor().apply {

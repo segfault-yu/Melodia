@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 /**
  * 首页 ViewModel
  *
- * 通过构造函数注入 [MusicRepository]，在初始化时自动发起每日推荐歌单请求，
+ * 通过构造函数注入 [MusicRepository]，在初始化时自动发起个性化推荐歌单请求，
  * 并将结果映射为 [HomeUiState] 暴露给 Compose UI 层。
  */
 class HomeViewModel(
@@ -24,19 +24,19 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        loadDailyRecommend()
+        loadPersonalizedPlaylists()
     }
 
     /**
-     * 加载每日推荐歌单
+     * 加载个性化推荐歌单
      *
      * 收集 Repository 返回的 Flow<Result>，将其映射为对应 UiState。
      */
-    fun loadDailyRecommend() {
+    fun loadPersonalizedPlaylists() {
         _uiState.value = HomeUiState.Loading
 
         viewModelScope.launch {
-            musicRepository.getDailyRecommendPlaylists().collect { result ->
+            musicRepository.getPersonalizedPlaylists().collect { result ->
                 _uiState.value = result.fold(
                     onSuccess = { data -> HomeUiState.Success(data) },
                     onFailure = { error ->

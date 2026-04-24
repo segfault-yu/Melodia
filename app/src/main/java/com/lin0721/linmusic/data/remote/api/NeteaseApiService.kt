@@ -42,6 +42,18 @@ interface NeteaseApiService {
     suspend fun getDailyRecommendPlaylists(
         @Body body: EmptyBody = EmptyBody()
     ): NeteaseResponse<RecommendPlaylistData>
+
+    // =================== 个性化推荐 ===================
+
+    /**
+     * 获取个性化推荐歌单（公开接口，无需登录）
+     *
+     * 用于在未登录状态下展示首页推荐歌单列表。
+     */
+    @POST("/weapi/personalized")
+    suspend fun getPersonalizedPlaylists(
+        @Body body: EmptyBody = EmptyBody()
+    ): PersonalizedResponse
 }
 
 // ======================== 请求体 ========================
@@ -154,3 +166,37 @@ data class PlaylistCreator(
     val nickname: String = "",
     val avatarUrl: String = "",
 )
+
+// ==================== 个性化推荐 ====================
+
+/**
+ * 个性化推荐接口的响应包装
+ *
+ * 该接口的响应结构为 { code: 200, result: [...] }，
+ * 与其他接口的扁平结构不同，因此单独定义响应类型。
+ */
+@Serializable
+data class PersonalizedResponse(
+    val code: Int = 0,
+    val result: List<PersonalizedPlaylist> = emptyList(),
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+/**
+ * 个性化推荐歌单数据（供 UI 层使用的简化包装）
+ */
+@Serializable
+data class PersonalizedData(
+    /** 推荐歌单列表 */
+    val playlists: List<PersonalizedPlaylist> = emptyList(),
+)
+
+@Serializable
+data class PersonalizedPlaylist(
+    val id: Long = 0,
+    val name: String = "",
+    /** 歌单封面 */
+    val picUrl: String = "",
+)
+
