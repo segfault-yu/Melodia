@@ -36,8 +36,13 @@ app/src/main/java/com/lin0721/linmusic/
 │       └── MusicRepositoryImpl.kt    # Repository 响应实现 (处理流与错误)
 ├── di/
 │   ├── NetworkModule.kt             # Koin 网络层依赖模块
-│   └── RepositoryModule.kt          # Koin 数据层依赖模块
+│   ├── RepositoryModule.kt          # Koin 数据层依赖模块
+│   └── ViewModelModule.kt           # Koin ViewModel 层依赖模块
 └── ui/
+    ├── home/
+    │   ├── HomeScreen.kt             # 首页 Compose 页面 (LazyVerticalGrid + PlaylistItemCard)
+    │   ├── HomeUiState.kt            # 首页 UI 状态密封接口 (Loading/Success/Error)
+    │   └── HomeViewModel.kt          # 首页 ViewModel (注入 MusicRepository)
     └── theme/                        # Compose 主题 (自动生成)
 ```
 
@@ -98,12 +103,56 @@ app/src/main/java/com/lin0721/linmusic/
 
 ---
 
+### 2026-04-23 Session 5 — ViewModel 层 (Phase 3)
+#### `[NEW] ui/home/HomeUiState.kt`
+- 定义 `HomeUiState` 密封接口，包含三种状态：
+  - `Loading`：加载中占位
+  - `Success(val data: RecommendPlaylistData)`：数据加载成功
+  - `Error(val message: String)`：请求失败，携带错误消息
+
+#### `[NEW] ui/home/HomeViewModel.kt`
+- 构造函数注入 `MusicRepository`，继承 `ViewModel()`。
+- 通过 `MutableStateFlow<HomeUiState>` 暴露只读 `StateFlow` 给 UI 层。
+- `init {}` 块调用 `loadDailyRecommend()`，在 `viewModelScope` 中收集 Repository 的 `Flow<Result>` 并映射为对应 `HomeUiState`。
+- `loadDailyRecommend()` 也可在 UI 层手动调用以实现下拉刷新等场景。
+
+#### `[NEW] di/ViewModelModule.kt`
+- 使用 Koin 的 `viewModelOf(::HomeViewModel)` 注册 ViewModel，自动解析构造参数。
+
+#### `[MODIFY] LinMusicApplication.kt`
+- 在 `modules()` 阵列中追加 `viewModelModule`。
+- 整理 import，将 `repositoryModule` 由全限定名改为顶层 import。
+
+#### `[MODIFY] gradle/libs.versions.toml` & `app/build.gradle.kts`
+- 新增 `androidx-lifecycle-viewmodel-compose` 依赖（复用 `lifecycleRuntimeKtx` 版本），为 ViewModel + `viewModelScope` 提供编译支持。
+
+### 2026-04-23 Session 6 — UI 层首页 (Phase 3 续)
+#### `[NEW] ui/home/HomeScreen.kt`
+- `HomeScreen()` Composable，通过 `koinViewModel()` 获取 `HomeViewModel`，使用 `collectAsStateWithLifecycle()` 收集状态。
+- 根据 `HomeUiState` 分支渲染：
+  - **Loading**：居中 `CircularProgressIndicator` + 提示文案
+  - **Error**：Emoji + 错误文案 + 「重试」按钮（调用 `viewModel.loadDailyRecommend()`）
+  - **Success**：`LazyVerticalGrid(2列)` 展示歌单卡片，空列表时显示「暂无推荐歌单」
+- 独立抽取 `PlaylistItemCard()` 组件：
+  - Coil `AsyncImage` 加载封面图 + `RoundedCornerShape` 圆角裁剪
+  - 歌单名称（最多两行 ellipsis）+ 格式化播放次数 + 曲目数
+  - `formatPlayCount()` 工具函数自动转换为「x.x万/亿次播放」
+
+#### `[MODIFY] MainActivity.kt`
+- 移除原有 `Greeting` 占位，直接调用 `HomeScreen()` 作为入口页面。
+
+#### `[MODIFY] gradle/libs.versions.toml` & `app/build.gradle.kts`
+- 新增 **Coil 2.7.0** (`coil-compose`) 图片加载库。
+- 新增 `androidx-lifecycle-runtime-compose` 依赖，提供 `collectAsStateWithLifecycle()` 支持。
+
+---
+
 ## 待办事项 / 下一步
 
 - [x] Repository 层封装 (数据仓库模式)
 - [x] Gradle Sync 验证编译通过并完成单元测试
-- [ ] ViewModel 层 (架构搭建与 UI State 数据收发)
+- [x] ViewModel 层 (架构搭建与 UI State 数据收发)
+- [x] UI 层集成 (使用 Jetpack Compose 显示数据状态)
 - [ ] Cookie / Token 管理 (拦截器抓取登录态响应参数，配合 DataStore/Preferences 进行持久化保存并在请求中复用)
 - [ ] 更多 API 接口补充 (搜索、歌曲详情、播放链接等)
 - [ ] 错误处理统一封装 (集中分发业务码映射弹窗和过滤)
-- [ ] UI 层集成 (使用 Jetpack Compose 显示数据状态)
