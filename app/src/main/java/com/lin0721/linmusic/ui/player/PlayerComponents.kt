@@ -68,10 +68,10 @@ fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(onClick = { }) { Icon(Icons.Default.Phone, "Devices", tint = Color.White, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { }) { Icon(Icons.Default.Share, "Share", tint = Color.White, modifier = Modifier.size(20.dp)) }
             IconButton(onClick = onTogglePlay) {
                 if (isPlaying) {
-                    Text("⏸", color = Color.White, fontSize = 24.sp)
+                    Icon(Icons.Default.Pause, "Pause", tint = Color.White, modifier = Modifier.size(28.dp))
                 } else {
                     Icon(Icons.Default.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(28.dp))
                 }
@@ -193,9 +193,9 @@ fun FullPlayerScreen(
                 modifier = Modifier.size(72.dp)
             ) {
                 if (isPlaying) {
-                    Text("⏸", color = Color.Black, fontSize = 32.sp)
+                    Icon(Icons.Default.Pause, contentDescription = "Pause", tint = Color.Black, modifier = Modifier.size(40.dp))
                 } else {
-                    Icon(Icons.Rounded.PlayArrow, contentDescription = "Play", tint = Color.Black, modifier = Modifier.size(40.dp))
+                    Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = Color.Black, modifier = Modifier.size(40.dp))
                 }
             }
             Icon(Icons.Rounded.KeyboardArrowRight, contentDescription = "Next", tint = Color.White, modifier = Modifier.size(48.dp))

@@ -82,6 +82,14 @@ class PlayerManager(private val context: Context) : Player.Listener {
         controller?.seekTo(positionMs)
     }
 
+    fun togglePlayPause() {
+        if (_isPlaying.value) {
+            pause()
+        } else {
+            resume()
+        }
+    }
+
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         _isPlaying.value = isPlaying
     }

@@ -41,13 +41,12 @@ class MusicRepositoryImpl(
         if (response.isSuccess) {
             val songItem = response.data.firstOrNull()
             if (songItem != null && !songItem.url.isNullOrBlank()) {
-                // 如果有 freeTrialInfo 且需要限制，这里可以抛错，目前允许试听
                 emit(Result.success(songItem.url))
             } else {
-                emit(Result.failure(Exception("无法获取播放链接，可能是 VIP 歌曲或无版权")))
+                emit(Result.failure(Exception("无法获取播放链接：该歌曲可能需要开启 VIP 或其版权受限。")))
             }
         } else {
-            emit(Result.failure(Exception("API Error (Code: ${response.code})")))
+            emit(Result.failure(Exception("网易云 API 响应异常 (Code: ${response.code})，可能是风控拦截。")))
         }
     }.catch { e ->
         emit(Result.failure(e))

@@ -66,7 +66,7 @@ interface NeteaseApiService {
     /**
      * 获取歌曲播放链接
      */
-    @POST("/weapi/song/enhance/player/url/v1")
+    @POST("/eapi/song/enhance/player/url/v1")
     suspend fun getSongUrl(
         @Body body: SongUrlRequest
     ): SongUrlResponse

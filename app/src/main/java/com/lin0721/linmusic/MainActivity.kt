@@ -27,55 +27,60 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             LinMusicTheme {
-                val viewModel: HomeViewModel = koinViewModel()
-                val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
-                val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
-                
-                var isPlayerOpen by remember { mutableStateOf(false) }
-                
-                var currentScreen by remember { mutableStateOf(Screen.Home) }
-                var activePlaylistId by remember { mutableStateOf<Long?>(null) }
+                LinMusicApp()
+            }
+        }
+    }
+}
 
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Crossfade(targetState = currentScreen, label = "screen_transition") { screen ->
-                        when (screen) {
-                            Screen.Home -> {
-                                HomeScreen(
-                                    viewModel = viewModel,
-                                    onPlaylistClick = { id ->
-                                        activePlaylistId = id
-                                        currentScreen = Screen.Playlist
-                                    },
-                                    onOpenPlayer = { isPlayerOpen = true }
-                                )
-                            }
-                            Screen.Playlist -> {
-                                activePlaylistId?.let { id ->
-                                    com.lin0721.linmusic.ui.playlist.PlaylistScreen(
-                                        playlistId = id,
-                                        onBack = { currentScreen = Screen.Home },
-                                        onOpenPlayer = { isPlayerOpen = true }
-                                    )
-                                }
-                            }
-                        }
-                    }
+@Composable
+fun LinMusicApp() {
+    val viewModel: HomeViewModel = koinViewModel()
+    val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
 
-                    AnimatedVisibility(
-                        visible = isPlayerOpen,
-                        enter = slideInVertically(initialOffsetY = { it }, animationSpec = tween(300)),
-                        exit = slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        FullPlayerScreen(
-                            currentTrack = currentTrack,
-                            isPlaying = isPlaying,
-                            onTogglePlay = { viewModel.togglePlayPause() },
-                            onClose = { isPlayerOpen = false }
+    var isPlayerOpen by remember { mutableStateOf(false) }
+
+    var currentScreen by remember { mutableStateOf(Screen.Home) }
+    var activePlaylistId by remember { mutableStateOf<Long?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Crossfade(targetState = currentScreen, label = "screen_transition") { screen ->
+            when (screen) {
+                Screen.Home -> {
+                    HomeScreen(
+                        viewModel = viewModel,
+                        onPlaylistClick = { id ->
+                            activePlaylistId = id
+                            currentScreen = Screen.Playlist
+                        },
+                        onOpenPlayer = { isPlayerOpen = true }
+                    )
+                }
+                Screen.Playlist -> {
+                    activePlaylistId?.let { id ->
+                        com.lin0721.linmusic.ui.playlist.PlaylistScreen(
+                            playlistId = id,
+                            onBack = { currentScreen = Screen.Home },
+                            onOpenPlayer = { isPlayerOpen = true }
                         )
                     }
                 }
             }
+        }
+
+        AnimatedVisibility(
+            visible = isPlayerOpen,
+            enter = slideInVertically(initialOffsetY = { it }, animationSpec = tween(300)),
+            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            FullPlayerScreen(
+                currentTrack = currentTrack,
+                isPlaying = isPlaying,
+                onTogglePlay = { viewModel.togglePlayPause() },
+                onClose = { isPlayerOpen = false }
+            )
         }
     }
 }

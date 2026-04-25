@@ -105,6 +105,7 @@ class CryptoInterceptor : Interceptor {
             put("requestId", "${System.currentTimeMillis()}_${(1000..9999).random()}")
         }
         rootObj.put("header", headerObj)
+        rootObj.put("e_r", false)
 
         val encrypted = NeteaseCrypto.eapi(apiPath, rootObj.toString())
         return FormBody.Builder()

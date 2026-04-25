@@ -7,6 +7,9 @@ import com.lin0721.linmusic.player.PlayerManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class PlaylistViewModel(
@@ -16,6 +19,9 @@ class PlaylistViewModel(
 
     private val _uiState = MutableStateFlow<PlaylistUiState>(PlaylistUiState.Loading)
     val uiState: StateFlow<PlaylistUiState> = _uiState.asStateFlow()
+
+    private val _toastEvent = MutableSharedFlow<String>()
+    val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
     fun loadPlaylist(id: Long) {
         _uiState.value = PlaylistUiState.Loading
@@ -45,8 +51,8 @@ class PlaylistViewModel(
                             coverUrl = coverUrl
                         )
                     },
-                    onFailure = {
-                        // In a real app we could post errors to a SharedFlow.
+                    onFailure = { error ->
+                        _toastEvent.emit(error.message ?: "无法获取播放链接")
                     }
                 )
             }

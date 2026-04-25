@@ -71,10 +71,6 @@ class HomeViewModel(
     }
     
     fun togglePlayPause() {
-        if (playerManager.isPlaying.value) {
-            playerManager.pause()
-        } else {
-            playerManager.resume()
-        }
+        playerManager.togglePlayPause()
     }
 }
