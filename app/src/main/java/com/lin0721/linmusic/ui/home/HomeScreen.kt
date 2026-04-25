@@ -1,89 +1,113 @@
 package com.lin0721.linmusic.ui.home
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.MediaItem
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.data.remote.api.PersonalizedPlaylist
+import com.lin0721.linmusic.ui.theme.BackgroundDark
+import com.lin0721.linmusic.ui.theme.SpotifyGreen
+import com.lin0721.linmusic.ui.theme.SurfaceDark
+import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.ui.player.MiniPlayer
 import org.koin.androidx.compose.koinViewModel
 
-/**
- * 首页 Compose 页面
- *
- * 通过 [koinViewModel] 获取 [HomeViewModel]，
- * 使用 [collectAsStateWithLifecycle] 收集 UI 状态并根据状态渲染不同画面。
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = koinViewModel()
+    viewModel: HomeViewModel = koinViewModel(),
+    onPlaylistClick: (Long) -> Unit = {},
+    onOpenPlayer: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "推荐歌单",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
+    val context = LocalContext.current
+    LaunchedEffect(viewModel) {
+        viewModel.toastEvent.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (val state = uiState) {
-                is HomeUiState.Loading -> LoadingContent()
-                is HomeUiState.Error -> ErrorContent(
-                    message = state.message,
-                    onRetry = { viewModel.loadPersonalizedPlaylists() }
-                )
-                is HomeUiState.Success -> SuccessContent(
-                    playlists = state.data.playlists
-                )
+    }
+    
+    val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
+
+    Scaffold(
+        bottomBar = { LinBottomNavigation() },
+        modifier = Modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(Color(0xFF1B3B2B), BackgroundDark), startY = 0f, endY = 1000f
+            )
+        ),
+        containerColor = Color.Transparent
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            // Main content
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp) // 给 MiniPlayer 留空间
+            ) {
+                // 原有的 TopGreetingBar 和 WelcomeBanner 放置于顶部
+                item { TopGreetingBar() }
+                item { WelcomeBanner() }
+
+                when (val state = uiState) {
+                    is HomeUiState.Loading -> {
+                        item { LoadingContent() }
+                    }
+                    is HomeUiState.Error -> {
+                        item {
+                            ErrorContent(
+                                message = state.message,
+                                onRetry = { viewModel.loadPersonalizedPlaylists() }
+                            )
+                        }
+                    }
+                    is HomeUiState.Success -> {
+                        item { SectionTitle(title = "Recommend for You", subtitle = "See All") }
+                        item {
+                            AlbumCarousel(
+                                playlists = state.data.playlists,
+                                onClick = { playlist ->
+                                    onPlaylistClick(playlist.id)
+                                }
+                            )
+                        }
+                    }
+                }
             }
+
+            // 底部悬浮的 MiniPlayer
+            MiniPlayer(
+                currentTrack = currentTrack,
+                isPlaying = isPlaying,
+                onTogglePlay = { viewModel.togglePlayPause() },
+                onClick = onOpenPlayer,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp)
+            )
         }
     }
 }
@@ -93,20 +117,20 @@ fun HomeScreen(
 @Composable
 private fun LoadingContent() {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth().height(300.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(
                 modifier = Modifier.size(48.dp),
-                color = MaterialTheme.colorScheme.primary,
+                color = SpotifyGreen,
                 strokeWidth = 4.dp
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "正在加载推荐歌单…",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Loading personalized recommendations...",
+                fontSize = 14.sp,
+                color = TextGray
             )
         }
     }
@@ -120,127 +144,139 @@ private fun ErrorContent(
     onRetry: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth().height(300.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "😵",
-                style = MaterialTheme.typography.displayMedium
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = "Error",
+                tint = TextGray,
+                modifier = Modifier.size(48.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "加载失败",
-                style = MaterialTheme.typography.titleMedium,
+                text = "Cannot load albums",
+                fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                color = TextGray,
                 modifier = Modifier.padding(horizontal = 32.dp)
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = onRetry,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = SpotifyGreen
                 )
             ) {
-                Text(text = "重试")
+                Text(text = "Retry", color = Color.Black, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
-// ─────────────────────── Success ──────────────────────
+// ─────────────────── 新增的 UI 组件 ──────────────────────
 
 @Composable
-private fun SuccessContent(
-    playlists: List<PersonalizedPlaylist>
-) {
-    if (playlists.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "暂无推荐歌单",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        return
-    }
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxSize()
+fun TopGreetingBar() {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 48.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        items(
-            items = playlists,
-            key = { it.id }
-        ) { playlist ->
-            PlaylistItemCard(playlist = playlist)
+        AsyncImage(
+            model = "https://picsum.photos/seed/avatar/100",
+            contentDescription = "Profile",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(40.dp).clip(CircleShape)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Good Morning,", fontSize = 12.sp, color = TextGray)
+            Text("lin", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
+        IconButton(onClick = { }) { Icon(Icons.Default.Notifications, "Notification", tint = Color.White) }
     }
 }
 
-// ─────────────────── 歌单卡片组件 ──────────────────────
-
-/**
- * 推荐歌单卡片
- *
- * 使用 Coil 的 [AsyncImage] 加载封面图并应用圆角裁剪，
- * 底部显示歌单名称。
- *
- * 图片加载时追加 `?param=300y300` 参数，利用网易云 CDN 进行
- * 服务端缩放，大幅减少客户端内存占用。
- */
 @Composable
-fun PlaylistItemCard(
-    playlist: PersonalizedPlaylist,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column {
-            // ── 封面图（追加网易云图片压缩后缀） ──
-            AsyncImage(
-                model = "${playlist.picUrl}?param=300y300",
-                contentDescription = playlist.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)          // 正方形封面
-                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-            )
+fun WelcomeBanner() {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(text = "Welcome to", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Row {
+            Text(text = "LinMusic ", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = SpotifyGreen)
+            Text(text = "World", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
 
-            // ── 歌单信息 ──
-            Column(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-            ) {
+@Composable
+fun SectionTitle(title: String, subtitle: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(subtitle, fontSize = 12.sp, color = TextGray)
+    }
+}
+
+@Composable
+fun AlbumCarousel(playlists: List<PersonalizedPlaylist>, onClick: (PersonalizedPlaylist) -> Unit) {
+    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        items(playlists) { playlist ->
+            Column(modifier = Modifier.width(140.dp).clickable { onClick(playlist) }) {
+                AsyncImage(
+                    model = "${playlist.picUrl}?param=300y300",
+                    contentDescription = playlist.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(140.dp).clip(RoundedCornerShape(8.dp))
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = playlist.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
     }
 }
+
+@Composable
+fun LinBottomNavigation() {
+    NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
+        val items = listOf(
+            Triple("Home", Icons.Default.Home, true),
+            Triple("Search", Icons.Default.Search, false),
+            Triple("Library", Icons.Default.List, false),
+            Triple("Profile", Icons.Default.Person, false)
+        )
+        items.forEach { (label, icon, selected) ->
+            NavigationBarItem(
+                selected = selected,
+                onClick = { },
+                icon = { Icon(icon, contentDescription = label) },
+                label = { Text(label, fontSize = 10.sp) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.White, unselectedIconColor = TextGray,
+                    selectedTextColor = Color.White, unselectedTextColor = TextGray,
+                    indicatorColor = Color.Transparent
+                )
+            )
+        }
+    }
+}
+
+// Removed local MiniPlayer in favor of ui.player.MiniPlayer

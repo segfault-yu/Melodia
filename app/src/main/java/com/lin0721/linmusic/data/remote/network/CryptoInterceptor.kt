@@ -61,7 +61,17 @@ class CryptoInterceptor : Interceptor {
      * WeApi：加密后包含 params + encSecKey
      */
     private fun buildWeApiForm(rawJson: String): FormBody {
-        val encrypted = NeteaseCrypto.weapi(rawJson)
+        val jsonPayload = try {
+            val orgJson = org.json.JSONObject(rawJson)
+            if (!orgJson.has("csrf_token")) {
+                orgJson.put("csrf_token", "")
+            }
+            orgJson.toString()
+        } catch (e: Exception) {
+            rawJson
+        }
+
+        val encrypted = NeteaseCrypto.weapi(jsonPayload)
         return FormBody.Builder()
             .add("params", encrypted.getValue("params"))
             .add("encSecKey", encrypted.getValue("encSecKey"))
@@ -74,7 +84,29 @@ class CryptoInterceptor : Interceptor {
     private fun buildEApiForm(url: String, rawJson: String): FormBody {
         // 从完整 URL 中提取 /eapi/... 路径部分作为 EApi 所需的 url 参数
         val eapiPath = extractEApiPath(url)
-        val encrypted = NeteaseCrypto.eapi(eapiPath, rawJson)
+        val apiPath = eapiPath.replace("/eapi/", "/api/")
+        
+        // 给原生 JSON payload 加入风控 Header 上下文
+        val rootObj = try {
+            org.json.JSONObject(rawJson)
+        } catch (e: Exception) {
+            org.json.JSONObject()
+        }
+        
+        val headerObj = org.json.JSONObject().apply {
+            put("osver", "16.2")
+            put("deviceId", "iPhone14,2")
+            put("os", "ios")
+            put("appver", "9.0.90")
+            put("versioncode", "140")
+            put("mobilename", "")
+            put("buildver", System.currentTimeMillis().toString().substring(0, 10))
+            put("resolution", "1920x1080")
+            put("requestId", "${System.currentTimeMillis()}_${(1000..9999).random()}")
+        }
+        rootObj.put("header", headerObj)
+
+        val encrypted = NeteaseCrypto.eapi(apiPath, rootObj.toString())
         return FormBody.Builder()
             .add("params", encrypted.getValue("params"))
             .build()

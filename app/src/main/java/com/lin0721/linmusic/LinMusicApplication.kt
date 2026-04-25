@@ -4,6 +4,7 @@ import android.app.Application
 import com.lin0721.linmusic.di.networkModule
 import com.lin0721.linmusic.di.repositoryModule
 import com.lin0721.linmusic.di.viewModelModule
+import com.lin0721.linmusic.di.playerModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -22,7 +23,7 @@ class LinMusicApplication : Application() {
             androidContext(this@LinMusicApplication)
 
             // 加载模块
-            modules(networkModule, repositoryModule, viewModelModule)
+            modules(networkModule, repositoryModule, viewModelModule, playerModule)
         }
     }
 }

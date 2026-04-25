@@ -50,10 +50,26 @@ interface NeteaseApiService {
      *
      * 用于在未登录状态下展示首页推荐歌单列表。
      */
-    @POST("/weapi/personalized")
+    @POST("/eapi/personalized/playlist")
     suspend fun getPersonalizedPlaylists(
-        @Body body: EmptyBody = EmptyBody()
+        @Body body: PersonalizedRequest = PersonalizedRequest()
     ): PersonalizedResponse
+
+    // ================== 歌单详情 ==================
+    @POST("/eapi/v6/playlist/detail")
+    suspend fun getPlaylistDetail(
+        @Body body: PlaylistDetailRequest
+    ): PlaylistDetailResponse
+
+    // ======================= 歌曲信息 =======================
+
+    /**
+     * 获取歌曲播放链接
+     */
+    @POST("/weapi/song/enhance/player/url/v1")
+    suspend fun getSongUrl(
+        @Body body: SongUrlRequest
+    ): SongUrlResponse
 }
 
 // ======================== 请求体 ========================
@@ -169,6 +185,11 @@ data class PlaylistCreator(
 
 // ==================== 个性化推荐 ====================
 
+@Serializable
+data class PersonalizedRequest(
+    val limit: Int = 30
+)
+
 /**
  * 个性化推荐接口的响应包装
  *
@@ -198,5 +219,92 @@ data class PersonalizedPlaylist(
     val name: String = "",
     /** 歌单封面 */
     val picUrl: String = "",
+)
+
+// ======================= 歌曲信息 =======================
+
+@Serializable
+data class SongUrlRequest(
+    val ids: String,
+    val level: String = "standard",
+    val encodeType: String = "flac",
+)
+
+@Serializable
+data class SongUrlResponse(
+    val code: Int = 0,
+    val data: List<SongUrlItem> = emptyList(),
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class SongUrlItem(
+    val id: Long = 0,
+    val url: String? = null,
+    val br: Long = 0,
+    val size: Long = 0,
+    val md5: String? = null,
+    val type: String? = null,
+    /**
+     * VIP歌曲或者无版权时收费标识
+     * freeTrialInfo 不为空表示可能只能试听
+     */
+    val freeTrialInfo: FreeTrialInfo? = null,
+)
+
+@Serializable
+data class FreeTrialInfo(
+    val start: Long = 0,
+    val end: Long = 0,
+)
+
+// ======================= 歌单详情 =======================
+
+@Serializable
+data class PlaylistDetailRequest(
+    val id: Long,
+    val n: Int = 100000,
+    val s: Int = 8
+)
+
+@Serializable
+data class PlaylistDetailResponse(
+    val code: Int = 0,
+    val playlist: PlaylistDetail? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class PlaylistDetail(
+    val id: Long = 0,
+    val name: String = "",
+    val coverImgUrl: String = "",
+    val description: String? = null,
+    val playCount: Long = 0,
+    val tracks: List<Track> = emptyList()
+)
+
+@Serializable
+data class Track(
+    val id: Long = 0,
+    val name: String = "",
+    val ar: List<Artist> = emptyList(),
+    val al: Album = Album(),
+    val fee: Int = 0 // 1是VIP，8是免费等，可以用作后续过滤标识
+)
+
+@Serializable
+data class Artist(
+    val id: Long = 0,
+    val name: String = ""
+)
+
+@Serializable
+data class Album(
+    val id: Long = 0,
+    val name: String = "",
+    val picUrl: String = ""
 )
 

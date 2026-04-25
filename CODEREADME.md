@@ -22,29 +22,23 @@
 ```text
 app/src/main/java/com/lin0721/linmusic/
 ├── LinMusicApplication.kt          # 自定义 Application，初始化 Koin
-├── MainActivity.kt                 # 主 Activity (Compose)
+├── MainActivity.kt                 # 主 Activity，全屏播放器容器
 ├── data/
 │   ├── remote/
-│   │   ├── api/
-│   │   │   └── NeteaseApiService.kt  # Retrofit 接口 + 请求/响应数据类
-│   │   ├── crypto/
-│   │   │   └── NeteaseCrypto.kt      # 网易云加密工具 (WeApi/LinuxApi/EApi)
-│   │   └── network/
-│   │       └── CryptoInterceptor.kt  # OkHttp 加密拦截器
-│   └── repository/
-│       ├── MusicRepository.kt        # Repository 接口定义
-│       └── MusicRepositoryImpl.kt    # Repository 响应实现 (处理流与错误)
-├── di/
-│   ├── NetworkModule.kt             # Koin 网络层依赖模块
-│   ├── RepositoryModule.kt          # Koin 数据层依赖模块
-│   └── ViewModelModule.kt           # Koin ViewModel 层依赖模块
+│   │   ├── api/                    # NeteaseApiService.kt
+│   │   ├── crypto/                 # NeteaseCrypto.kt
+│   │   └── network/                # 拦截器 (Crypto, Header, EmptyBody)
+│   └── repository/                 # MusicRepository.kt
+├── di/                             # Koin 模块定义
+├── player/
+│   ├── LinMusicPlaybackService.kt    # Media3 播放服务
+│   └── PlayerManager.kt              # 播放控制器封装
 └── ui/
-    ├── home/
-    │   ├── HomeScreen.kt             # 首页 Compose 页面 (LazyVerticalGrid + PlaylistItemCard)
-    │   ├── HomeUiState.kt            # 首页 UI 状态密封接口 (Loading/Success/Error)
-    │   └── HomeViewModel.kt          # 首页 ViewModel (注入 MusicRepository)
-    └── theme/                        # Compose 主题 (自动生成)
+    ├── home/                       # 首页模块
+    ├── player/                     # PlayerComponents.kt (Mini & Full)
+    └── theme/                      # Spotify 暗黑主题
 ```
+
 
 ---
 
@@ -194,6 +188,105 @@ app/src/main/java/com/lin0721/linmusic/
 
 ---
 
+### 2026-04-24 Session 9 — 初始化播放服务 (Phase 4 — Media3 Integration)
+
+#### `[MODIFY] gradle/libs.versions.toml` & `app/build.gradle.kts`
+- 引入 **AndroidX Media3** (1.3.1) 核心组件：`media3-exoplayer` 和 `media3-session`。
+
+#### `[NEW] player/LinMusicPlaybackService.kt`
+- 核心播放服务实现，继承自 `MediaSessionService`，保障后台持续播放能力。
+- 在 `onCreate` 中初始化 `ExoPlayer` 实例，并与 `MediaSession` 绑定。
+- 实现了 `onGetSession` 钩子，支持外部 `MediaController` 连接。
+- 实现了 `onDestroy` 钩子，严格释放 Player 和 Session 资源，防止内存泄漏。
+
+#### `[MODIFY] AndroidManifest.xml`
+- **权限申请**：新增 `FOREGROUND_SERVICE` 与 `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (适配 Android 14+ 前台服务新规)。
+- **服务注册**：注册 `LinMusicPlaybackService`，设置 `foregroundServiceType="mediaPlayback"` 声明前台服务类型。
+- **Intent Filter**：添加 `androidx.media3.session.MediaSessionService` 动作响应。
+
+---
+
+### 2026-04-24 Session 10 — 全局播放控制器 (PlayerManager)
+
+#### `[NEW] player/PlayerManager.kt`
+- 创建 UI 与 `LinMusicPlaybackService` 通信的桥梁类。
+- 利用 `suspendCancellableCoroutine` 将原生 Guava `ListenableFuture` 的回调转换为协程原生的挂起函数 (`initController()`)，优雅地构建 `MediaController` 连接。
+- 通过内部实现 `Player.Listener` 监听回调，将播放器的当前轨道 (`currentTrack`) 和播放/暂停状态 (`isPlaying`) 封装为 `StateFlow`，便于 Compose UI 层的单向数据流监听绑定。
+- 提供了面向业务的基本方法封装：`playAudio`（含自动根据元数据构建 `MediaItem`）、`pause`、`resume`、`seekTo` 等。
+
+#### `[NEW] di/PlayerModule.kt` & `[MODIFY] LinMusicApplication.kt`
+- 配置 Koin 依赖注入：`single { PlayerManager(androidContext()) }`。
+- 将 `playerModule` 挂载到应用启动时的 Koin 运行配置中。
+
+---
+
+### 2026-04-24 Session 11 — 歌曲播放链接 API (Song URL)
+
+#### `[MODIFY] data/remote/api/NeteaseApiService.kt`
+- 新增 `@POST("/weapi/song/enhance/player/url/v1")` 接口，用于获取网易云真实歌曲播放链接。
+- 定义 `SongUrlRequest` 请求体（固定 `level="standard"`, `encodeType="flac"` 等必要参数）。
+- 定义独立的 `SongUrlResponse`、`SongUrlItem` 响应体包装（专门为应对 API 在此路由下不同的 Json 结构嵌套，而非盲目复用泛型包装导致解析丢失）。
+- 增加了针对收费歌曲与版权受限时的标识字段 `freeTrialInfo` 保留项，以供后续权限扩展。
+
+#### `[MODIFY] data/repository/MusicRepository.kt` & `MusicRepositoryImpl.kt`
+- 仓储层新增方法 `getSongUrl(songId: Long): Flow<Result<String>>`。
+- 封装内部的流控制：提取数组的首项，遇到空 URL 和 VIP 收费拦截等无效播放情况时，主动向外抛出 `Result.failure` 异常阻断，确保能够触发 UI 层的错误表现。
+
+---
+
+### 2026-04-24 Session 12 — UI 层播放控制与悬浮播放条 (MiniPlayer)
+
+#### `[MODIFY] ui/home/HomeViewModel.kt`
+- 成功注入 `PlayerManager` 控制单例。
+- 自动化服务绑定：在 `init` 中通过 `playerManager.initController()` 连接后台播放服务。
+- 暴露了基于协程 `SharedFlow` 的 `toastEvent` 用于 UI 层的无副作用的一次性弹窗分发。
+- 实现业务方法 `playSong()`：拉取真实音频流地址后，无缝移交给 `playerManager.playAudio` 控制器调度。
+- 暴露 `togglePlayPause()` 以供 Compose 层交互触发动态暂停与重播。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **悬浮组件引入 (超前实现)**：设计封装了全局悬浮组件 `MiniPlayer`，被悬浮固定在底部。支持显示带圆角的动态封面、歌名歌手、和状态同步的切换按钮。
+- **状态流监听**：利用 `collectAsStateWithLifecycle` 将 `PlayerManager` 暴露出来的底层播放状态 `currentTrack` 及 `isPlaying` 激活为 Compose 动态响应内容。
+- **异常捕获**：引入 `LaunchedEffect` 来收集后端抛出的收费歌曲或坏链报错，并调用 `Toast` 展现。
+- 修复并补全了 `PlaylistItemCard` 卡片的点击监听连线。
+
+---
+
+### 2026-04-24 Session 13 — 绕过网易云反风控策略与免登录协议修补
+
+#### 核心问题识别
+在真机或国内特定网络环境下，直接请求免登录的个性化推荐接口可能引发 `api body is empty, possibly auth failed` 的错误。这本质来源于网易云极强的防逆向/反爬虫鉴权：
+1. **设备指纹**：不允许移动端设备无 Cookie 直接访问宽泛的推荐接口。
+2. **地域风控**：无中国大陆 IP 参数的请求易被空包拦截。
+3. **加密容错**：`WeApi` 的早期实现直接拦截 `{}` 或空包。
+
+#### `[NEW] data/remote/network/HeaderInterceptor.kt`
+- 专门解决设备反爬风控的头拦截器。
+- 伪装 `User-Agent` 与 `Referer` 为官方 PC 浏览器。
+- 注入了 `X-Real-IP` 以及 `X-Forwarded-For` 将请求归属地回流中国国内。
+- 解析了原有 Cookie 层，缺失设备标识时注入保底参数 `os=pc; osver=Microsoft...`。
+
+#### `[MODIFY] di/NetworkModule.kt`
+- 将 `HeaderInterceptor` 注册成了单例，并将其添加进入 `OkHttpClient` 的构建队列中。
+- **注意顺序**：必须放置在 `CryptoInterceptor` 和 `EmptyBodyInterceptor` 的中间运行，以规避参数签名破坏。
+
+#### `[MODIFY] data/remote/api/NeteaseApiService.kt`
+- 新增具体的请求体：`@Serializable data class PersonalizedRequest(val limit: Int = 30)`。
+- 修改 `@POST("weapi/personalized")` 接口使用此实体类替代原来的 `EmptyBody`。借助 Kotlinx Serialization 的解析，最终将会生成合乎规范的 `{"limit":30}`，使得网络深层的 `CryptoInterceptor.readString()` 将不再接收空对象，从而完美逃逸后端的空包查杀。
+
+### 2026-04-24 Session 14 — 致命 WeApi 签名与 Padding 错误修复
+根据实际抓包比对，我们完全重构了 `NeteaseCrypto.kt` 中 `weapi` 的核心实现，解决了 Android 平台特有的致命坑点：
+1. **Base64 换行符消除**：`aesEncrypt` 由 `java.util.Base64` 整体迁移至 `android.util.Base64`，并在 `encodeToString` 时强制指定 `Base64.NO_WRAP` 免除换行符问题，防止网易反解析异常。
+2. **Padding 防护**：对 `rsaEncrypt` 启用了大数（`BigInteger`）计算模式，对齐结果并利用 `padStart(256, '0')` 左侧强制填充安全位数，以绕开 Android 原生 Cipher 对于非标准模数执行 Padding 的异常。
+3. **二次加密规整**：纠正了两次 AES 之间的过渡流传：第二次 AES 必须专门对其上一次输出的最终 Base64 明文字符串再次进行独立化加密计算；并修复了官方通用的 `PRESET_KEY` (`0CoJUm6Qyw8W8jud`) 以及 `PUBLIC_KEY`、`MODULUS` 的硬编码。
+4. **IP 轮替动态化**：配合防刷机制，将 `HeaderInterceptor` 中的保底访问 IP 修改为了基于 `Math.random` 构造的中国沿海高亮区动态 IP (`116.25.x.x`) 以逃避定点 IP 风控。
+
+### 2026-04-24 Session 15 — 清理路由劫持，全面回归纯净 WeApi 
+之前为了绕过 IPv6 风控，我们曾在 `CryptoInterceptor` 内部实施了硬性的 `Linux Forward` 转发劫持机制，但导致了需要繁体嵌套的 URL (如获取音乐播放链接的 API) 受到牵连持续爆出 `400 Bad Request`。随着 Session 14 中 `NeteaseCrypto` 的底层缺陷彻底修正，经过严格排查，我们决定：
+- **完全摘除 Linux 移花接木算法**：在 `CryptoInterceptor.kt` 删除了所有针对 `/weapi/` 执行重定向至 `https://interface.music.163.com/api/linux/forward` 的逻辑。
+- 所有的 `/weapi/` 路由流量现在都能最纯粹地通过原版 `CryptoType.WEAPI` 进行算法洗礼，并精确保留它们最初请求的 URL 路径出海。
+
+---
+
 ## 待办事项 / 下一步
 
 - [x] Repository 层封装 (数据仓库模式)
@@ -201,7 +294,64 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] ViewModel 层 (架构搭建与 UI State 数据收发)
 - [x] UI 层集成 (使用 Jetpack Compose 显示数据状态)
 - [x] 首页切换为免登录公开接口 (personalized)
-- [ ] Cookie / Token 管理 (拦截器抓取登录态响应参数，配合 DataStore/Preferences 进行持久化保存并在请求中复用)
-- [ ] 更多 API 接口补充 (搜索、歌曲详情、播放链接等)
+- [x] 初始化 Media3 播放引擎 (Service + Session)
+- [x] 全局播放控制器封装 (PlayerManager + StateFlow)
+- [x] 歌曲播放链接 API 对接
+- [x] UI 层集成播放控制组件 (全局悬浮播放栏 MiniPlayer)
+- [x] 全局 UI 视觉升级 (Spotify 暗黑风格)
+- [x] 全屏播放器页面实现与动效集成
+- [ ] 更多 API 接口补充 (搜索、歌曲详情等)
+- [ ] Cookie / Token 管理 (持久化登录态)
+- [ ] 歌词解析与显示
 - [ ] 错误处理统一封装 (集中分发业务码映射弹窗和过滤)
+
+---
+
+### 2026-04-25 Session 16 — UI 视觉大升级与播放器重构
+
+#### `[MODIFY] ui/theme/Color.kt` & `Theme.kt`
+- **配色体系**: 引入 Spotify 经典配色：`SpotifyGreen`, `BackgroundDark`, `SurfaceDark`, `SurfaceLight`, `TextGray`。
+- **强制深色模式**: 彻底精简 `Theme.kt`，移除动态颜色（Dynamic Color）和亮色模式切换逻辑，强制 App 锁定在深色材质主题下。
+
+#### `[MODIFY] gradle/libs.versions.toml` & `app/build.gradle.kts`
+- **依赖扩充**: 新增 `androidx-compose-material-icons-extended` 库，以支持更丰富的图标集（如 `Icons.Default.List` 等）并修复相应的类型推断报错。
+
+#### `[NEW] ui/player/PlayerComponents.kt`
+- **组件抽取**: 将播放器相关 UI 独立化。
+- **MiniPlayer**: 高级圆角悬浮样式，支持同步 `currentTrack` 封面、标题及 `isPlaying` 状态，并暴露点击回调用于打开全屏。
+- **FullPlayerScreen**: 全屏播放页，采用沉浸式渐变背景，大图封面展示，并与 `MediaItem` 真实元数据及 `PlayerManager` 的 `togglePlayPause` 逻辑深度绑定。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **布局重构**: 采用 `Scaffold` + `LazyColumn` 结构，背景应用绿色到黑色的垂直微渐变。
+- **真实数据流**: `AlbumCarousel` 现已接入 `HomeUiState.Success` 中的 `PersonalizedPlaylist` 真实数据，点击卡片直接调用 `viewModel.playSong`。
+- **播放器接入**: 移除了本地临时 MiniPlayer 实现，接入统一的 `ui.player.MiniPlayer`。
+
+#### `[MODIFY] MainActivity.kt`
+- **全屏动效集成**: 在 Activity 层级通过 `AnimatedVisibility` 容器接管播放器页面的显示状态。
+- **交互逻辑**: 通过注入 `HomeViewModel` 监听播放状态，实现点击 MiniPlayer 底部丝滑滑出 `FullPlayerScreen` 的转场效果。
+
+---
+
+### 2026-04-25 Session 17 — EApi / WeApi 通信协议架构深化与修复
+
+#### `[MODIFY] data/remote/crypto/NeteaseCrypto.kt`
+- **EApi 算法校准**: 
+    - 修正 `EAPI_KEY` 为 `e82ckenh8dichen8`。
+    - 修正拼缝符（Salt）为 `-36cd479b6b5-`。
+    - 修正散列摘要尾随词为 `md5forencrypt`。
+
+#### `[MODIFY] data/remote/network/CryptoInterceptor.kt`
+- **降维算力策略**: 在执行 EApi 加密前，动态将 Payload 中的路径 `/eapi/` 替换为 `/api/`，以对齐网易云后端的验签算法逻辑。
+- **指纹负载注入**: 拦截器现在会自动往 EApi 的 JSON Body 中注入包含 `os`, `appver`, `deviceId`, `requestId` 等 9 项核心设备特征的 `header` 对象，从而通过基于载荷内容的 Anti-Cheat 服务器检测。
+- **WeApi 健壮性**: 为所有 WeApi 请求强制补全 `csrf_token` 字段，避免因字段缺失导致服务器返回 0 字节空包。
+
+#### `[MODIFY] data/remote/network/HeaderInterceptor.kt`
+- **动态域名重定向**: 识别 `/eapi/` 路由流量并将其 Host 无缝切换至原生 APP 专用域名 **`interface.music.163.com`**，成功避开了 Web 域名 `music.163.com` 对非网页加密流的屏蔽。
+- **双轨 UA 路由**: 为 EApi 精准下发 `iPhone; iOS 16.2` 移动端 User-Agent 与对应 Cookie，同时维持 WeApi 的 PC 端伪装，消除了指纹冲突导致的 0 字节风控。
+
+#### `[MODIFY] data/remote/api/NeteaseApiService.kt`
+- **路由同步**: 将「个性化推荐歌单」接口由不稳定的 `/weapi/personalized` 迁移至修复后的专线 `/eapi/personalized/playlist`。
+
+#### `[MODIFY] di/NetworkModule.kt`
+- **连接调优**: 将全局 `connectTimeout`、`readTimeout` 和 `writeTimeout` 统一提升至 **30s**，以应对复杂加密载荷在不佳网络环境下的响应抖动。
 

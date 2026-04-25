@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.data.repository
 
+import com.lin0721.linmusic.data.remote.api.PlaylistDetail
 import com.lin0721.linmusic.data.remote.api.PersonalizedData
 import kotlinx.coroutines.flow.Flow
 
@@ -13,4 +14,13 @@ interface MusicRepository {
      */
     fun getPersonalizedPlaylists(): Flow<Result<PersonalizedData>>
 
+    /**
+     * 获取歌单详情
+     */
+    fun getPlaylistDetail(id: Long): Flow<Result<PlaylistDetail>>
+
+    /**
+     * 获取歌曲播放链接
+     */
+    fun getSongUrl(songId: Long): Flow<Result<String>>
 }
