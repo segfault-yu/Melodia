@@ -4,7 +4,55 @@
     <selectionStates>
       <SelectionState runConfigName="LinMusic">
         <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
+        <DropdownSelection timestamp="2026-04-26T08:30:18.020639321Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="FirebaseDirectAccess" identifier="reservation=projects/linmusic-571efefc/deviceSessions/session-f0qkgks1dmbha" />
+            </handle>
+            <template>
+              <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=e1q/36" />
+            </template>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection>
+          <targets>
+            <Target type="DEFAULT_BOOT">
+              <template>
+                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=tokay/34" />
+              </template>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <template>
+                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=tokay/35" />
+              </template>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <template>
+                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=tokay/36" />
+              </template>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <template>
+                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=comet/34" />
+              </template>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <template>
+                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=comet/35" />
+              </template>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <template>
+                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=e1q/34" />
+              </template>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <template>
+                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=e1q/36" />
+              </template>
+            </Target>
+          </targets>
+        </DialogSelection>
       </SelectionState>
     </selectionStates>
   </component>

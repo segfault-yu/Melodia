@@ -1,20 +1,24 @@
 package com.lin0721.linmusic.ui.home
 
-import com.lin0721.linmusic.data.remote.api.PersonalizedData
+import com.lin0721.linmusic.data.remote.api.PersonalizedPlaylist
+import com.lin0721.linmusic.data.remote.api.Artist
 
 /**
  * 首页 UI 状态密封接口
- *
- * 用于描述首页数据加载的三种状态，供 Compose UI 层进行分支渲染。
  */
 sealed interface HomeUiState {
-
-    /** 加载中 */
     data object Loading : HomeUiState
 
-    /** 加载成功，携带个性化推荐歌单数据 */
-    data class Success(val data: PersonalizedData) : HomeUiState
+    /** 加载成功，携带聚合后的首页数据 */
+    data class Success(val data: HomeFeedData) : HomeUiState
 
-    /** 加载失败，携带错误消息 */
     data class Error(val message: String) : HomeUiState
 }
+
+/**
+ * 首页聚合数据类
+ */
+data class HomeFeedData(
+    val recommendPlaylists: List<PersonalizedPlaylist>,
+    val topArtists: List<Artist>
+)

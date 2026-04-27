@@ -70,6 +70,16 @@ interface NeteaseApiService {
     suspend fun getSongUrl(
         @Body body: SongUrlRequest
     ): SongUrlResponse
+
+    // ======================= 热门歌手 =======================
+
+    /**
+     * 获取热门歌手
+     */
+    @POST("/weapi/artist/top")
+    suspend fun getTopArtists(
+        @Body body: TopArtistsRequest = TopArtistsRequest()
+    ): TopArtistsResponse
 }
 
 // ======================== 请求体 ========================
@@ -259,6 +269,30 @@ data class FreeTrialInfo(
     val end: Long = 0,
 )
 
+// ======================= 热门歌手 =======================
+
+@Serializable
+data class TopArtistsRequest(
+    val offset: Int = 0,
+    val limit: Int = 30
+)
+
+@Serializable
+data class TopArtistsResponse(
+    val code: Int = 0,
+    val artists: List<Artist> = emptyList(),
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class Artist(
+    val id: Long = 0,
+    val name: String = "",
+    val picUrl: String = "",
+    val img1v1Url: String = "",
+)
+
 // ======================= 歌单详情 =======================
 
 @Serializable
@@ -292,13 +326,7 @@ data class Track(
     val name: String = "",
     val ar: List<Artist> = emptyList(),
     val al: Album = Album(),
-    val fee: Int = 0 // 1是VIP，8是免费等，可以用作后续过滤标识
-)
-
-@Serializable
-data class Artist(
-    val id: Long = 0,
-    val name: String = ""
+    val fee: Int = 0 
 )
 
 @Serializable

@@ -23,10 +23,29 @@
   <component name="ChangeListManager">
     <list default="true" id="6bf18f15-fd07-4d78-9ebf-931e84450de9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/checksums/checksums.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/md5-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/checksums/md5-checksums.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/sha1-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/checksums/sha1-checksums.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/appInsightsSettings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/appInsightsSettings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CODEREADME.md" beforeDir="false" afterPath="$PROJECT_DIR$/CODEREADME.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/remote/api/NeteaseApiService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/remote/api/NeteaseApiService.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepository.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepository.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepositoryImpl.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepositoryImpl.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeScreen.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeUiState.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeUiState.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeViewModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/theme/Color.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/theme/Color.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +66,12 @@
       <state>
         <projects_view>
           <tree_state>
-            <expand />
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="LinMusic" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
             <select />
           </tree_state>
         </projects_view>
@@ -69,29 +93,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Android App.LInMusic.executor&quot;: &quot;Run&quot;,
-    &quot;Android App.LinMusic.executor&quot;: &quot;Run&quot;,
-    &quot;Android App.app.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;com.google.services.firebase.aqiPopupShown&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/lin0721/AndroidStudioProjects/LinMusic&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;SDK Location&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.17&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;templates.modelproviders.configurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Android App.LInMusic.executor": "Run",
+    "Android App.LinMusic.executor": "Run",
+    "Android App.app.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "com.google.services.firebase.aqiPopupShown": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/home/lin0721/AndroidStudioProjects/LinMusic",
+    "project.structure.last.edited": "SDK Location",
+    "project.structure.proportion": "0.17",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "templates.modelproviders.configurable"
   }
-}</component>
+}]]></component>
   <component name="PsdUISettings">
     <option name="LAST_EDITED_BUILD_TYPE" value="release" />
   </component>
@@ -176,6 +201,17 @@
       <updated>1776859432884</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">

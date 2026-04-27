@@ -5,6 +5,7 @@ import com.lin0721.linmusic.data.remote.api.PlaylistDetail
 import com.lin0721.linmusic.data.remote.api.PlaylistDetailRequest
 import com.lin0721.linmusic.data.remote.api.PersonalizedData
 import com.lin0721.linmusic.data.remote.api.SongUrlRequest
+import com.lin0721.linmusic.data.remote.api.Artist
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
@@ -47,6 +48,17 @@ class MusicRepositoryImpl(
             }
         } else {
             emit(Result.failure(Exception("网易云 API 响应异常 (Code: ${response.code})，可能是风控拦截。")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getTopArtists(): Flow<Result<List<Artist>>> = flow {
+        val response = apiService.getTopArtists()
+        if (response.isSuccess) {
+            emit(Result.success(response.artists))
+        } else {
+            emit(Result.failure(Exception("API Error (Code: ${response.code})")))
         }
     }.catch { e ->
         emit(Result.failure(e))

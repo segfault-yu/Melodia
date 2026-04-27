@@ -355,3 +355,63 @@ app/src/main/java/com/lin0721/linmusic/
 #### `[MODIFY] di/NetworkModule.kt`
 - **连接调优**: 将全局 `connectTimeout`、`readTimeout` 和 `writeTimeout` 统一提升至 **30s**，以应对复杂加密载荷在不佳网络环境下的响应抖动。
 
+
+### 2026-04-26 Session 18 — 首页聚合数据源重构（热门歌手集成）
+
+#### `[MODIFY] data/remote/api/NeteaseApiService.kt`
+- **新增接口**: 接入 `@POST("/eapi/top/artists")` 热门歌手接口。
+- **数据模型**: 定义 `TopArtistsRequest`, `TopArtistsResponse` 及 `Artist` 模型（包含 id, name, picUrl 等关键字段）。
+
+#### `[MODIFY] data/repository/MusicRepository.kt` & `MusicRepositoryImpl.kt`
+- **方法扩展**: 新增 `getTopArtists(): Flow<Result<List<Artist>>>` 方法，封装歌手数据的拉取逻辑。
+
+#### `[MODIFY] ui/home/HomeUiState.kt`
+- **聚合架构**: 定义 `HomeFeedData` 聚合类，将 `recommendPlaylists` 和 `topArtists` 统一打包。
+- **状态更新**: 将 `HomeUiState.Success` 的载体由 `PersonalizedData` 提升为 `HomeFeedData`。
+
+#### `[MODIFY] HomeViewModel.kt`
+- **并发请求优化**: 将 `init` 引导逻辑由单接口拉取改为聚合请求 `loadHomeData()`。
+- **异步调度**: 利用 Kotlin 协程的 `async` 与 `await` 并发调用推荐歌单与热门歌手接口，大幅提升首页首屏数据加载速度，并将多个业务流合并为单一 UI 状态分发。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **视觉完全重构**: 严格对齐 `zhuye.txt` 交付的设计稿，实现沉浸式音乐社交体验。
+- **背景设计**: 引入 `GradientStart` (#3a1515) 到 `BackgroundBlack` (#0a0a0a) 的垂直三级渐变。
+- **高级 Header**: 实现带头像、动态问候语（“早上好，哥哥”）及带实体描边红点通知图标的顶部区域。
+- **模块化区块**:
+    - **FilterPills**: 采用横向滚动的过滤胶囊块，支持选中高亮动效。
+    - **RecommendationCarousel**: 20dp 圆角大方块卡片，配套双行文本排版与横向吸附滚动。
+    - **ArtistCarousel**: 专门实现正圆形剪裁的歌手头像组。
+- **集成悬浮舱 (Integrated Floating Island)**: 
+    - 创新性地将 **播放控制条 (MiniPlayer)** 与 **底部导航栏 (Navigation)** 垂直聚合。
+    - 采用 `121212` 玻璃材质，配合 60% 磨砂透明度及 32dp 的胶囊化处理。
+    - 内部集成 `IconButton` 控制集、实时歌曲元数据展示及线型模拟进度条。
+
+### 2026-04-26 Session 19 — 首页数据流容错与解耦优化
+
+#### `[MODIFY] data/remote/api/NeteaseApiService.kt`
+- **接口纠偏**: 将热门歌手接口由 404 的 `/eapi/top/artists` 迁移至更稳定的原生 WeApi 路径 `/weapi/artist/top`。
+
+#### `[MODIFY] HomeViewModel.kt`
+- **分级加载逻辑**: 
+    - 核心数据 (推荐歌单) 保持严格加载，失败则进入 Error 状态。
+    - 非核心数据 (热门歌手) 引入 `runCatching` 与 `getOrElse` 独立包装。
+    - 即使歌手接口因风控或链路问题报错，也会被静默拦截并返回 `emptyList()`，确保首页不会因辅助信息的缺失而整体崩溃。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **动态组件渲染**: 为「关注的歌手」区块增加 `isNotEmpty()` 校验。只有当数据流中确实存在歌手信息时才渲染该 Section，避免在数据加载失败时页面出现无意义的标题和空白间隙。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **悬浮舱质感增强**: 
+    - 背景不透明度提升至 **90%** (`0xE6121212`)，显著增强了底部文字的隔离度与可读性。
+    - 引入 **16dp 实时模糊 (Blur)** 滤镜与 **1dp 微光边框** (`White 10%`)，呈现极致的玻璃拟态质感。
+- **列表避空逻辑**: 将 `LazyColumn` 底部内边距修正为 **180.dp**，彻底解决了灵动岛遮挡最后一行列表项的问题。
+- **MiniPlayer 紧凑态**: 
+    - 优化了“未播放”状态下的 UI 排版，自动收缩组件高度并微调字体/图标大小，确保空状态下界面依旧整洁美白。
+    - 动态显隐进度条：仅在有歌曲载入时才显示播放进度，减少不必要的视觉噪音。
+
+#### `[NEW] 玻璃拟态 (Glassmorphism) 集成`
+- **引入 Haze 库**: 集成 `dev.chrisbanes.haze:haze:0.6.2` 库，替代 Compose 原生无法模糊背景的局限性。
+- **真实背景模糊**: 
+    - 在 `HomeScreen` 核心容器绑定 `HazeState`。
+    - 悬浮舱升级为 `hazeChild`，配置 `blurRadius = 24.dp` 与 `Black 40%` 遮罩。
+    - 实现列表滑动到悬浮舱下方时，色彩能够柔和透出的 iOS 级视觉效果。

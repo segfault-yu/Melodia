@@ -2,6 +2,7 @@ package com.lin0721.linmusic.data.repository
 
 import com.lin0721.linmusic.data.remote.api.PlaylistDetail
 import com.lin0721.linmusic.data.remote.api.PersonalizedData
+import com.lin0721.linmusic.data.remote.api.Artist
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -23,4 +24,9 @@ interface MusicRepository {
      * 获取歌曲播放链接
      */
     fun getSongUrl(songId: Long): Flow<Result<String>>
+
+    /**
+     * 获取热门歌手
+     */
+    fun getTopArtists(): Flow<Result<List<Artist>>>
 }

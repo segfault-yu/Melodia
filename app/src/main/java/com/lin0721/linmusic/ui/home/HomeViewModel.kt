@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.player.PlayerManager
 
@@ -30,30 +32,48 @@ class HomeViewModel(
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
     init {
-        loadPersonalizedPlaylists()
+        loadHomeData()
         viewModelScope.launch {
             playerManager.initController()
         }
     }
 
     /**
-     * 加载个性化推荐歌单
-     *
-     * 收集 Repository 返回的 Flow<Result>，将其映射为对应 UiState。
+     * 加载首页聚合数据（并发获取歌单和歌手）
      */
-    fun loadPersonalizedPlaylists() {
+    fun loadHomeData() {
         _uiState.value = HomeUiState.Loading
 
         viewModelScope.launch {
-            musicRepository.getPersonalizedPlaylists().collect { result ->
-                _uiState.value = result.fold(
-                    onSuccess = { data -> HomeUiState.Success(data) },
-                    onFailure = { error ->
-                        HomeUiState.Error(
-                            error.localizedMessage ?: "未知错误"
+            try {
+                // 1. 获取推荐歌单 (核心数据)
+                val playlistsDeferred = async { 
+                    musicRepository.getPersonalizedPlaylists().first()
+                }
+                
+                // 2. 获取热门歌手 (非核心数据，独立容错)
+                val artistsDeferred = async { 
+                    runCatching { musicRepository.getTopArtists().first() }
+                        .getOrElse { Result.success(emptyList()) }
+                }
+
+                val playlistsResult = playlistsDeferred.await()
+                val artistsResult = artistsDeferred.await()
+
+                if (playlistsResult.isSuccess) {
+                    _uiState.value = HomeUiState.Success(
+                        HomeFeedData(
+                            recommendPlaylists = playlistsResult.getOrThrow().playlists,
+                            topArtists = artistsResult.getOrDefault(emptyList())
                         )
-                    }
-                )
+                    )
+                } else {
+                    _uiState.value = HomeUiState.Error(
+                        playlistsResult.exceptionOrNull()?.message ?: "加载核心数据失败"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = HomeUiState.Error(e.localizedMessage ?: "未知错误")
             }
         }
     }
