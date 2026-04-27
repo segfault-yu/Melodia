@@ -415,3 +415,32 @@ app/src/main/java/com/lin0721/linmusic/
     - 在 `HomeScreen` 核心容器绑定 `HazeState`。
     - 悬浮舱升级为 `hazeChild`，配置 `blurRadius = 24.dp` 与 `Black 40%` 遮罩。
     - 实现列表滑动到悬浮舱下方时，色彩能够柔和透出的 iOS 级视觉效果。
+
+---
+
+### 2026-04-27 Session 20 — 播放器断点续播与进度记忆功能
+
+#### `[MODIFY] gradle/libs.versions.toml` & `app/build.gradle.kts`
+- **依赖引入**: 新增 `androidx.datastore:datastore-preferences` (1.1.2) 用于轻量级键值对持久化存储。
+
+#### `[NEW] data/local/PlaybackPreferences.kt`
+- **数据室封装**: 实现 `PlaybackPreferences` 类，定义 `LAST_SONG_ID`, `LAST_TITLE`, `LAST_ARTIST`, `LAST_COVER`, `LAST_POSITION` 等存储键值。
+- **响应式状态**: 通过 `Flow<PlaybackState>` 实时暴露本地存储的播放快照，支持应用启动时的状态恢复。
+
+#### `[NEW] di/LocalModule.kt` & `[MODIFY] LinMusicApplication.kt`
+- **DI 注册**: 将 `PlaybackPreferences` 注册为单例模块 `localModule`，并挂载至 `LinMusicApplication` 的 Koin 初始化列表中。
+
+#### `[MODIFY] player/PlayerManager.kt`
+- **进度监听**: 引入 `CoroutineScope` 开启每秒轮询机制，实时同步 `controller.currentPosition` 到 Compose 响应式流 `currentPosition: StateFlow<Long>`。
+- **自动保存**: 深度集成 `Player.Listener`，在播放暂停 (`onIsPlayingChanged`)、轨道切换 (`onMediaItemTransition`) 以及服务销毁时自动触发 `saveState()`，将当前元数据与进度持久化。
+- **状态恢复**: 在 `initController` 时优先从 DataStore 恢复上一次的歌曲快照作为 UI 占位符。
+
+#### `[MODIFY] ui/home/HomeViewModel.kt` & `ui/playlist/PlaylistViewModel.kt`
+- **虚拟续播逻辑**: 增强 `togglePlayPause`。当检测到当前 Track 是持久化恢复的“本地占位符”（无 URI）时，自动触发 `musicRepository.getSongUrl` 重新拉取音频流，并指挥播放器从记忆点执行 `seekTo` 续播。
+- **接口同步**: 适配 `PlayerManager.playAudio` 修改后的签名，补全 `songId` 参数传递，修复编译错误。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **进度反馈绑定**: 将 MiniPlayer 底部模拟进度条与 `PlayerManager` 的 `currentPosition` 和 `duration` 进行动态计算绑定，实现非播放状态下也能显示历史进度条位置。
+
+#### `[MODIFY] player/LinMusicPlaybackService.kt`
+- **保底持久化**: 注入 `PlayerManager` 并在服务 `onDestroy` 周期内强制执行一次 `saveState()`，确保系统意外回收进程时最大限度保留播放位点。

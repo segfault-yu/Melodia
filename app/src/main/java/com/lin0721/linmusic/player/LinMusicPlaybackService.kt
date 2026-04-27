@@ -4,9 +4,11 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import org.koin.android.ext.android.inject
 
 class LinMusicPlaybackService : MediaSessionService() {
 
+    private val playerManager: PlayerManager by inject()
     private var player: Player? = null
     private var mediaSession: MediaSession? = null
 
@@ -22,7 +24,9 @@ class LinMusicPlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        playerManager.saveState()
         mediaSession?.run {
+
             player.release()
             release()
             mediaSession = null

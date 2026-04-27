@@ -45,11 +45,13 @@ class PlaylistViewModel(
                 result.fold(
                     onSuccess = { url ->
                         playerManager.playAudio(
+                            songId = songId,
                             url = url,
                             title = title,
                             artist = artist,
                             coverUrl = coverUrl
                         )
+
                     },
                     onFailure = { error ->
                         _toastEvent.emit(error.message ?: "无法获取播放链接")

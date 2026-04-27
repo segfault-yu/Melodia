@@ -78,11 +78,11 @@ class HomeViewModel(
         }
     }
 
-    fun playSong(songId: Long, title: String, artist: String, coverUrl: String) {
+    fun playSong(songId: Long, title: String, artist: String, coverUrl: String, startPosition: Long = 0) {
         viewModelScope.launch {
             musicRepository.getSongUrl(songId).collect { result ->
                 result.onSuccess { url ->
-                    playerManager.playAudio(url, title, artist, coverUrl)
+                    playerManager.playAudio(songId, url, title, artist, coverUrl, startPosition)
                 }.onFailure { error ->
                     _toastEvent.emit(error.message ?: "无法获取播放链接")
                 }
@@ -91,6 +91,21 @@ class HomeViewModel(
     }
     
     fun togglePlayPause() {
+        val currentTrack = playerManager.currentTrack.value
+        if (!playerManager.isPlaying.value && currentTrack != null) {
+            val songId = currentTrack.mediaMetadata.extras?.getLong("songId") ?: -1L
+            // 如果 MediaItem 只有元数据而没有实际的 URI (说明是持久化恢复的占位符)
+            if (songId != -1L && currentTrack.localConfiguration == null) {
+                playSong(
+                    songId = songId,
+                    title = currentTrack.mediaMetadata.title?.toString() ?: "",
+                    artist = currentTrack.mediaMetadata.artist?.toString() ?: "",
+                    coverUrl = currentTrack.mediaMetadata.artworkUri?.toString() ?: "",
+                    startPosition = playerManager.currentPosition.value
+                )
+                return
+            }
+        }
         playerManager.togglePlayPause()
     }
 }

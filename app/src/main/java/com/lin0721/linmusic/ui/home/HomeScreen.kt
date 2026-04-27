@@ -1,6 +1,8 @@
 package com.lin0721.linmusic.ui.home
 
 import android.widget.Toast
+import androidx.compose.animation.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -59,6 +61,9 @@ fun HomeScreen(
 
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
     val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
+    val currentPosition by viewModel.playerManager.currentPosition.collectAsStateWithLifecycle()
+    val duration by viewModel.playerManager.duration.collectAsStateWithLifecycle()
+
 
     Box(
         modifier = Modifier
@@ -134,9 +139,12 @@ fun HomeScreen(
                 hazeState = hazeState,
                 currentTrack = currentTrack,
                 isPlaying = isPlaying,
+                currentPosition = currentPosition,
+                duration = duration,
                 onTogglePlay = { viewModel.togglePlayPause() },
                 onOpenPlayer = onOpenPlayer
             )
+
         }
     }
 }
@@ -336,12 +344,16 @@ fun BottomFloatingIsland(
     hazeState: HazeState,
     currentTrack: androidx.media3.common.MediaItem?,
     isPlaying: Boolean,
+    currentPosition: Long,
+    duration: Long,
     onTogglePlay: () -> Unit,
     onOpenPlayer: () -> Unit
 ) {
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .animateContentSize()
             .hazeChild(
                 state = hazeState,
                 shape = RoundedCornerShape(32.dp),
@@ -352,79 +364,85 @@ fun BottomFloatingIsland(
             )
             .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp))
     ) {
+
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // --- TOP: MiniPlayer ---
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clickable { onOpenPlayer() }
-                    .padding(horizontal = 4.dp, vertical = if (currentTrack == null) 4.dp else 0.dp)
+            // --- TOP: MiniPlayer & Progress ---
+            AnimatedVisibility(
+                visible = currentTrack != null,
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
             ) {
-                AsyncImage(
-                    model = currentTrack?.mediaMetadata?.artworkUri ?: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80",
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(if (currentTrack == null) 40.dp else 48.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = currentTrack?.mediaMetadata?.title?.toString() ?: "尚未播放任何歌曲",
-                        color = Color.White,
-                        fontSize = if (currentTrack == null) 13.sp else 14.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (currentTrack != null) {
-                        Text(
-                            text = currentTrack.mediaMetadata.artist?.toString() ?: "未知艺术家",
-                            color = Color.LightGray,
-                            fontSize = 12.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable { onOpenPlayer() }
+                            .padding(horizontal = 4.dp, vertical = 0.dp)
+                    ) {
+                        AsyncImage(
+                            model = currentTrack?.mediaMetadata?.artworkUri,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
                         )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = currentTrack?.mediaMetadata?.title?.toString() ?: "",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = currentTrack?.mediaMetadata?.artist?.toString() ?: "未知艺术家",
+                                color = Color.LightGray,
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { /* Cast */ }) {
+                                Icon(Icons.Default.Cast, null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
+                            }
+                            IconButton(onClick = onTogglePlay) {
+                                Icon(
+                                    if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                    null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
                     }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { /* Cast */ }) {
-                        Icon(Icons.Default.Cast, null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
-                    }
-                    IconButton(onClick = onTogglePlay) {
-                        Icon(
-                            if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                            null,
-                            tint = Color.White,
-                            modifier = Modifier.size(if (currentTrack == null) 28.dp else 32.dp)
-                        )
-                    }
-                }
-            }
-            
-            // Progress
-            if (currentTrack != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 8.dp)
-                        .height(2.dp)
-                        .clip(RoundedCornerShape(1.dp))
-                        .background(Color.White.copy(alpha = 0.1f))
-                ) {
+
+                    // Progress
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.4f)
-                            .fillMaxHeight()
-                            .background(NeteaseRed)
-                    )
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, top = 8.dp, bottom = 4.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp))
+                            .background(Color.White.copy(alpha = 0.1f))
+                    ) {
+                        val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                                .fillMaxHeight()
+                                .background(NeteaseRed)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-            } else {
-                Spacer(modifier = Modifier.height(8.dp))
             }
+
 
             // --- BOTTOM: Navigation ---
             Row(
