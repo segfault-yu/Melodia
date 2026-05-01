@@ -2,13 +2,17 @@ package com.lin0721.linmusic.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.data.local.UserProfile
 import com.lin0721.linmusic.data.repository.MusicRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -22,11 +26,16 @@ import com.lin0721.linmusic.player.PlayerManager
  */
 class HomeViewModel(
     private val musicRepository: MusicRepository,
-    val playerManager: PlayerManager
+    val playerManager: PlayerManager,
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    // 用户信息状态流，从 DataStore 实时读取
+    val userProfile: StateFlow<UserProfile?> = userPreferences.userProfile
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()

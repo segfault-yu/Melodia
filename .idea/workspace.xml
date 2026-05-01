@@ -22,10 +22,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6bf18f15-fd07-4d78-9ebf-931e84450de9" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gradle/config.properties" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/deviceManager.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/migrations.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/zhuye.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/checksums/checksums.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/md5-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/checksums/md5-checksums.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/sha1-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/checksums/sha1-checksums.bin" afterDir="false" />
@@ -35,27 +31,21 @@
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/config.properties" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/config.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/appInsightsSettings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/appInsightsSettings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CODEREADME.md" beforeDir="false" afterPath="$PROJECT_DIR$/CODEREADME.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/LinMusicApplication.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/LinMusicApplication.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/remote/api/NeteaseApiService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/remote/api/NeteaseApiService.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepository.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepository.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepositoryImpl.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepositoryImpl.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/di/PlayerModule.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/di/PlayerModule.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/player/LinMusicPlaybackService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/player/LinMusicPlaybackService.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/player/PlayerManager.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/player/PlayerManager.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/MainActivity.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/di/LocalModule.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/di/LocalModule.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeScreen.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeUiState.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeUiState.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeViewModel.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/playlist/PlaylistViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/playlist/PlaylistViewModel.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/theme/Color.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/theme/Color.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/gradle.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/local.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/zhuye.txt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,7 +81,7 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GradleScriptDefinitionsStorage" workingDir="$PROJECT_DIR$" gradleHome="$USER_HOME$/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1" javaHome="$APPLICATION_HOME_DIR$/jbr" gradleVersion="9.3.1" />
+  <component name="GradleScriptDefinitionsStorage" workingDir="$PROJECT_DIR$" gradleHome="C:\Users\guita\.gradle\wrapper\dists\gradle-9.3.1-bin\23ovyewtku6u96viwx3xl3oks\gradle-9.3.1" javaHome="F:\Android Studio\jbr" gradleVersion="9.3.1" />
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -120,18 +110,18 @@
     "com.google.services.firebase.aqiPopupShown": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/home/lin0721/AndroidStudioProjects/LinMusic",
+    "last_opened_file_path": "F:/dev/Melodia",
     "project.structure.last.edited": "SDK Location",
     "project.structure.proportion": "0.17",
     "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "templates.modelproviders.configurable"
+    "settings.editor.selected.configurable": "device.mirroring"
   }
 }]]></component>
   <component name="PsdUISettings">
     <option name="LAST_EDITED_BUILD_TYPE" value="release" />
   </component>
   <component name="RunManager">
-    <configuration name="LinMusic" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
+    <configuration name="app" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
       <module name="LinMusic.app" />
       <option name="ANDROID_RUN_CONFIGURATION_SCHEMA_VERSION" value="1" />
       <option name="DEPLOY" value="true" />
@@ -160,7 +150,6 @@
         <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
         <option name="SHOW_OPTIMIZED_WARNING" value="true" />
         <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
-        <option name="DEBUG_SANDBOX_SDK" value="false" />
       </Auto>
       <Hybrid>
         <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
@@ -169,11 +158,9 @@
         <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
         <option name="SHOW_OPTIMIZED_WARNING" value="true" />
         <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
-        <option name="DEBUG_SANDBOX_SDK" value="false" />
       </Hybrid>
       <Java>
         <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
-        <option name="DEBUG_SANDBOX_SDK" value="false" />
       </Java>
       <Native>
         <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
@@ -182,7 +169,6 @@
         <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
         <option name="SHOW_OPTIMIZED_WARNING" value="true" />
         <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
-        <option name="DEBUG_SANDBOX_SDK" value="false" />
       </Native>
       <Profilers>
         <option name="ADVANCED_PROFILING_ENABLED" value="false" />

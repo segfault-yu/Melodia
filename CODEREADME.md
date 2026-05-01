@@ -444,3 +444,49 @@ app/src/main/java/com/lin0721/linmusic/
 
 #### `[MODIFY] player/LinMusicPlaybackService.kt`
 - **保底持久化**: 注入 `PlayerManager` 并在服务 `onDestroy` 周期内强制执行一次 `saveState()`，确保系统意外回收进程时最大限度保留播放位点。
+
+---
+
+### 2026-04-30 Session 21 — 悬浮舱编译修复与动画体验优化
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **编译错误修复**: 将 `Modifier.padding(horizontal = 4.dp, top = 8.dp, bottom = 4.dp)` 改为 `padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 4.dp)`。Compose 的 `padding` 重载规范中，`horizontal` 不能与独立的 `top`/`bottom` 混用，必须拆分为四方向独立参数。
+- **悬浮舱动画方向修正**: 将 `AnimatedVisibility` 的 `expandFrom` 由 `Alignment.Top`（从顶部向下展开）改为 `Alignment.Bottom`（从底部向上弹出），符合底部锚定元素的视觉直觉。
+- **丝滑弹性动画**: 引入 `spring()` 与 `tween()` 精细动画参数：
+    - **展开**: `DampingRatioLowBouncy` + `StiffnessLow`，实现带轻微弹跳感的丝滑冒出。
+    - **淡入**: 延迟 80ms 错峰启动（避免内容在高度展开前过早闪现）。
+    - **收起**: `DampingRatioNoBouncy` + `StiffnessMediumLow`，干脆利落地收回。
+    - **淡出**: 200ms 快速消失。
+- **移除 `animateContentSize`**: 移除外层 Box 上的 `animateContentSize()`，避免与内层 `AnimatedVisibility` 产生双重动画冲突。`expandVertically` 已逐帧改变子组件测量高度，外层容器自然跟随，Haze 毛玻璃与边框描边均无损保留。
+
+---
+
+### 2026-05-01 Session 22 — 用户信息持久化与顶栏动态化
+
+#### `[NEW] data/local/UserPreferences.kt`
+- **数据模型**: 定义 `@Serializable data class UserProfile(uid, nickname, avatarUrl)`。
+- **DataStore 封装**: 新建 `UserPreferences` 类，通过独立的 `user_prefs` DataStore 实例管理用户信息。
+- **序列化方案**: 使用 `kotlinx.serialization` 将 `UserProfile` 序列化为 JSON 字符串存储，读取时通过 `runCatching` 容错反序列化。
+- **完整 API**: 提供 `userProfile: Flow<UserProfile?>`（响应式读取）、`saveUserProfile()`（持久化写入）和 `clearUserProfile()`（退出登录清理）。
+
+#### `[MODIFY] di/LocalModule.kt`
+- **DI 注册**: 将 `UserPreferences` 注册为 Koin 单例，复用与 `PlaybackPreferences` 相同的 `androidContext()` 注入模式。
+
+#### `[MODIFY] ui/home/HomeViewModel.kt`
+- **构造注入**: 新增 `UserPreferences` 构造参数，由 Koin 自动解析。
+- **状态暴露**: 通过 `stateIn()` 将 `userPreferences.userProfile` Flow 转换为 `StateFlow<UserProfile?>`，配置 `WhileSubscribed(5000)` 订阅策略优化性能。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **TopGreetingBar 重构**: 
+    - 接收 `userProfile: UserProfile?` 和 `onLoginClick: () -> Unit` 参数。
+    - **未登录态**: 灰色半透明圆形背景 + `Icons.Default.Person` 占位头像，文字显示"未登录"和"点击登录获取专属推荐"，整个区域可点击触发 `onLoginClick`。
+    - **已登录态**: Coil 加载真实 `avatarUrl`（带网易云 CDN 200x200 裁剪），显示真实昵称。
+    - **动态问候语**: 根据 `Calendar.HOUR_OF_DAY` 分时段显示"早上好 / 中午好 / 下午好 / 晚上好 / 夜深了"。
+    - **排版优化**: 昵称增加 `maxLines = 1` + `TextOverflow.Ellipsis` 防溢出。
+- **HomeScreen 签名扩展**: 新增 `onLoginClick` 回调参数并传递至 `TopGreetingBar`。
+- **清理**: 移除未使用的 `MiniPlayer` 导入。
+
+#### `[MODIFY] MainActivity.kt`
+- **路由扩展**: `Screen` 枚举新增 `Login` 项。
+- **登录占位页**: 在 `Crossfade` 中添加 `Screen.Login` 分支，展示带图标、标题和"返回首页"按钮的占位登录页。
+- **事件串联**: `HomeScreen` 调用处传入 `onLoginClick = { currentScreen = Screen.Login }` 完成路由闭环。

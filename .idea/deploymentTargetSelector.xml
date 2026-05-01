@@ -2,8 +2,8 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-      <SelectionState runConfigName="LinMusic">
-        <option name="selectionMode" value="DROPDOWN" />
+      <SelectionState runConfigName="app">
+        <option name="selectionMode" value="DIALOG" />
         <DropdownSelection timestamp="2026-04-26T08:30:18.020639321Z">
           <Target type="DEFAULT_BOOT">
             <handle>
@@ -17,39 +17,9 @@
         <DialogSelection>
           <targets>
             <Target type="DEFAULT_BOOT">
-              <template>
-                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=tokay/34" />
-              </template>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <template>
-                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=tokay/35" />
-              </template>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <template>
-                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=tokay/36" />
-              </template>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <template>
-                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=comet/34" />
-              </template>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <template>
-                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=comet/35" />
-              </template>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <template>
-                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=e1q/34" />
-              </template>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <template>
-                <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=e1q/36" />
-              </template>
+              <handle>
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=b7f68b89" />
+              </handle>
             </Target>
           </targets>
         </DialogSelection>

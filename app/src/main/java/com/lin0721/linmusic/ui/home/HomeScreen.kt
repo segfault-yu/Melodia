@@ -1,7 +1,11 @@
 package com.lin0721.linmusic.ui.home
 
 import android.widget.Toast
+import java.util.Calendar
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,7 +38,7 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.data.remote.api.PersonalizedPlaylist
 import com.lin0721.linmusic.data.remote.api.Artist
 import com.lin0721.linmusic.ui.theme.*
-import com.lin0721.linmusic.ui.player.MiniPlayer
+import com.lin0721.linmusic.data.local.UserProfile
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
@@ -45,7 +49,8 @@ import org.koin.androidx.compose.koinViewModel
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onPlaylistClick: (Long) -> Unit = {},
-    onOpenPlayer: () -> Unit = {}
+    onOpenPlayer: () -> Unit = {},
+    onLoginClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -63,7 +68,7 @@ fun HomeScreen(
     val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
     val currentPosition by viewModel.playerManager.currentPosition.collectAsStateWithLifecycle()
     val duration by viewModel.playerManager.duration.collectAsStateWithLifecycle()
-
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -83,7 +88,7 @@ fun HomeScreen(
                 .haze(hazeState), // Provide content to be blurred
             contentPadding = PaddingValues(bottom = 160.dp) 
         ) {
-            item { TopGreetingBar() }
+            item { TopGreetingBar(userProfile = userProfile, onLoginClick = onLoginClick) }
             item { WelcomeBanner() }
             item { FilterPills() }
 
@@ -149,27 +154,101 @@ fun HomeScreen(
     }
 }
 
+/**
+ * 动态问候语工具函数
+ */
+private fun getGreetingText(): String {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 6..11 -> "早上好"
+        in 12..13 -> "中午好"
+        in 14..17 -> "下午好"
+        in 18..22 -> "晚上好"
+        else -> "夜深了"
+    }
+}
+
 @Composable
-fun TopGreetingBar() {
+fun TopGreetingBar(
+    userProfile: UserProfile?,
+    onLoginClick: () -> Unit
+) {
+    val greeting = remember { getGreetingText() }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                // 未登录时整个区域可点击跳转登录
+                if (userProfile == null) Modifier.clickable { onLoginClick() }
+                else Modifier
+            )
             .padding(horizontal = 20.dp, vertical = 24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = "https://picsum.photos/seed/avatar/100",
-            contentDescription = null,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = "早上好，", fontSize = 12.sp, color = Color.LightGray)
-            Text(text = "哥哥", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        // 头像区域
+        if (userProfile != null) {
+            // 已登录：真实头像
+            AsyncImage(
+                model = "${userProfile.avatarUrl}?param=200y200",
+                contentDescription = null,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            // 未登录：默认占位头像
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // 文字区域
+        Column(modifier = Modifier.weight(1f)) {
+            if (userProfile != null) {
+                Text(
+                    text = "$greeting，",
+                    fontSize = 12.sp,
+                    color = Color.LightGray
+                )
+                Text(
+                    text = userProfile.nickname,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            } else {
+                Text(
+                    text = "未登录",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "点击登录获取专属推荐",
+                    fontSize = 12.sp,
+                    color = Color.LightGray
+                )
+            }
+        }
+
+        // 通知铃铛
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -353,7 +432,6 @@ fun BottomFloatingIsland(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize()
             .hazeChild(
                 state = hazeState,
                 shape = RoundedCornerShape(32.dp),
@@ -368,11 +446,27 @@ fun BottomFloatingIsland(
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // --- TOP: MiniPlayer & Progress ---
+            // --- 上半部分: MiniPlayer 与进度条（仅有歌曲时展示） ---
             AnimatedVisibility(
                 visible = currentTrack != null,
-                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
-                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+                enter = expandVertically(
+                    expandFrom = Alignment.Bottom,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ) + fadeIn(
+                    animationSpec = tween(durationMillis = 300, delayMillis = 80)
+                ),
+                exit = shrinkVertically(
+                    shrinkTowards = Alignment.Bottom,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeOut(
+                    animationSpec = tween(durationMillis = 200)
+                )
             ) {
                 Column {
                     Row(
@@ -426,7 +520,7 @@ fun BottomFloatingIsland(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 4.dp, top = 8.dp, bottom = 4.dp)
+                            .padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 4.dp)
                             .height(2.dp)
                             .clip(RoundedCornerShape(1.dp))
                             .background(Color.White.copy(alpha = 0.1f))
@@ -444,7 +538,7 @@ fun BottomFloatingIsland(
             }
 
 
-            // --- BOTTOM: Navigation ---
+            // --- 下半部分: 四大导航 Icon（始终显示） ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
