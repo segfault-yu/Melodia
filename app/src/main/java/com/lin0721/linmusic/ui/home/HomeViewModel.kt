@@ -117,4 +117,32 @@ class HomeViewModel(
         }
         playerManager.togglePlayPause()
     }
+
+    /**
+     * 模拟登录（测试用）
+     * 写入假数据到 DataStore，触发 UI 状态更新
+     */
+    fun simulateLogin() {
+        viewModelScope.launch {
+            userPreferences.saveUserProfile(
+                UserProfile(
+                    uid = 12345L,
+                    nickname = "首席体验官",
+                    avatarUrl = "https://p1.music.126.net/SUeqMM8HOIpHv9Nhl9qt9w==/109951164932670568.jpg"
+                )
+            )
+            _toastEvent.emit("登录成功，欢迎回来！")
+        }
+    }
+
+    /**
+     * 退出登录
+     * 清除 DataStore 中的用户信息
+     */
+    fun logout() {
+        viewModelScope.launch {
+            userPreferences.clearUserProfile()
+            _toastEvent.emit("已退出登录")
+        }
+    }
 }

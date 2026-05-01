@@ -2,6 +2,7 @@ package com.lin0721.linmusic.ui.home
 
 import android.widget.Toast
 import java.util.Calendar
+import kotlinx.coroutines.launch
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -39,25 +40,33 @@ import com.lin0721.linmusic.data.remote.api.PersonalizedPlaylist
 import com.lin0721.linmusic.data.remote.api.Artist
 import com.lin0721.linmusic.ui.theme.*
 import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.ui.components.LoginBottomSheet
+import com.lin0721.linmusic.ui.components.ProfileSidebar
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onPlaylistClick: (Long) -> Unit = {},
-    onOpenPlayer: () -> Unit = {},
-    onLoginClick: () -> Unit = {}
+    onOpenPlayer: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    
+
     val hazeState = remember { HazeState() }
 
-    // Toast collection
+    // 登录弹窗状态
+    var showLoginSheet by remember { mutableStateOf(false) }
+
+    // 侧边栏状态（2D挤压效果）
+    var isSidebarOpen by remember { mutableStateOf(false) }
+
+    // Toast 监听
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -70,87 +79,148 @@ fun HomeScreen(
     val duration by viewModel.playerManager.duration.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(GradientStart, BackgroundDark, BackgroundBlack),
-                    startY = 0f,
-                    endY = 2000f
+    // 头像点击：已登录开侧边栏，未登录开登录弹窗
+    val onAvatarClick: () -> Unit = {
+        if (userProfile != null) {
+            isSidebarOpen = !isSidebarOpen
+        } else {
+            showLoginSheet = true
+        }
+    }
+
+    Row(modifier = Modifier.fillMaxSize()) {
+        // 侧边栏：2D挤压动画
+        AnimatedVisibility(
+            visible = isSidebarOpen && userProfile != null,
+            enter = expandHorizontally(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
                 )
-            )
-    ) {
-        // CONTENT PROVIDER for Haze
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .haze(hazeState), // Provide content to be blurred
-            contentPadding = PaddingValues(bottom = 160.dp) 
+            ) + fadeIn(),
+            exit = shrinkHorizontally(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeOut()
         ) {
-            item { TopGreetingBar(userProfile = userProfile, onLoginClick = onLoginClick) }
-            item { WelcomeBanner() }
-            item { FilterPills() }
-
-            when (val state = uiState) {
-                is HomeUiState.Loading -> {
-                    item { LoadingIndicator() }
-                }
-                is HomeUiState.Error -> {
-                    item {
-                        ErrorContent(
-                            message = state.message,
-                            onRetry = { viewModel.loadHomeData() }
-                        )
+            userProfile?.let { profile ->
+                ProfileSidebar(
+                    userProfile = profile,
+                    onLogout = {
+                        viewModel.logout()
+                        isSidebarOpen = false
+                    },
+                    onDismiss = {
+                        isSidebarOpen = false
                     }
-                }
-                is HomeUiState.Success -> {
-                    item { SectionHeader(title = "为你推荐") }
-                    item {
-                        RecommendationCarousel(
-                            playlists = state.data.recommendPlaylists,
-                            onClick = { onPlaylistClick(it.id) }
-                        )
-                    }
-
-                    if (state.data.topArtists.isNotEmpty()) {
-                        item { SectionHeader(title = "关注的歌手") }
-                        item {
-                            ArtistCarousel(
-                                artists = state.data.topArtists,
-                                onClick = { /* artist click */ }
-                            )
-                        }
-                    }
-                    
-                    item { SectionHeader(title = "你的私人雷达") }
-                    item {
-                        RecommendationCarousel(
-                            playlists = state.data.recommendPlaylists.reversed(),
-                            onClick = { onPlaylistClick(it.id) }
-                        )
-                    }
-                }
+                )
             }
         }
 
-        // --- HAZE CONSUMER: BottomFloatingIsland ---
+        // 主内容区域（占据剩余空间，会被挤压）
         Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp, vertical = 24.dp)
+                .weight(1f)
+                .fillMaxHeight()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(GradientStart, BackgroundDark, BackgroundBlack),
+                        startY = 0f,
+                        endY = 2000f
+                    )
+                )
         ) {
-            BottomFloatingIsland(
-                hazeState = hazeState,
-                currentTrack = currentTrack,
-                isPlaying = isPlaying,
-                currentPosition = currentPosition,
-                duration = duration,
-                onTogglePlay = { viewModel.togglePlayPause() },
-                onOpenPlayer = onOpenPlayer
-            )
+            // Haze 内容提供层
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState),
+                contentPadding = PaddingValues(bottom = 160.dp)
+            ) {
+                item { TopGreetingBar(userProfile = userProfile, onLoginClick = onAvatarClick) }
+                item { WelcomeBanner() }
+                item { FilterPills() }
 
+                when (val state = uiState) {
+                    is HomeUiState.Loading -> {
+                        item { LoadingIndicator() }
+                    }
+                    is HomeUiState.Error -> {
+                        item {
+                            ErrorContent(
+                                message = state.message,
+                                onRetry = { viewModel.loadHomeData() }
+                            )
+                        }
+                    }
+                    is HomeUiState.Success -> {
+                        item { SectionHeader(title = "为你推荐") }
+                        item {
+                            RecommendationCarousel(
+                                playlists = state.data.recommendPlaylists,
+                                onClick = { onPlaylistClick(it.id) }
+                            )
+                        }
+
+                        if (state.data.topArtists.isNotEmpty()) {
+                            item { SectionHeader(title = "关注的歌手") }
+                            item {
+                                ArtistCarousel(
+                                    artists = state.data.topArtists,
+                                    onClick = { /* artist click */ }
+                                )
+                            }
+                        }
+
+                        item { SectionHeader(title = "你的私人雷达") }
+                        item {
+                            RecommendationCarousel(
+                                playlists = state.data.recommendPlaylists.reversed(),
+                                onClick = { onPlaylistClick(it.id) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 底部悬浮舱
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+            ) {
+                BottomFloatingIsland(
+                    hazeState = hazeState,
+                    currentTrack = currentTrack,
+                    isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onTogglePlay = { viewModel.togglePlayPause() },
+                    onOpenPlayer = onOpenPlayer
+                )
+            }
         }
+    }
+
+    // 登录弹窗（放在最外层）
+    if (showLoginSheet) {
+        LoginBottomSheet(
+            onDismiss = { showLoginSheet = false },
+            onPhoneLogin = {
+                viewModel.simulateLogin()
+                showLoginSheet = false
+            },
+            onQrLogin = {
+                viewModel.simulateLogin()
+                showLoginSheet = false
+            },
+            onEmailLogin = {
+                viewModel.simulateLogin()
+                showLoginSheet = false
+            }
+        )
     }
 }
 
@@ -191,10 +261,12 @@ fun TopGreetingBar(
             // 已登录：真实头像
             AsyncImage(
                 model = "${userProfile.avatarUrl}?param=200y200",
-                contentDescription = null,
+                contentDescription = "用户头像",
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape),
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.2f))
+                    .clickable { onLoginClick() },
                 contentScale = ContentScale.Crop
             )
         } else {

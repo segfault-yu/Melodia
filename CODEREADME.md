@@ -490,3 +490,72 @@ app/src/main/java/com/lin0721/linmusic/
 - **路由扩展**: `Screen` 枚举新增 `Login` 项。
 - **登录占位页**: 在 `Crossfade` 中添加 `Screen.Login` 分支，展示带图标、标题和"返回首页"按钮的占位登录页。
 - **事件串联**: `HomeScreen` 调用处传入 `onLoginClick = { currentScreen = Screen.Login }` 完成路由闭环。
+
+---
+
+### 2026-05-01 Session 23 — 登录弹窗组件与模拟登录流程
+
+#### `[NEW] ui/components/LoginBottomSheet.kt`
+- **ModalBottomSheet 组件**: 使用 Material3 `ModalBottomSheet`，`SurfaceDark` 背景色 + `24.dp` 大圆角。
+- **拖拽指示条**: 自定义 `dragHandle`，40x4dp 半透明白色胶囊条。
+- **头部**: 居中大标题"登录" + 副标题引导语。
+- **三按钮布局**:
+    - **手机号登录** (`SpotifyGreen` 主色调实心按钮，`PhoneAndroid` Icon)
+    - **APP 扫码登录 (推荐)** (`SurfaceLight` 边框描边按钮，`QrCode2` Icon)
+    - **邮箱/密码登录** (`SurfaceLight` 边框描边按钮，`Email` Icon)
+- **按钮规格**: `fillMaxWidth` + `56.dp` 高度 + `16.dp` 圆角，主按钮带 4dp 阴影提升。
+- **组件抽取**: 独立封装 `LoginOptionButton` 私有组件，通过 `isPrimary` 参数区分实心/描边样式。
+
+#### `[MODIFY] ui/home/HomeViewModel.kt`
+- **模拟登录方法**: 新增 `simulateLogin()`，写入固定假数据 (`uid=12345`, `nickname="首席体验官"`, 网易云 CDN 头像) 到 DataStore，并触发 Toast 提示"登录成功，欢迎回来！"。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **弹窗状态管理**: 新增 `showLoginSheet` 内部状态，点击 `TopGreetingBar` 未登录区域时设为 `true`。
+- **BottomSheet 集成**: 在 `HomeScreen` 最外层条件渲染 `LoginBottomSheet`，三个按钮均触发 `simulateLogin()` 后自动关闭弹窗。
+- **签名精简**: 移除 `onLoginClick` 外传参数，登录流程完全内聚于 HomeScreen。
+
+#### `[MODIFY] MainActivity.kt`
+- **路由清理**: 移除 `Screen.Login` 枚举项及对应的全屏占位页面。
+- **导入精简**: 清除 `background`, `Arrangement`, `Column`, `Icons`, `Color`, `FontWeight` 等仅被登录占位页使用的多余导入。
+- **职责回归**: `MainActivity` 恢复为纯粹的 Home/Playlist 双屏路由 + 全屏播放器浮层。
+
+---
+
+### 2026-05-01 Session 24 — 用户侧边栏与退出登录
+
+#### `[NEW] ui/components/ProfileSidebar.kt`
+- **侧边栏组件**: 采用 `BackgroundDark` 深色背景，宽度 300dp，纵向三段式布局。
+- **头部区域**: 80dp 大圆形头像（Coil 加载 + CDN 裁剪）、20sp 粗体昵称（单行省略）、"查看个人主页"引导标签（`SurfaceDark` 胶囊底色 + `ChevronRight` 箭头）。
+- **功能菜单**: 6 项带 Outlined Icon 的菜单（消息中心、定时关闭、离线缓存、音质设置、设置、关于），上下分组以 `HorizontalDivider` 分隔，每项带涟漪点击效果。
+- **退出登录**: 底部独立区块，Icon 和文字均使用 `NeteaseRed 80%` 红色警示。
+- **组件抽取**: `ProfileHeader`、`SidebarMenuItem`、`LogoutButton` 三个私有子组件。
+
+#### `[MODIFY] ui/home/HomeViewModel.kt`
+- **退出登录方法**: 新增 `logout()`，调用 `userPreferences.clearUserProfile()` 清除 DataStore 用户信息，并触发 Toast 提示"已退出登录"。
+
+#### `[MODIFY] ui/components/LoginBottomSheet.kt`
+- **主色调统一**: 主按钮颜色由 `SpotifyGreen` 改为 `NeteaseRed`，与应用主题一致。
+
+---
+
+### 2026-05-01 Session 25 — 侧边栏串联集成
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **Drawer 状态管理**: 新增 `drawerState`（`rememberDrawerState`）和 `coroutineScope`（`rememberCoroutineScope`）。
+- **头像点击分发**: 提取 `onAvatarClick` lambda，已登录时 `coroutineScope.launch { drawerState.open() }`，未登录时触发 `showLoginSheet = true`。
+- **ModalNavigationDrawer 集成**: 用 `ModalNavigationDrawer` 包裹整个首页内容。
+    - `drawerContent`: `userProfile?.let` 条件渲染 `ProfileSidebar`，传入 `onLogout`（调用 `viewModel.logout()` 后关闭 Drawer）和 `onDismiss`（直接关闭 Drawer）。
+    - `gesturesEnabled`: 仅已登录时允许手势滑出（未登录无 Drawer 内容，禁止误触）。
+- **导入补全**: 新增 `ProfileSidebar`、`kotlinx.coroutines.launch` 导入。
+
+---
+
+### 2026-05-02 Session 26 — 侧边栏 2D 挤压动画重构
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **移除 ModalNavigationDrawer**: 取消传统的 Drawer 覆盖交互模式，移除 `drawerState` 和 `rememberCoroutineScope`。
+- **引入 2D 挤压布局**: 
+    - 使用 `Row(modifier = Modifier.fillMaxSize())` 作为最外层容器。
+    - **左侧侧边栏**: 使用 `AnimatedVisibility` 包裹 `ProfileSidebar`。设置 `expandHorizontally` 和 `shrinkHorizontally` 动画（配合 `Spring` 低弹性曲线和透明度渐变），实现丝滑展开/收起。
+    - **右侧主界面**: 使用 `Box(modifier = Modifier.weight(1f).fillMaxHeight())` 包裹原有首页内容。当侧边栏展开时，由于 `weight(1f)` 的特性，主界面会自动被向右“挤压”（宽度缩小），实现 2D 推挤效果。
+- **状态管理更新**: 将 `drawerState` 替换为简单的 `isSidebarOpen: Boolean` 状态，点击已登录头像时直接切换该状态。
