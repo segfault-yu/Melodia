@@ -26,9 +26,10 @@ class CryptoInterceptor : Interceptor {
 
         val cryptoType = resolveCryptoType(url) ?: return chain.proceed(originalRequest)
         val rawJson = originalBody.readString()
+        val cookies = originalRequest.header("Cookie") ?: ""
 
         val encryptedForm = when (cryptoType) {
-            CryptoType.WEAPI -> buildWeApiForm(rawJson)
+            CryptoType.WEAPI -> buildWeApiForm(rawJson, cookies)
             CryptoType.EAPI -> buildEApiForm(url, rawJson)
             CryptoType.LINUXAPI -> buildLinuxApiForm(rawJson)
         }
@@ -59,13 +60,15 @@ class CryptoInterceptor : Interceptor {
 
     /**
      * WeApi：加密后包含 params + encSecKey
+     * 同时动态提取并补全 CSRF Token
      */
-    private fun buildWeApiForm(rawJson: String): FormBody {
+    private fun buildWeApiForm(rawJson: String, cookies: String): FormBody {
+        val csrfToken = Regex("__csrf=([^;]+)").find(cookies)?.groupValues?.get(1) ?: ""
+        
         val jsonPayload = try {
             val orgJson = org.json.JSONObject(rawJson)
-            if (!orgJson.has("csrf_token")) {
-                orgJson.put("csrf_token", "")
-            }
+            // 强制注入 CSRF Token 到根节点
+            orgJson.put("csrf_token", csrfToken)
             orgJson.toString()
         } catch (e: Exception) {
             rawJson

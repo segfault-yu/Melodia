@@ -3,8 +3,7 @@ package com.lin0721.linmusic.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,9 +25,8 @@ import com.lin0721.linmusic.ui.theme.SurfaceLight
 @Composable
 fun LoginBottomSheet(
     onDismiss: () -> Unit,
-    onPhoneLogin: () -> Unit,
-    onQrLogin: () -> Unit,
-    onEmailLogin: () -> Unit
+    onWebLogin: () -> Unit,
+    onQrLogin: () -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -52,7 +50,7 @@ fun LoginBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 48.dp),
+                .padding(bottom = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 大标题
@@ -70,32 +68,22 @@ fun LoginBottomSheet(
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            // 手机号登录（主按钮）
+            // 网页登录（推荐）
             LoginOptionButton(
-                text = "手机号登录",
-                icon = Icons.Default.PhoneAndroid,
+                text = "网页登录 (推荐)",
+                icon = Icons.Default.Language,
                 isPrimary = true,
-                onClick = onPhoneLogin
+                onClick = onWebLogin
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // APP 扫码登录
+            // 二维码登录
             LoginOptionButton(
-                text = "APP 扫码登录 (推荐)",
+                text = "二维码登录",
                 icon = Icons.Default.QrCode2,
                 isPrimary = false,
                 onClick = onQrLogin
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // 邮箱/密码登录
-            LoginOptionButton(
-                text = "邮箱/密码登录",
-                icon = Icons.Default.Email,
-                isPrimary = false,
-                onClick = onEmailLogin
             )
         }
     }

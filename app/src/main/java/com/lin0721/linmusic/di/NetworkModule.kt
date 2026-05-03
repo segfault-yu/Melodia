@@ -43,7 +43,7 @@ val networkModule = module {
     single { EmptyBodyInterceptor() }
 
     // ─── 请求头拦截器 ───
-    single { HeaderInterceptor() }
+    single { HeaderInterceptor(get()) }
 
     // ─── OkHttpClient ───
     single {

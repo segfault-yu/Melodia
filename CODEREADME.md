@@ -559,3 +559,32 @@ app/src/main/java/com/lin0721/linmusic/
     - **左侧侧边栏**: 使用 `AnimatedVisibility` 包裹 `ProfileSidebar`。设置 `expandHorizontally` 和 `shrinkHorizontally` 动画（配合 `Spring` 低弹性曲线和透明度渐变），实现丝滑展开/收起。
     - **右侧主界面**: 使用 `Box(modifier = Modifier.weight(1f).fillMaxHeight())` 包裹原有首页内容。当侧边栏展开时，由于 `weight(1f)` 的特性，主界面会自动被向右“挤压”（宽度缩小），实现 2D 推挤效果。
 - **状态管理更新**: 将 `drawerState` 替换为简单的 `isSidebarOpen: Boolean` 状态，点击已登录头像时直接切换该状态。
+### 2026-05-04 Session 27 — 移除模拟登录与网页登录全量集成
+
+#### 核心变更
+- **登录体系重构**: 彻底移除基于假数据的“模拟登录”逻辑，转向基于 WebView 的真实网页授权流程。
+- **登录态持久化**: 实现 Cookie 的本地存储与网络层自动注入，确保登录后 API 调用的合法性。
+
+#### `[MODIFY] data/local/UserPreferences.kt`
+- **功能扩展**: 新增 `KEY_COOKIES` 存储位，支持原始 Cookie 字符串的持久化。
+- **逻辑优化**: 完善 `clearUserProfile`，在退出登录时同步清除所有 Cookie 信息。
+
+#### `[MODIFY] data/remote/network/HeaderInterceptor.kt` & `NetworkModule.kt`
+- **注入增强**: 拦截器现在通过构造函数注入 `UserPreferences`。
+- **Cookie 自动同步**: 在每个请求（WeApi & EApi）发送前，自动从 DataStore 中提取最新 Cookie 并拼接到请求头中，绕开服务端 0 字节拦截。
+
+#### `[MODIFY] data/remote/api/NeteaseApiService.kt` & `MusicRepository.kt`
+- **新增接口**: 接入 `/weapi/nuser/account/get` 接口。
+- **数据对齐**: 定义 `AccountInfoResponse` 模型，用于登录后同步真实的 `userId`、`nickname` 和 `avatarUrl`。
+
+#### `[MODIFY] ui/components/LoginBottomSheet.kt`
+- **UI 精简**: 移除已废弃的“手机号登录”和“邮箱登录”入口。
+- **推荐策略**: 将“网页登录”设为首选（Primary）推荐项，保持“二维码登录”作为辅助选项。
+
+#### `[MODIFY] HomeViewModel.kt`
+- **业务重构**: 移除 `simulateLogin()`。
+- **登录流水线**: 实现 `handleLoginSuccess(cookies)`。该方法会自动保存 Cookie、触发账号信息同步、持久化真实 Profile 并最终驱动首页数据（推荐歌单等）重新加载。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **流程集成**: 新增 `showWebViewLogin` 状态控制。
+- **组件挂载**: 无缝集成 `WebViewLoginScreen`。用户在弹窗中选择“网页登录”后，即可在应用内完成扫码或账号授权，成功后自动回传 Cookie 至 ViewModel 完成闭环。

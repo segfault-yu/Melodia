@@ -31,6 +31,7 @@ class UserPreferences(private val context: Context) {
 
     companion object {
         private val KEY_USER_PROFILE = stringPreferencesKey("user_profile_json")
+        private val KEY_COOKIES = stringPreferencesKey("user_cookies")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -45,6 +46,13 @@ class UserPreferences(private val context: Context) {
     }
 
     /**
+     * 读取 Cookie（响应式流）
+     */
+    val cookies: Flow<String?> = context.userDataStore.data.map { prefs ->
+        prefs[KEY_COOKIES]
+    }
+
+    /**
      * 保存用户信息
      */
     suspend fun saveUserProfile(profile: UserProfile) {
@@ -54,11 +62,21 @@ class UserPreferences(private val context: Context) {
     }
 
     /**
-     * 清除用户信息（退出登录）
+     * 保存 Cookie
+     */
+    suspend fun saveCookies(cookies: String) {
+        context.userDataStore.edit { prefs ->
+            prefs[KEY_COOKIES] = cookies
+        }
+    }
+
+    /**
+     * 清除用户信息与 Cookie（退出登录）
      */
     suspend fun clearUserProfile() {
         context.userDataStore.edit { prefs ->
             prefs.remove(KEY_USER_PROFILE)
+            prefs.remove(KEY_COOKIES)
         }
     }
 }

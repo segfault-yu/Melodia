@@ -13,23 +13,29 @@ import retrofit2.http.POST
  */
 interface NeteaseApiService {
 
-    // ======================= 登录 =======================
+    // ======================= 登录 (二维码) =======================
 
     /**
-     * 手机号登录
-     *
-     * @param body 包含手机号、密码 MD5、国家码等参数
+     * 二维码登录：第一步 - 获取 Key
      */
-    @POST("/weapi/login/cellphone")
-    suspend fun loginByPhone(@Body body: LoginByPhoneRequest): NeteaseResponse<LoginData>
+    @POST("/weapi/login/qr/key")
+    suspend fun getQrKey(@Body body: EmptyBody = EmptyBody()): NeteaseResponse<QrKeyData>
 
     /**
-     * 邮箱登录
-     *
-     * @param body 包含邮箱、密码 MD5 等参数
+     * 二维码登录：第二步 - 获取二维码
      */
-    @POST("/weapi/login")
-    suspend fun loginByEmail(@Body body: LoginByEmailRequest): NeteaseResponse<LoginData>
+    @POST("/weapi/login/qr/create")
+    suspend fun createQr(@Body body: QrCreateRequest): NeteaseResponse<QrCreateData>
+
+    /**
+     * 二维码登录：第三步 - 检查二维码状态
+     * 800: 二维码不存在或已过期
+     * 801: 等待扫码
+     * 802: 待确认
+     * 803: 授权成功 (此状态下会返回 Cookie)
+     */
+    @POST("/weapi/login/qr/check")
+    suspend fun checkQr(@Body body: QrCheckRequest): NeteaseResponse<QrCheckData>
 
     // ===================== 推荐歌单 =====================
 
@@ -80,36 +86,63 @@ interface NeteaseApiService {
     suspend fun getTopArtists(
         @Body body: TopArtistsRequest = TopArtistsRequest()
     ): TopArtistsResponse
+
+    // ======================= 用户信息 =======================
+
+    /**
+     * 获取当前登录账号信息
+     */
+    @POST("/eapi/nuser/account/get")
+    suspend fun getAccountInfo(
+        @Body body: EmptyBody = EmptyBody()
+    ): AccountInfoResponse
 }
 
-// ======================== 请求体 ========================
-
 /**
- * 手机号登录请求
+ * 二维码 Key 响应数据
  */
 @Serializable
-data class LoginByPhoneRequest(
-    /** 手机号 */
-    val phone: String,
-    /** 密码的 MD5 值 */
-    val password: String,
-    /** 国家区号，默认 86 (中国大陆) */
-    val countrycode: String = "86",
-    /** 是否记住登录 */
-    val rememberLogin: Boolean = true,
+data class QrKeyData(
+    val unikey: String = ""
 )
 
 /**
- * 邮箱登录请求
+ * 创建二维码请求
  */
 @Serializable
-data class LoginByEmailRequest(
-    /** 邮箱地址 */
-    val username: String,
-    /** 密码的 MD5 值 */
-    val password: String,
-    /** 是否记住登录 */
-    val rememberLogin: Boolean = true,
+data class QrCreateRequest(
+    val key: String,
+    val qr64: Boolean = true
+)
+
+/**
+ * 二维码创建响应数据
+ */
+@Serializable
+data class QrCreateData(
+    val qrurl: String = "",
+    val qrimg: String = ""
+)
+
+/**
+ * 检查二维码状态请求
+ */
+@Serializable
+data class QrCheckRequest(
+    val key: String
+)
+
+/**
+ * 二维码状态响应数据
+ */
+@Serializable
+data class QrCheckData(
+    /** 状态码 */
+    val code: Int = 0,
+    /** 状态消息 */
+    val message: String = "",
+    /** 成功时的 Cookie (MUSIC_U) */
+    val cookie: String = ""
 )
 
 /**
@@ -334,5 +367,22 @@ data class Album(
     val id: Long = 0,
     val name: String = "",
     val picUrl: String = ""
+)
+
+// ======================= 用户账户信息 =======================
+
+@Serializable
+data class AccountInfoResponse(
+    val code: Int = 0,
+    val account: Account? = null,
+    val profile: UserProfile? = null
+)
+
+@Serializable
+data class Account(
+    val id: Long = 0,
+    val userName: String = "",
+    val type: Int = 0,
+    val status: Int = 0,
 )
 

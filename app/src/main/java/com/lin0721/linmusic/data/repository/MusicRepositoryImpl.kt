@@ -63,4 +63,15 @@ class MusicRepositoryImpl(
     }.catch { e ->
         emit(Result.failure(e))
     }
+
+    override fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.data.remote.api.AccountInfoResponse>> = flow {
+        val response = apiService.getAccountInfo()
+        if (response.code == 200) {
+            emit(Result.success(response))
+        } else {
+            emit(Result.failure(Exception("Failed to get account info: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
 }

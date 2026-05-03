@@ -29,4 +29,9 @@ interface MusicRepository {
      * 获取热门歌手
      */
     fun getTopArtists(): Flow<Result<List<Artist>>>
+
+    /**
+     * 获取当前登录账号信息
+     */
+    fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.data.remote.api.AccountInfoResponse>>
 }
