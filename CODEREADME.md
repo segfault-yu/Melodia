@@ -588,3 +588,27 @@ app/src/main/java/com/lin0721/linmusic/
 #### `[MODIFY] ui/home/HomeScreen.kt`
 - **流程集成**: 新增 `showWebViewLogin` 状态控制。
 - **组件挂载**: 无缝集成 `WebViewLoginScreen`。用户在弹窗中选择“网页登录”后，即可在应用内完成扫码或账号授权，成功后自动回传 Cookie 至 ViewModel 完成闭环。
+
+---
+
+### 2026-05-04 Session 28 — 侧边栏视觉重构与跟手手势集成
+
+#### 核心变更
+- **视觉风格进化**: 彻底抛弃原生侧边栏样式，参照 Spotify 设计语言重构 `ProfileSidebar`。采用深邃背景、细线分割及高对比度排版。
+- **手势交互革命**: 引入 `AnchoredDraggable` 手势系统，实现侧边栏与主界面的“跟手”推移效果，支持从屏幕边缘滑出。
+- **主题风格统一**: 将退出登录等核心交互件统一为 `NeteaseRed`（网易红），确立了“深黑背景 + 红色点缀”的品牌视觉基调。
+
+#### `[MODIFY] ui/home/HomeScreen.kt`
+- **手势引擎替换**: 移除简单的 `AnimatedVisibility` 动画，改用 `AnchoredDraggableState` 管理侧边栏状态。
+- **布局推移逻辑**: 主界面不再缩放（遵循用户反馈），而是根据滑动偏移量（Offset）整体平移，配合动态透明度的遮罩层（Scrim）。
+- **稳定性修复**: 修复了由于局部枚举类（`DragValue`）导致的编译错误，并补全了 `LocalDensity`、`zIndex`、`MutableInteractionSource` 等缺失导入。
+
+#### `[MODIFY] ui/components/ProfileSidebar.kt`
+- **菜单精简**: 按照生产环境需求，移除了“添加帐号”选项。
+- **退出按钮重构**: 弃用文字链接形式，改为带有 `NeteaseRed` 边框、注销图标及点击缩放反馈的高级圆角按钮。
+- **菜单交互反馈**: 为所有菜单项添加了 `animateFloatAsState` 实现板的按压缩小反馈，提升操作的物理真实感。
+- **布局优化**: 将“消息”预览区上移，移除了冗余的社交圆圈组件，使侧边栏结构更加聚焦。
+
+#### `[FIX] 项目构建修复`
+- **模型冲突解决**: 修复了远程 API 模型与本地 `UserProfile` 模型同名导致的混淆问题。
+- **导入补全**: 系统性修复了 Compose 1.6+ 新增动画/手势 API 所需的所有包导入。
