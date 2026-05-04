@@ -22,20 +22,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6bf18f15-fd07-4d78-9ebf-931e84450de9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/remote/api/HomepageBlockResponse.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/remote/api/HomepageBlockResponse.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/remote/api/NeteaseApiService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/remote/api/NeteaseApiService.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepository.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepository.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepositoryImpl.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/data/repository/MusicRepositoryImpl.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CODEREADME.md" beforeDir="false" afterPath="$PROJECT_DIR$/CODEREADME.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeFeedModels.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeFeedModels.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeScreen.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeUiState.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeUiState.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/lin0721/linmusic/ui/home/HomeViewModel.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

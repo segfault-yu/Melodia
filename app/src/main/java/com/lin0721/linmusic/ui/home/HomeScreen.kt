@@ -5,17 +5,11 @@ import java.util.Calendar
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.animation.*
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,8 +23,10 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,13 +39,14 @@ import com.lin0721.linmusic.ui.theme.*
 import com.lin0721.linmusic.data.local.UserProfile
 import com.lin0721.linmusic.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.ui.components.ProfileSidebar
+import com.lin0721.linmusic.ui.components.WebViewLoginScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
@@ -62,7 +59,30 @@ fun HomeScreen(
     val hazeState = remember { HazeState() }
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
-    var isSidebarOpen by remember { mutableStateOf(false) }
+    
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val drawerWidth = 310.dp
+    val drawerWidthPx = with(density) { drawerWidth.toPx() }
+
+    val drawerState = remember {
+        AnchoredDraggableState<HomeSidebarState>(
+            initialValue = HomeSidebarState.Closed,
+            positionalThreshold = { distance: Float -> distance * 0.5f },
+            velocityThreshold = { with(density) { 100.dp.toPx() } },
+            snapAnimationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            decayAnimationSpec = exponentialDecay()
+        )
+    }
+
+    LaunchedEffect(drawerWidthPx) {
+        drawerState.updateAnchors(
+            DraggableAnchors {
+                HomeSidebarState.Closed at 0f
+                HomeSidebarState.Open at drawerWidthPx
+            }
+        )
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
@@ -78,40 +98,75 @@ fun HomeScreen(
 
     val onAvatarClick: () -> Unit = {
         if (userProfile != null) {
-            isSidebarOpen = !isSidebarOpen
+            scope.launch {
+                if (drawerState.currentValue == HomeSidebarState.Closed) {
+                    drawerState.animateTo(HomeSidebarState.Open)
+                } else {
+                    drawerState.animateTo(HomeSidebarState.Closed)
+                }
+            }
         } else {
             showLoginSheet = true
         }
     }
 
-    Row(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(
-            visible = isSidebarOpen && userProfile != null,
-            enter = expandHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
-            exit = shrinkHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut()
-        ) {
-            userProfile?.let { profile ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .anchoredDraggable(
+                state = drawerState,
+                orientation = Orientation.Horizontal,
+                enabled = userProfile != null
+            )
+            .background(BackgroundBlack)
+    ) {
+        // 1. 侧边栏层 (位于底部或同步移动)
+        userProfile?.let { profile ->
+            Box(
+                modifier = Modifier
+                    .width(drawerWidth)
+                    .fillMaxHeight()
+                    .graphicsLayer {
+                        val offset = drawerState.offset
+                        val progress = if (offset.isNaN()) 0f else (offset / drawerWidthPx).coerceIn(0f, 1f)
+                        
+                        translationX = (if (offset.isNaN()) 0f else offset) - drawerWidthPx
+                        
+                        // 侧边栏本身的渐变
+                        alpha = 0.5f + (0.5f * progress)
+                    }
+            ) {
                 ProfileSidebar(
                     userProfile = profile,
                     onLogout = {
                         viewModel.logout()
-                        isSidebarOpen = false
+                        scope.launch { drawerState.animateTo(HomeSidebarState.Closed) }
                     },
-                    onDismiss = { isSidebarOpen = false }
+                    onDismiss = {
+                        scope.launch { drawerState.animateTo(HomeSidebarState.Closed) }
+                    }
                 )
             }
         }
 
+        // 2. 主内容层 (跟随偏移，带高级视差与缩放效果)
         Box(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(GradientStart, BackgroundDark, BackgroundBlack),
-                        startY = 0f, endY = 2000f
-                    )
-                )
+                .fillMaxSize()
+                .graphicsLayer {
+                    val offset = drawerState.offset
+                    val progress = if (offset.isNaN()) 0f else (offset / drawerWidthPx).coerceIn(0f, 1f)
+                    
+                    translationX = if (offset.isNaN()) 0f else offset
+                    
+                    // 进阶视觉效果：圆角过渡
+                    clip = true
+                    shape = RoundedCornerShape((progress * 32).dp)
+                    
+                    // 动态阴影
+                    shadowElevation = (progress * 30f)
+                }
+                .background(BackgroundDark)
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().haze(hazeState),
@@ -201,32 +256,52 @@ fun HomeScreen(
                     onOpenPlayer = onOpenPlayer
                 )
             }
+
+            // 3. 点击遮罩层 (当侧边栏打开时，主内容变暗且点击可关闭)
+            val currentOffset = drawerState.offset
+            if (!currentOffset.isNaN() && currentOffset > 0f) {
+                val progress = currentOffset / drawerWidthPx
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f * progress))
+                        .clickable(
+                            enabled = drawerState.currentValue == HomeSidebarState.Open,
+                            onClick = { scope.launch { drawerState.animateTo(HomeSidebarState.Closed) } }
+                        )
+                )
+            }
+        }
+
+        // 登录相关的弹窗保持在最顶层
+        if (showLoginSheet) {
+            LoginBottomSheet(
+                onDismiss = { showLoginSheet = false },
+                onWebLogin = {
+                    showLoginSheet = false
+                    showWebViewLogin = true
+                },
+                onQrLogin = {
+                    Toast.makeText(context, "二维码登录正在开发中", Toast.LENGTH_SHORT).show()
+                    showLoginSheet = false
+                }
+            )
+        }
+        
+        if (showWebViewLogin) {
+            WebViewLoginScreen(
+                onClose = { showWebViewLogin = false },
+                onLoginSuccess = { cookies ->
+                    showWebViewLogin = false
+                    viewModel.handleLoginSuccess(cookies)
+                }
+            )
         }
     }
+}
 
-    if (showLoginSheet) {
-        LoginBottomSheet(
-            onDismiss = { showLoginSheet = false },
-            onWebLogin = {
-                showLoginSheet = false
-                showWebViewLogin = true
-            },
-            onQrLogin = {
-                Toast.makeText(context, "二维码登录正在写喵", Toast.LENGTH_SHORT).show()
-                showLoginSheet = false
-            }
-        )
-    }
-
-    if (showWebViewLogin) {
-        com.lin0721.linmusic.ui.components.WebViewLoginScreen(
-            onClose = { showWebViewLogin = false },
-            onLoginSuccess = { cookies ->
-                viewModel.handleLoginSuccess(cookies)
-                showWebViewLogin = false
-            }
-        )
-    }
+enum class HomeSidebarState {
+    Closed, Open
 }
 
 private fun getGreetingText(): String {
