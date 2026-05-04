@@ -11,7 +11,9 @@ data class HomepageBlockResponse(
 
 @Serializable
 data class HomepageData(
-    val blocks: List<HomepageBlock> = emptyList()
+    val blocks: List<HomepageBlock> = emptyList(),
+    val hasMore: Boolean = false,
+    val cursor: String? = null
 )
 
 @Serializable

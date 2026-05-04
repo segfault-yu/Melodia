@@ -5,16 +5,12 @@ import java.util.Calendar
 import kotlinx.coroutines.launch
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -32,11 +28,8 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,9 +47,6 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import org.koin.androidx.compose.koinViewModel
-
-// 定义侧边栏锚点状态 (移至顶层以修复编译错误)
-enum class DragValue { Closed, Open }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,62 +91,22 @@ fun HomeScreen(
         }
     }
 
-    // 侧边栏宽度
-    val sidebarWidth = 310.dp
-    val density = LocalDensity.current
-
-    // 初始化 AnchoredDraggableState (Material 3)
-    val draggableState = remember {
-        AnchoredDraggableState(
-            initialValue = if (isSidebarOpen && userProfile != null) DragValue.Open else DragValue.Closed,
-            anchors = DraggableAnchors {
-                DragValue.Closed at 0f
-                DragValue.Open at with(density) { sidebarWidth.toPx() }
-            },
-            positionalThreshold = { distance: Float -> distance * 0.5f },
-            velocityThreshold = { with(density) { 100.dp.toPx() } },
-            snapAnimationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessLow),
-            decayAnimationSpec = exponentialDecay()
-        )
-    }
-
-    // 同步外部点击切换状态
-    LaunchedEffect(isSidebarOpen) {
-        if (userProfile != null) {
-            val target = if (isSidebarOpen) DragValue.Open else DragValue.Closed
-            if (draggableState.currentValue != target) {
-                draggableState.animateTo(target)
-            }
-        }
-    }
-
-    // 监听手势状态回传给 isSidebarOpen
-    LaunchedEffect(draggableState.currentValue) {
-        isSidebarOpen = draggableState.currentValue == DragValue.Open
-    }
-
-    val offsetPx = draggableState.offset
-    val offsetDp = with(density) { offsetPx.toDp() }
-    val isOpen = offsetPx > 0f
-    val scrimAlpha = (offsetPx / with(density) { sidebarWidth.toPx() }).coerceIn(0f, 1f) * 0.5f
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .anchoredDraggable(
-                state = draggableState,
-                orientation = Orientation.Horizontal,
-                enabled = userProfile != null
-            )
-    ) {
-        // 1. 侧边栏层 (跟手平移)
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(sidebarWidth)
-                .offset(x = offsetDp - sidebarWidth)
-                .zIndex(2f) // 确保侧边栏在最顶层
+    Row(modifier = Modifier.fillMaxSize()) {
+        // 侧边栏：2D挤压动画
+        AnimatedVisibility(
+            visible = isSidebarOpen && userProfile != null,
+            enter = expandHorizontally(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeIn(),
+            exit = shrinkHorizontally(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeOut()
         ) {
             userProfile?.let { profile ->
                 ProfileSidebar(
@@ -172,11 +122,11 @@ fun HomeScreen(
             }
         }
 
-        // 2. 主内容区域 (跟手平移 + 遮罩)
+        // 主内容区域（占据剩余空间，会被挤压）
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .offset(x = offsetDp)
+                .weight(1f)
+                .fillMaxHeight()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(GradientStart, BackgroundDark, BackgroundBlack),
@@ -209,7 +159,7 @@ fun HomeScreen(
                         }
                     }
                     is HomeUiState.Success -> {
-                        item { SectionHeader(title = "为你推荐") }
+                        item { SectionHeader(title = "为你推荐", showAction = false) }
                         item {
                             RecommendationCarousel(
                                 playlists = state.data.recommendPlaylists,
@@ -227,12 +177,22 @@ fun HomeScreen(
                             }
                         }
 
-                        item { SectionHeader(title = "你的私人雷达") }
+                        item { SectionHeader(title = "你的私人雷达", showAction = false) }
                         item {
                             RecommendationCarousel(
                                 playlists = state.data.recommendPlaylists.reversed(),
                                 onClick = { onPlaylistClick(it.id) }
                             )
+                        }
+
+                        if (state.data.recentPlaylists.isNotEmpty()) {
+                            item { SectionHeader(title = "最近播放") }
+                            item {
+                                RecentPlaylistCarousel(
+                                    items = state.data.recentPlaylists,
+                                    onClick = { onPlaylistClick(it.data.id) }
+                                )
+                            }
                         }
                     }
                 }
@@ -252,21 +212,6 @@ fun HomeScreen(
                     duration = duration,
                     onTogglePlay = { viewModel.togglePlayPause() },
                     onOpenPlayer = onOpenPlayer
-                )
-            }
-
-            // 3. 遮罩层 (侧边栏打开时覆盖主界面，点击关闭)
-            if (isOpen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = scrimAlpha))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            isSidebarOpen = false
-                        }
                 )
             }
         }
@@ -481,7 +426,7 @@ fun FilterPills() {
 }
 
 @Composable
-fun SectionHeader(title: String) {
+fun SectionHeader(title: String, showAction: Boolean = true) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -490,7 +435,9 @@ fun SectionHeader(title: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text(text = "查看全部", color = Color.Gray, fontSize = 12.sp)
+        if (showAction) {
+            Text(text = "显示全部", color = Color.Gray, fontSize = 12.sp)
+        }
     }
 }
 
@@ -528,6 +475,48 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
                     color = Color.Gray,
                     fontSize = 12.sp,
                     maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>, onClick: (com.lin0721.linmusic.data.remote.api.RecentPlayItem) -> Unit) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        items(items) { item ->
+            val playlist = item.data
+            Column(
+                modifier = Modifier
+                    .width(120.dp)
+                    .clickable { onClick(item) }
+            ) {
+                AsyncImage(
+                    model = "${playlist.picUrl}?param=300y300",
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = playlist.name,
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "歌单 · ${playlist.creator?.nickname ?: "网易云音乐"}",
+                    color = Color.Gray,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

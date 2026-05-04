@@ -1,8 +1,6 @@
 package com.lin0721.linmusic.ui.home
 
-/**
- * 首页动态 Feed 数据模型
- */
+// 首页动态 Feed 数据模型
 sealed class HomeSection {
     // 方形封面横向滑动列表 (歌单/专辑/排行榜/新歌)
     data class SectionCarousel(val title: String, val items: List<CardItem>) : HomeSection()
@@ -11,9 +9,7 @@ sealed class HomeSection {
     data class SectionArtist(val title: String, val items: List<CardItem>) : HomeSection()
 }
 
-/**
- * 基础卡片项模型
- */
+// 基础卡片项模型
 data class CardItem(
     val id: String,
     val title: String,
@@ -26,3 +22,10 @@ data class CardItem(
 enum class CardType {
     PLAYLIST, ALBUM, ARTIST, RADIO
 }
+
+// 首页分页数据包装类
+data class HomeFeedPage(
+    val sections: List<HomeSection>,
+    val cursor: String?,
+    val hasMore: Boolean
+)

@@ -7,14 +7,7 @@ import okhttp3.RequestBody
 import okhttp3.Response
 import okio.Buffer
 
-/**
- * OkHttp 拦截器 —— 自动识别网易云 API 类型并加密请求体
- *
- * 路由规则：
- * - URL 包含 `/eapi/`  → EApi 加密
- * - URL 包含 `/api/`   → WeApi 加密（含 LinuxApi 降级可能）
- * - 其它                → 透传，不加密
- */
+// OkHttp 拦截器 —— 自动识别网易云 API 类型并加密请求体 (WeApi/EApi/LinuxApi)
 class CryptoInterceptor : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -46,9 +39,7 @@ class CryptoInterceptor : Interceptor {
 
     private enum class CryptoType { WEAPI, EAPI, LINUXAPI }
 
-    /**
-     * 根据 URL 路径判断加密类型
-     */
+    // 根据 URL 路径判断加密类型
     private fun resolveCryptoType(url: String): CryptoType? = when {
         url.contains("/eapi/") -> CryptoType.EAPI
         url.contains("/linux/api/") -> CryptoType.LINUXAPI
@@ -58,10 +49,7 @@ class CryptoInterceptor : Interceptor {
 
     // ---------- 各模式加密并构造 FormBody ----------
 
-    /**
-     * WeApi：加密后包含 params + encSecKey
-     * 同时动态提取并补全 CSRF Token
-     */
+    // WeApi：加密后包含 params + encSecKey
     private fun buildWeApiForm(rawJson: String, cookies: String): FormBody {
         val csrfToken = Regex("__csrf=([^;]+)").find(cookies)?.groupValues?.get(1) ?: ""
         
@@ -81,9 +69,7 @@ class CryptoInterceptor : Interceptor {
             .build()
     }
 
-    /**
-     * EApi：加密后仅包含 params
-     */
+    // EApi：加密后仅包含 params
     private fun buildEApiForm(url: String, rawJson: String): FormBody {
         // 从完整 URL 中提取 /eapi/... 路径部分作为 EApi 所需的 url 参数
         val eapiPath = extractEApiPath(url)
@@ -116,9 +102,7 @@ class CryptoInterceptor : Interceptor {
             .build()
     }
 
-    /**
-     * LinuxApi：加密后仅包含 eparams
-     */
+    // LinuxApi：加密后仅包含 eparams
     private fun buildLinuxApiForm(rawJson: String): FormBody {
         val encrypted = NeteaseCrypto.linuxapi(rawJson)
         return FormBody.Builder()
@@ -128,18 +112,13 @@ class CryptoInterceptor : Interceptor {
 
     // ---------- 工具方法 ----------
 
-    /**
-     * 将 [RequestBody] 读取为字符串
-     */
+    // 将 [RequestBody] 读取为字符串
     private fun RequestBody.readString(): String {
         val buffer = Buffer()
         writeTo(buffer)
         return buffer.readUtf8()
     }
-    /**
-     * 从完整 URL 中提取 /eapi/ 及之后的路径
-     * 例如 https://music.163.com/eapi/song/detail → /eapi/song/detail
-     */
+    // 从完整 URL 中提取 /eapi/ 及之后的路径
     private fun extractEApiPath(url: String): String {
         val idx = url.indexOf("/eapi/")
         return if (idx != -1) url.substring(idx) else url

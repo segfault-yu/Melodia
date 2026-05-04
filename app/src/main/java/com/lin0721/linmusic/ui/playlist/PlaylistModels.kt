@@ -1,8 +1,6 @@
 package com.lin0721.linmusic.ui.playlist
 
-/**
- * 歌单详情业务模型
- */
+// 歌单详情业务模型
 data class PlaylistDetailData(
     val id: Long,
     val name: String,
@@ -13,9 +11,7 @@ data class PlaylistDetailData(
     val tracks: List<TrackData>
 )
 
-/**
- * 歌曲业务模型
- */
+// 歌曲业务模型
 data class TrackData(
     val id: Long,
     val name: String,

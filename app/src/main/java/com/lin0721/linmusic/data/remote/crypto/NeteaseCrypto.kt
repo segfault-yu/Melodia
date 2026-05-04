@@ -9,10 +9,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
-/**
- * 网易云音乐加密工具类
- * 包含 WeApi, LinuxApi, EApi 的实现
- */
+// 网易云音乐加密工具类 (WeApi, LinuxApi, EApi)
 object NeteaseCrypto {
 
     private val json = Json {
@@ -29,10 +26,7 @@ object NeteaseCrypto {
     private const val LINUX_API_KEY = "rpaWUfe92PZ4WjM9"
     private const val EAPI_KEY = "e82ckenh8dichen8"
 
-    /**
-     * WeApi 加密
-     * 适用于 Web 端、小程序等
-     */
+    // WeApi 加密 (Web, 小程序)
     fun weapi(text: String): Map<String, String> {
         // 生成 16 位随机秘钥
         val secretKey = (1..16).map { "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
@@ -46,20 +40,14 @@ object NeteaseCrypto {
         return mapOf("params" to params, "encSecKey" to encSecKey)
     }
 
-    /**
-     * LinuxApi 加密
-     * 适用于部分特殊接口
-     */
+    // LinuxApi 加密
     fun linuxapi(text: String): Map<String, String> {
         return mapOf(
             "eparams" to aesEncryptHex(text, LINUX_API_KEY, mode = "AES/ECB/PKCS5Padding").uppercase()
         )
     }
 
-    /**
-     * EApi 加密
-     * 适用于移动端原生接口
-     */
+    // EApi 加密 (移动端)
     fun eapi(url: String, params: Any): Map<String, String> {
         val text = if (params is String) params else json.encodeToString(params)
         val message = "nobody${url}use${text}md5forencrypt"
@@ -70,9 +58,7 @@ object NeteaseCrypto {
         )
     }
 
-    /**
-     * AES 加密 (Base64 输出)
-     */
+    // AES 加密 (Base64)
     private fun aesEncrypt(text: String, key: String): String {
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
         val secretKeySpec = SecretKeySpec(key.toByteArray(Charsets.UTF_8), "AES")
@@ -83,9 +69,7 @@ object NeteaseCrypto {
         return Base64.encodeToString(encryptedBytes, Base64.NO_WRAP)
     }
 
-    /**
-     * AES 加密 (Hex 输出)
-     */
+    // AES 加密 (Hex)
     private fun aesEncryptHex(
         text: String,
         key: String,
@@ -104,9 +88,7 @@ object NeteaseCrypto {
         return encrypted.joinToString("") { "%02x".format(it) }
     }
 
-    /**
-     * RSA 加密 (网易特化版)
-     */
+    // RSA 加密 (网易特化版)
     private fun rsaEncrypt(text: String, pubKey: String, modulus: String): String {
         val reversedText = text.reversed()
         val m = BigInteger(1, reversedText.toByteArray(Charsets.UTF_8))
@@ -117,9 +99,7 @@ object NeteaseCrypto {
         return c.toString(16).padStart(256, '0')
     }
 
-    /**
-     * 生成指定长度的随机字符串
-     */
+    // 生成随机字符串
     private fun generateRandomString(length: Int): String {
         val charPool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         return (1..length)
@@ -128,9 +108,7 @@ object NeteaseCrypto {
             .joinToString("")
     }
 
-    /**
-     * MD5 摘要
-     */
+    // MD5 摘要
     private fun md5(input: String): String {
         val md = MessageDigest.getInstance("MD5")
         return BigInteger(1, md.digest(input.toByteArray()))

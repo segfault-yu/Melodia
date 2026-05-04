@@ -5,57 +5,34 @@ import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.POST
 
-/**
- * 网易云音乐 Retrofit 接口定义
- *
- * 所有 POST 请求的 JSON body 会被 [CryptoInterceptor] 自动拦截加密，
- * 调用方只需传入明文参数即可。
- */
+// 网易云音乐 Retrofit 接口定义。所有 POST 请求会被 [CryptoInterceptor] 自动加密。
 interface NeteaseApiService {
 
     // ======================= 登录 (二维码) =======================
 
-    /**
-     * 二维码登录：第一步 - 获取 Key
-     */
+    // 二维码登录：第一步 - 获取 Key
     @POST("/weapi/login/qr/key")
     suspend fun getQrKey(@Body body: EmptyBody = EmptyBody()): NeteaseResponse<QrKeyData>
 
-    /**
-     * 二维码登录：第二步 - 获取二维码
-     */
+    // 二维码登录：第二步 - 获取二维码
     @POST("/weapi/login/qr/create")
     suspend fun createQr(@Body body: QrCreateRequest): NeteaseResponse<QrCreateData>
 
-    /**
-     * 二维码登录：第三步 - 检查二维码状态
-     * 800: 二维码不存在或已过期
-     * 801: 等待扫码
-     * 802: 待确认
-     * 803: 授权成功 (此状态下会返回 Cookie)
-     */
+    // 二维码登录：第三步 - 检查二维码状态 (800:过期, 801:等待, 802:待确认, 803:成功)
     @POST("/weapi/login/qr/check")
     suspend fun checkQr(@Body body: QrCheckRequest): NeteaseResponse<QrCheckData>
 
     // ===================== 推荐歌单 =====================
 
-    /**
-     * 获取每日推荐歌单
-     *
-     * 注意：需要登录后的 Cookie 才能调用
-     */
-    @POST("/weapi/v1/discovery/recommend/resource")
+    // 获取每日推荐歌单 (需要登录后的 Cookie)
+    @POST("/eapi/v1/discovery/recommend/resource")
     suspend fun getDailyRecommendPlaylists(
         @Body body: EmptyBody = EmptyBody()
     ): NeteaseResponse<RecommendPlaylistData>
 
     // =================== 个性化推荐 ===================
 
-    /**
-     * 获取个性化推荐歌单（公开接口，无需登录）
-     *
-     * 用于在未登录状态下展示首页推荐歌单列表。
-     */
+    // 获取个性化推荐歌单（公开接口，无需登录）
     @POST("/eapi/personalized/playlist")
     suspend fun getPersonalizedPlaylists(
         @Body body: PersonalizedRequest = PersonalizedRequest()
@@ -82,7 +59,7 @@ interface NeteaseApiService {
     /**
      * 获取热门歌手
      */
-    @POST("/weapi/artist/top")
+    @POST("/eapi/v1/artist/top")
     suspend fun getTopArtists(
         @Body body: TopArtistsRequest = TopArtistsRequest()
     ): TopArtistsResponse
@@ -96,7 +73,32 @@ interface NeteaseApiService {
     suspend fun getAccountInfo(
         @Body body: EmptyBody = EmptyBody()
     ): AccountInfoResponse
+
+    /**
+     * 获取首页动态内容 (支持分页)
+     */
+    @POST("/eapi/homepage/block/page")
+    suspend fun getHomepageBlocks(
+        @Body body: HomepageBlockRequest
+    ): HomepageBlockResponse
+
+    // ================== 最近播放 ==================
+
+    /**
+     * 获取最近播放歌单
+     */
+    @POST("/eapi/play-record/playlist/list")
+    suspend fun getRecentPlaylists(
+        @Body body: RecentPlaylistRequest = RecentPlaylistRequest()
+    ): RecentPlaylistResponse
 }
+
+// 首页动态内容请求体
+@Serializable
+data class HomepageBlockRequest(
+    val cursor: String? = null,
+    val refresh: Boolean = false
+)
 
 /**
  * 二维码 Key 响应数据
@@ -145,26 +147,17 @@ data class QrCheckData(
     val cookie: String = ""
 )
 
-/**
- * 空请求体，用于不需要参数的 POST 接口
- */
+// 空请求体，用于不需要参数的 POST 接口
 @Serializable
 class EmptyBody
 
 // ======================= 响应体 =======================
 
-/**
- * 网易云 API 通用响应包装
- *
- * 所有接口都会返回 [code] 和可选的 [msg]，
- * 具体业务数据由泛型 [T] 内联展平。
- *
- * 注意：网易云的响应结构比较扁平，业务字段直接和 code 平级，
- * 因此这里不做二层嵌套，而是让具体的 Data 类自行包含业务字段。
- */
+// 网易云 API 通用响应包装。具体业务数据由泛型 [T] 内联展平。
 @Serializable
 data class NeteaseResponse<T>(
     val code: Int = 0,
+    val data: T? = null,
     val msg: String? = null,
     val message: String? = null,
 ) {
@@ -384,5 +377,39 @@ data class Account(
     val userName: String = "",
     val type: Int = 0,
     val status: Int = 0,
+)
+
+// ======================= 最近播放 =======================
+
+@Serializable
+data class RecentPlaylistRequest(
+    val limit: Int = 100
+)
+
+@Serializable
+data class RecentPlaylistResponse(
+    val code: Int = 0,
+    val data: RecentPlaylistData? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class RecentPlaylistData(
+    val list: List<RecentPlayItem> = emptyList()
+)
+
+@Serializable
+data class RecentPlayItem(
+    val data: RecentPlaylistInfo
+)
+
+@Serializable
+data class RecentPlaylistInfo(
+    val id: Long = 0,
+    val name: String = "",
+    @SerialName("coverImgUrl")
+    val picUrl: String = "",
+    val creator: PlaylistCreator? = null
 )
 

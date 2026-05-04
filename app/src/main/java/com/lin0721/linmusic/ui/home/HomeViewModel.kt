@@ -67,14 +67,22 @@ class HomeViewModel(
                         .getOrElse { Result.success(emptyList()) }
                 }
 
+                // 3. 获取最近播放 (非核心数据，独立容错)
+                val recentDeferred = async {
+                    runCatching { musicRepository.getRecentPlaylists().first() }
+                        .getOrDefault(Result.success(emptyList()))
+                }
+
                 val playlistsResult = playlistsDeferred.await()
                 val artistsResult = artistsDeferred.await()
+                val recentResult = recentDeferred.await()
 
                 if (playlistsResult.isSuccess) {
                     _uiState.value = HomeUiState.Success(
                         HomeFeedData(
                             recommendPlaylists = playlistsResult.getOrThrow().playlists,
-                            topArtists = artistsResult.getOrDefault(emptyList())
+                            topArtists = artistsResult.getOrDefault(emptyList()),
+                            recentPlaylists = recentResult.getOrDefault(emptyList())
                         )
                     )
                 } else {

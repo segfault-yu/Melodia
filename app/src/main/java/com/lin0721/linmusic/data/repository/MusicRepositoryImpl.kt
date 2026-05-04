@@ -1,11 +1,7 @@
 package com.lin0721.linmusic.data.repository
 
-import com.lin0721.linmusic.data.remote.api.NeteaseApiService
-import com.lin0721.linmusic.data.remote.api.PlaylistDetail
-import com.lin0721.linmusic.data.remote.api.PlaylistDetailRequest
-import com.lin0721.linmusic.data.remote.api.PersonalizedData
-import com.lin0721.linmusic.data.remote.api.SongUrlRequest
-import com.lin0721.linmusic.data.remote.api.Artist
+import com.lin0721.linmusic.data.remote.api.*
+import com.lin0721.linmusic.ui.home.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
@@ -13,6 +9,54 @@ import kotlinx.coroutines.flow.flow
 class MusicRepositoryImpl(
     private val apiService: NeteaseApiService
 ) : MusicRepository {
+
+    override fun getHomepageBlocks(refresh: Boolean, cursor: String?): Flow<Result<HomeFeedPage>> = flow {
+        val response = apiService.getHomepageBlocks(HomepageBlockRequest(cursor = cursor, refresh = refresh))
+        if (response.code == 200 && response.data != null) {
+            val data = response.data
+            val sections = data.blocks.mapNotNull { block ->
+                val title = block.uiElement?.mainTitle?.title ?: ""
+                val items = block.creatives?.flatMap { creative ->
+                    creative.resources?.map { resource ->
+                        CardItem(
+                            id = resource.resourceId,
+                            title = resource.uiElement?.mainTitle?.title ?: "",
+                            subtitle = resource.uiElement?.subTitle?.title,
+                            imageUrl = creative.uiElement?.image?.imageUrl ?: "",
+                            isSong = resource.resourceType == "song",
+                            type = when (resource.resourceType) {
+                                "playlist" -> CardType.PLAYLIST
+                                "album" -> CardType.ALBUM
+                                "artist" -> CardType.ARTIST
+                                else -> CardType.PLAYLIST
+                            }
+                        )
+                    } ?: listOf(
+                        CardItem(
+                            id = creative.creativeId,
+                            title = creative.uiElement?.mainTitle?.title ?: "",
+                            subtitle = creative.uiElement?.subTitle?.title,
+                            imageUrl = creative.uiElement?.image?.imageUrl ?: "",
+                            type = CardType.PLAYLIST
+                        )
+                    )
+                } ?: emptyList()
+
+                if (items.isNotEmpty()) {
+                    if (block.showType == "SLIDE_PLAYABLE_DRAGON_BALL" || block.blockCode == "HOMEPAGE_BLOCK_STYLE_ARTIST") {
+                        HomeSection.SectionArtist(title, items)
+                    } else {
+                        HomeSection.SectionCarousel(title, items)
+                    }
+                } else null
+            }
+            emit(Result.success(HomeFeedPage(sections, data.cursor, data.hasMore)))
+        } else {
+            emit(Result.failure(Exception("Failed to load homepage blocks: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
 
     override fun getPersonalizedPlaylists(): Flow<Result<PersonalizedData>> = flow {
         val response = apiService.getPersonalizedPlaylists()
@@ -70,6 +114,17 @@ class MusicRepositoryImpl(
             emit(Result.success(response))
         } else {
             emit(Result.failure(Exception("Failed to get account info: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getRecentPlaylists(): Flow<Result<List<RecentPlayItem>>> = flow {
+        val response = apiService.getRecentPlaylists()
+        if (response.isSuccess && response.data != null) {
+            emit(Result.success(response.data.list))
+        } else {
+            emit(Result.failure(Exception("Failed to load recent playlists: code ${response.code}")))
         }
     }.catch { e ->
         emit(Result.failure(e))
