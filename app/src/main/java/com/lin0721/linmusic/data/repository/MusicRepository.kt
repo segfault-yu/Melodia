@@ -29,4 +29,15 @@ interface MusicRepository {
 
     // 获取最近播放歌单
     fun getRecentPlaylists(): Flow<Result<List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>>>
+
+    // ================== 私人 FM ==================
+    
+    // 获取私人 FM 歌曲
+    fun getPersonalFm(): Flow<Result<List<com.lin0721.linmusic.data.remote.api.Track>>>
+
+    // 歌曲打心
+    fun likeSong(trackId: Long, like: Boolean): Flow<Result<Unit>>
+
+    // 移出私人 FM
+    fun trashFmSong(songId: Long): Flow<Result<Unit>>
 }

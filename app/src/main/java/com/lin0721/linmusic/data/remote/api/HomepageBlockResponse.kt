@@ -39,6 +39,7 @@ data class MainTitle(
 data class BlockCreative(
     val creativeId: String = "",
     val creativeType: String = "",
+    val targetId: Long = 0,
     val uiElement: CreativeUiElement? = null,
     val resources: List<BlockResource>? = null
 )
@@ -59,5 +60,6 @@ data class CreativeImage(
 data class BlockResource(
     val resourceId: String = "",
     val resourceType: String = "",
+    val targetId: Long = 0,
     val uiElement: CreativeUiElement? = null
 )

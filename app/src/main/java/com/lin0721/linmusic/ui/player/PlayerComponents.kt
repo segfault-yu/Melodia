@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -185,7 +187,7 @@ fun FullPlayerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Default.Refresh, contentDescription = "Shuffle", tint = TextGray, modifier = Modifier.size(24.dp))
-            Icon(Icons.Rounded.KeyboardArrowLeft, contentDescription = "Previous", tint = Color.White, modifier = Modifier.size(48.dp))
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = "Previous", tint = Color.White, modifier = Modifier.size(48.dp))
             FloatingActionButton(
                 onClick = onTogglePlay,
                 containerColor = SpotifyGreen,
@@ -198,7 +200,7 @@ fun FullPlayerScreen(
                     Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = Color.Black, modifier = Modifier.size(40.dp))
                 }
             }
-            Icon(Icons.Rounded.KeyboardArrowRight, contentDescription = "Next", tint = Color.White, modifier = Modifier.size(48.dp))
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = "Next", tint = Color.White, modifier = Modifier.size(48.dp))
             Icon(Icons.Default.Repeat, contentDescription = "Repeat", tint = TextGray, modifier = Modifier.size(24.dp))
         }
 

@@ -72,7 +72,7 @@ fun WebViewLoginScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = BackgroundBlack
                 )
             )
@@ -108,7 +108,6 @@ fun WebViewLoginScreen(
                         settings.apply {
                             javaScriptEnabled = true
                             domStorageEnabled = true
-                            databaseEnabled = true
                             loadWithOverviewMode = true
                             useWideViewPort = true
                             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW

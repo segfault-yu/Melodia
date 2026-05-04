@@ -16,37 +16,50 @@ class MusicRepositoryImpl(
             val data = response.data
             val sections = data.blocks.mapNotNull { block ->
                 val title = block.uiElement?.mainTitle?.title ?: ""
-                val items = block.creatives?.flatMap { creative ->
-                    creative.resources?.map { resource ->
+                
+                val items = if (block.blockCode == "HOMEPAGE_BLOCK_STYLE_RCMD" || block.blockCode == "HOMEPAGE_BLOCK_MGC_PLAYLIST") {
+                    block.creatives?.mapIndexed { index, creative ->
                         CardItem(
-                            id = resource.resourceId,
-                            title = resource.uiElement?.mainTitle?.title ?: "",
-                            subtitle = resource.uiElement?.subTitle?.title,
-                            imageUrl = creative.uiElement?.image?.imageUrl ?: "",
-                            isSong = resource.resourceType == "song",
-                            type = when (resource.resourceType) {
-                                "playlist" -> CardType.PLAYLIST
-                                "album" -> CardType.ALBUM
-                                "artist" -> CardType.ARTIST
-                                else -> CardType.PLAYLIST
-                            }
-                        )
-                    } ?: listOf(
-                        CardItem(
-                            id = creative.creativeId,
+                            id = if (creative.targetId != 0L) creative.targetId.toString() else (creative.creativeId.takeIf { it.isNotBlank() } ?: "creative_$index"),
                             title = creative.uiElement?.mainTitle?.title ?: "",
                             subtitle = creative.uiElement?.subTitle?.title,
                             imageUrl = creative.uiElement?.image?.imageUrl ?: "",
                             type = CardType.PLAYLIST
                         )
-                    )
-                } ?: emptyList()
+                    } ?: emptyList()
+                } else {
+                    block.creatives?.flatMapIndexed { cIdx, creative ->
+                        creative.resources?.mapIndexed { rIdx, resource ->
+                            CardItem(
+                                id = if (resource.targetId != 0L) resource.targetId.toString() else (resource.resourceId.takeIf { it.isNotBlank() } ?: "res_${cIdx}_$rIdx"),
+                                title = resource.uiElement?.mainTitle?.title ?: "",
+                                subtitle = resource.uiElement?.subTitle?.title,
+                                imageUrl = creative.uiElement?.image?.imageUrl ?: "",
+                                isSong = resource.resourceType == "song",
+                                type = when (resource.resourceType) {
+                                    "playlist" -> CardType.PLAYLIST
+                                    "album" -> CardType.ALBUM
+                                    "artist" -> CardType.ARTIST
+                                    else -> CardType.PLAYLIST
+                                }
+                            )
+                        } ?: listOf(
+                            CardItem(
+                                id = if (creative.targetId != 0L) creative.targetId.toString() else (creative.creativeId.takeIf { it.isNotBlank() } ?: "cre_${cIdx}"),
+                                title = creative.uiElement?.mainTitle?.title ?: "",
+                                subtitle = creative.uiElement?.subTitle?.title,
+                                imageUrl = creative.uiElement?.image?.imageUrl ?: "",
+                                type = CardType.PLAYLIST
+                            )
+                        )
+                    } ?: emptyList()
+                }
 
                 if (items.isNotEmpty()) {
-                    if (block.showType == "SLIDE_PLAYABLE_DRAGON_BALL" || block.blockCode == "HOMEPAGE_BLOCK_STYLE_ARTIST") {
-                        HomeSection.SectionArtist(title, items)
-                    } else {
-                        HomeSection.SectionCarousel(title, items)
+                    when {
+                        block.blockCode == "HOMEPAGE_BLOCK_STYLE_RCMD" || block.blockCode == "HOMEPAGE_BLOCK_MGC_PLAYLIST" -> HomeSection.SectionMixes(title, items)
+                        block.showType == "SLIDE_PLAYABLE_DRAGON_BALL" || block.blockCode == "HOMEPAGE_BLOCK_STYLE_ARTIST" -> HomeSection.SectionArtist(title, items)
+                        else -> HomeSection.SectionCarousel(title, items)
                     }
                 } else null
             }
@@ -125,6 +138,39 @@ class MusicRepositoryImpl(
             emit(Result.success(response.data.list))
         } else {
             emit(Result.failure(Exception("Failed to load recent playlists: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getPersonalFm(): Flow<Result<List<Track>>> = flow {
+        val response = apiService.getPersonalFm()
+        if (response.code == 200) {
+            emit(Result.success(response.data))
+        } else {
+            emit(Result.failure(Exception("Failed to load Personal FM: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun likeSong(trackId: Long, like: Boolean): Flow<Result<Unit>> = flow {
+        val response = apiService.likeSong(LikeSongRequest(trackId = trackId, like = like))
+        if (response.code == 200) {
+            emit(Result.success(Unit))
+        } else {
+            emit(Result.failure(Exception("Failed to like song: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun trashFmSong(songId: Long): Flow<Result<Unit>> = flow {
+        val response = apiService.trashFmSong(TrashFmRequest(songId = songId))
+        if (response.code == 200) {
+            emit(Result.success(Unit))
+        } else {
+            emit(Result.failure(Exception("Failed to trash FM song: code ${response.code}")))
         }
     }.catch { e ->
         emit(Result.failure(e))

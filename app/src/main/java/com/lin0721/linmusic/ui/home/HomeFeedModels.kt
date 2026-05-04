@@ -7,6 +7,9 @@ sealed class HomeSection {
     
     // 圆形头像横向滑动列表 (艺人/播客)
     data class SectionArtist(val title: String, val items: List<CardItem>) : HomeSection()
+
+    // 样式丰富的合辑卡片 (Hot Mixes)
+    data class SectionMixes(val title: String, val items: List<CardItem>) : HomeSection()
 }
 
 // 基础卡片项模型

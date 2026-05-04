@@ -91,6 +91,32 @@ interface NeteaseApiService {
     suspend fun getRecentPlaylists(
         @Body body: RecentPlaylistRequest = RecentPlaylistRequest()
     ): RecentPlaylistResponse
+
+    // ================== 私人 FM ==================
+
+    /**
+     * 获取私人 FM 歌曲
+     */
+    @POST("/eapi/v1/radio/get")
+    suspend fun getPersonalFm(
+        @Body body: EmptyBody = EmptyBody()
+    ): PersonalFmResponse
+
+    /**
+     * 歌曲打心 (Like/Unlike)
+     */
+    @POST("/eapi/song/like")
+    suspend fun likeSong(
+        @Body body: LikeSongRequest
+    ): NeteaseResponse<Unit>
+
+    /**
+     * 垃圾桶 (移除私人 FM 歌曲)
+     */
+    @POST("/eapi/v1/radio/trash")
+    suspend fun trashFmSong(
+        @Body body: TrashFmRequest
+    ): NeteaseResponse<Unit>
 }
 
 // 首页动态内容请求体
@@ -411,5 +437,26 @@ data class RecentPlaylistInfo(
     @SerialName("coverImgUrl")
     val picUrl: String = "",
     val creator: PlaylistCreator? = null
+)
+
+// ======================= 私人 FM 模型 =======================
+
+@Serializable
+data class PersonalFmResponse(
+    val code: Int = 0,
+    val data: List<Track> = emptyList()
+)
+
+@Serializable
+data class LikeSongRequest(
+    val trackId: Long,
+    val like: Boolean = true
+)
+
+@Serializable
+data class TrashFmRequest(
+    val songId: Long,
+    val alg: String = "rt",
+    val time: Int = 25
 )
 
