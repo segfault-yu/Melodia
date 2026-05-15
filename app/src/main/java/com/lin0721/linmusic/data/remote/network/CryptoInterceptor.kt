@@ -55,8 +55,9 @@ class CryptoInterceptor : Interceptor {
         
         val jsonPayload = try {
             val orgJson = org.json.JSONObject(rawJson)
-            // 强制注入 CSRF Token 到根节点
             orgJson.put("csrf_token", csrfToken)
+            // 告知服务器返回明文 JSON (e_r=false)，避免响应被加密为 binary
+            orgJson.put("e_r", false)
             orgJson.toString()
         } catch (e: Exception) {
             rawJson

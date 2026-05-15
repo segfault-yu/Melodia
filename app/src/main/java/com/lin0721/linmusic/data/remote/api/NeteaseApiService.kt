@@ -46,9 +46,7 @@ interface NeteaseApiService {
 
     // ======================= 歌曲信息 =======================
 
-    /**
-     * 获取歌曲播放链接
-     */
+    // 获取歌曲播放链接
     @POST("/eapi/song/enhance/player/url/v1")
     suspend fun getSongUrl(
         @Body body: SongUrlRequest
@@ -56,9 +54,7 @@ interface NeteaseApiService {
 
     // ======================= 热门歌手 =======================
 
-    /**
-     * 获取热门歌手
-     */
+    // 获取热门歌手
     @POST("/eapi/v1/artist/top")
     suspend fun getTopArtists(
         @Body body: TopArtistsRequest = TopArtistsRequest()
@@ -66,17 +62,13 @@ interface NeteaseApiService {
 
     // ======================= 用户信息 =======================
 
-    /**
-     * 获取当前登录账号信息
-     */
+    // 获取当前登录账号信息
     @POST("/eapi/nuser/account/get")
     suspend fun getAccountInfo(
         @Body body: EmptyBody = EmptyBody()
     ): AccountInfoResponse
 
-    /**
-     * 获取首页动态内容 (支持分页)
-     */
+    // 获取首页动态内容 (支持分页)
     @POST("/eapi/homepage/block/page")
     suspend fun getHomepageBlocks(
         @Body body: HomepageBlockRequest
@@ -84,39 +76,33 @@ interface NeteaseApiService {
 
     // ================== 最近播放 ==================
 
-    /**
-     * 获取最近播放歌单
-     */
+    // 获取最近播放歌单
     @POST("/eapi/play-record/playlist/list")
     suspend fun getRecentPlaylists(
         @Body body: RecentPlaylistRequest = RecentPlaylistRequest()
     ): RecentPlaylistResponse
 
-    // ================== 私人 FM ==================
+    // ================== 每日推荐歌曲 ==================
 
-    /**
-     * 获取私人 FM 歌曲
-     */
-    @POST("/eapi/v1/radio/get")
-    suspend fun getPersonalFm(
+    // 获取每日推荐歌曲（需登录，每天 06:00 更新）
+    @POST("/eapi/v3/discovery/recommend/songs")
+    suspend fun getDailyRecommendSongs(
         @Body body: EmptyBody = EmptyBody()
-    ): PersonalFmResponse
+    ): DailyRecommendSongsResponse
 
-    /**
-     * 歌曲打心 (Like/Unlike)
-     */
-    @POST("/eapi/song/like")
-    suspend fun likeSong(
-        @Body body: LikeSongRequest
-    ): NeteaseResponse<Unit>
+    // ================== 历史日推记录 ==================
 
-    /**
-     * 垃圾桶 (移除私人 FM 歌曲)
-     */
-    @POST("/eapi/v1/radio/trash")
-    suspend fun trashFmSong(
-        @Body body: TrashFmRequest
-    ): NeteaseResponse<Unit>
+    // 获取可用的历史日推日期列表（黑胶 VIP 功能）
+    @POST("/weapi/discovery/recommend/songs/history/recent")
+    suspend fun getHistoryRecommendDates(
+        @Body body: EmptyBody = EmptyBody()
+    ): HistoryDatesResponse
+
+    // 获取指定日期的历史日推详情
+    @POST("/weapi/discovery/recommend/songs/history/detail")
+    suspend fun getHistoryRecommendDetail(
+        @Body body: HistoryDetailRequest
+    ): HistoryDetailResponse
 }
 
 // 首页动态内容请求体
@@ -460,3 +446,56 @@ data class TrashFmRequest(
     val time: Int = 25
 )
 
+// ======================= 每日推荐歌曲模型 =======================
+
+@Serializable
+data class DailyRecommendSongsResponse(
+    val code: Int = 0,
+    val data: DailyRecommendData? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class DailyRecommendData(
+    val dailySongs: List<DailySong> = emptyList()
+)
+
+@Serializable
+data class DailySong(
+    val id: Long = 0,
+    val name: String = "",
+    val ar: List<Artist> = emptyList(),
+    val al: Album = Album(),
+    val fee: Int = 0,
+    // 推荐理由（例如："根据你喜欢的 xxx 推荐"）
+    val reason: String? = null
+)
+// ======================= 历史日推模型 =======================
+
+@Serializable
+data class HistoryDatesResponse(
+    val code: Int = 0,
+    val data: HistoryDatesData? = null
+)
+
+@Serializable
+data class HistoryDatesData(
+    val list: List<String> = emptyList()
+)
+
+@Serializable
+data class HistoryDetailRequest(
+    val date: String
+)
+
+@Serializable
+data class HistoryDetailResponse(
+    val code: Int = 0,
+    val data: HistoryDetailData? = null
+)
+
+@Serializable
+data class HistoryDetailData(
+    val dailySongs: List<DailySong> = emptyList()
+)

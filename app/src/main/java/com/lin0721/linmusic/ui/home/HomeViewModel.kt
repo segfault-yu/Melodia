@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.UserPreferences
 import com.lin0721.linmusic.data.local.UserProfile
 import com.lin0721.linmusic.data.remote.api.AccountInfoResponse
+import com.lin0721.linmusic.data.remote.api.DailySong
 import com.lin0721.linmusic.data.repository.MusicRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,9 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.player.PlayerManager
 
-/**
- * 首页 ViewModel
- */
+// 首页 ViewModel
 class HomeViewModel(
     private val musicRepository: MusicRepository,
     val playerManager: PlayerManager,
@@ -36,6 +35,22 @@ class HomeViewModel(
 
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
+
+    // 历史日推状态
+    private val _historyDates = MutableStateFlow<List<String>>(emptyList())
+    val historyDates: StateFlow<List<String>> = _historyDates.asStateFlow()
+
+    private val _historyDatesLoading = MutableStateFlow(false)
+    val historyDatesLoading: StateFlow<Boolean> = _historyDatesLoading.asStateFlow()
+
+    private val _historySongs = MutableStateFlow<List<DailySong>>(emptyList())
+    val historySongs: StateFlow<List<DailySong>> = _historySongs.asStateFlow()
+
+    private val _selectedDate = MutableStateFlow<String?>(null)
+    val selectedDate: StateFlow<String?> = _selectedDate.asStateFlow()
+
+    private val _historySongsLoading = MutableStateFlow(false)
+    val historySongsLoading: StateFlow<Boolean> = _historySongsLoading.asStateFlow()
 
     init {
         loadHomeData()
@@ -63,15 +78,15 @@ class HomeViewModel(
                         .getOrDefault(Result.success(emptyList()))
                 }
 
-                val fmDeferred = async {
-                    runCatching { musicRepository.getPersonalFm().first() }
+                val dailySongsDeferred = async {
+                    runCatching { musicRepository.getDailyRecommendSongs().first() }
                         .getOrDefault(Result.success(emptyList()))
                 }
 
                 val playlistsResult = playlistsDeferred.await()
                 val artistsResult = artistsDeferred.await()
                 val recentResult = recentDeferred.await()
-                val fmResult = fmDeferred.await()
+                val dailySongsResult = dailySongsDeferred.await()
 
                 if (playlistsResult.isSuccess) {
                     _uiState.value = HomeUiState.Success(
@@ -79,7 +94,7 @@ class HomeViewModel(
                             recommendPlaylists = playlistsResult.getOrThrow().playlists,
                             topArtists = artistsResult.getOrDefault(emptyList()),
                             recentPlaylists = recentResult.getOrDefault(emptyList()),
-                            personalFm = fmResult.getOrDefault(emptyList())
+                            dailySongs = dailySongsResult.getOrDefault(emptyList())
                         )
                     )
                 } else {
@@ -105,43 +120,18 @@ class HomeViewModel(
         }
     }
 
-    fun playPersonalFm() {
+    fun playDailySong(index: Int = 0) {
         val state = uiState.value
-        if (state is HomeUiState.Success && state.data.personalFm.isNotEmpty()) {
-            val track = state.data.personalFm[0]
+        if (state is HomeUiState.Success && state.data.dailySongs.isNotEmpty()) {
+            val song = state.data.dailySongs.getOrElse(index) { state.data.dailySongs[0] }
             playSong(
-                songId = track.id,
-                title = track.name,
-                artist = track.ar.joinToString { it.name },
-                coverUrl = track.al.picUrl
+                songId = song.id,
+                title = song.name,
+                artist = song.ar.joinToString { it.name },
+                coverUrl = song.al.picUrl
             )
         } else {
-            viewModelScope.launch { _toastEvent.emit("私人 FM 暂无歌曲") }
-        }
-    }
-
-    fun likeSong(trackId: Long, like: Boolean) {
-        viewModelScope.launch {
-            musicRepository.likeSong(trackId, like).collect { result ->
-                result.onSuccess {
-                    _toastEvent.emit(if (like) "已收藏" else "已取消收藏")
-                }.onFailure { e ->
-                    _toastEvent.emit("操作失败: ${e.message}")
-                }
-            }
-        }
-    }
-
-    fun trashFmSong(songId: Long) {
-        viewModelScope.launch {
-            musicRepository.trashFmSong(songId).collect { result ->
-                result.onSuccess {
-                    _toastEvent.emit("已不再播放此歌曲")
-                    loadHomeData() // 刷新 FM 列表
-                }.onFailure { e ->
-                    _toastEvent.emit("操作失败: ${e.message}")
-                }
-            }
+            viewModelScope.launch { _toastEvent.emit("每日推荐暂无歌曲") }
         }
     }
     
@@ -192,5 +182,53 @@ class HomeViewModel(
             _toastEvent.emit("已退出登录")
             loadHomeData()
         }
+    }
+
+    // 加载历史日推可用日期
+    fun loadHistoryDates() {
+        viewModelScope.launch {
+            _historyDatesLoading.value = true
+            musicRepository.getHistoryRecommendDates().collect { result ->
+                result.onSuccess { dates ->
+                    _historyDates.value = dates
+                    // 自动加载第一个日期的详情
+                    if (dates.isNotEmpty() && _selectedDate.value == null) {
+                        loadHistoryDetail(dates.first())
+                    }
+                }.onFailure {
+                    _toastEvent.emit("历史日推需要黑胶会员")
+                }
+                _historyDatesLoading.value = false
+            }
+        }
+    }
+
+    // 加载指定日期的历史日推歌曲
+    fun loadHistoryDetail(date: String) {
+        viewModelScope.launch {
+            _selectedDate.value = date
+            _historySongsLoading.value = true
+            musicRepository.getHistoryRecommendDetail(date).collect { result ->
+                result.onSuccess { songs ->
+                    _historySongs.value = songs
+                }.onFailure {
+                    _toastEvent.emit("加载失败：${it.message}")
+                }
+                _historySongsLoading.value = false
+            }
+        }
+    }
+
+    // 播放历史推荐中的歌曲
+    fun playHistorySong(index: Int) {
+        val songs = _historySongs.value
+        if (songs.isEmpty()) return
+        val song = songs.getOrElse(index) { songs[0] }
+        playSong(
+            songId = song.id,
+            title = song.name,
+            artist = song.ar.joinToString { it.name },
+            coverUrl = song.al.picUrl
+        )
     }
 }

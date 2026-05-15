@@ -3,6 +3,7 @@ package com.lin0721.linmusic.data.repository
 import com.lin0721.linmusic.data.remote.api.PlaylistDetail
 import com.lin0721.linmusic.data.remote.api.PersonalizedData
 import com.lin0721.linmusic.data.remote.api.Artist
+import com.lin0721.linmusic.data.remote.api.DailySong
 import com.lin0721.linmusic.ui.home.HomeFeedPage
 import kotlinx.coroutines.flow.Flow
 
@@ -30,14 +31,14 @@ interface MusicRepository {
     // 获取最近播放歌单
     fun getRecentPlaylists(): Flow<Result<List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>>>
 
-    // ================== 私人 FM ==================
-    
-    // 获取私人 FM 歌曲
-    fun getPersonalFm(): Flow<Result<List<com.lin0721.linmusic.data.remote.api.Track>>>
+    // ================== 每日推荐 ==================
 
-    // 歌曲打心
-    fun likeSong(trackId: Long, like: Boolean): Flow<Result<Unit>>
+    // 获取每日推荐歌曲（需登录）
+    fun getDailyRecommendSongs(): Flow<Result<List<DailySong>>>
 
-    // 移出私人 FM
-    fun trashFmSong(songId: Long): Flow<Result<Unit>>
+    // 获取历史日推可用日期列表（黑胶 VIP）
+    fun getHistoryRecommendDates(): Flow<Result<List<String>>>
+
+    // 获取指定日期的历史日推详情
+    fun getHistoryRecommendDetail(date: String): Flow<Result<List<DailySong>>>
 }

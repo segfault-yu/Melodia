@@ -143,34 +143,34 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
-    override fun getPersonalFm(): Flow<Result<List<Track>>> = flow {
-        val response = apiService.getPersonalFm()
-        if (response.code == 200) {
-            emit(Result.success(response.data))
+    override fun getDailyRecommendSongs(): Flow<Result<List<DailySong>>> = flow {
+        val response = apiService.getDailyRecommendSongs()
+        if (response.isSuccess && response.data != null) {
+            emit(Result.success(response.data.dailySongs))
         } else {
-            emit(Result.failure(Exception("Failed to load Personal FM: code ${response.code}")))
+            emit(Result.failure(Exception("Failed to load daily recommend songs: code ${response.code}")))
         }
     }.catch { e ->
         emit(Result.failure(e))
     }
 
-    override fun likeSong(trackId: Long, like: Boolean): Flow<Result<Unit>> = flow {
-        val response = apiService.likeSong(LikeSongRequest(trackId = trackId, like = like))
-        if (response.code == 200) {
-            emit(Result.success(Unit))
+    override fun getHistoryRecommendDates(): Flow<Result<List<String>>> = flow {
+        val response = apiService.getHistoryRecommendDates()
+        if (response.code == 200 && response.data != null) {
+            emit(Result.success(response.data.list))
         } else {
-            emit(Result.failure(Exception("Failed to like song: code ${response.code}")))
+            emit(Result.failure(Exception("Failed to load history dates: code ${response.code}")))
         }
     }.catch { e ->
         emit(Result.failure(e))
     }
 
-    override fun trashFmSong(songId: Long): Flow<Result<Unit>> = flow {
-        val response = apiService.trashFmSong(TrashFmRequest(songId = songId))
-        if (response.code == 200) {
-            emit(Result.success(Unit))
+    override fun getHistoryRecommendDetail(date: String): Flow<Result<List<DailySong>>> = flow {
+        val response = apiService.getHistoryRecommendDetail(HistoryDetailRequest(date = date))
+        if (response.code == 200 && response.data != null) {
+            emit(Result.success(response.data.dailySongs))
         } else {
-            emit(Result.failure(Exception("Failed to trash FM song: code ${response.code}")))
+            emit(Result.failure(Exception("Failed to load history detail: code ${response.code}")))
         }
     }.catch { e ->
         emit(Result.failure(e))
