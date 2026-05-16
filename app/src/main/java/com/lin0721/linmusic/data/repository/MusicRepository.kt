@@ -27,6 +27,14 @@ data class ArtistInfo(
 // 音乐数据层接口
 interface MusicRepository {
 
+    // ================== 发现/搜索 ==================
+    // 获取默认搜索词
+    fun getDefaultSearchKeyword(): Flow<Result<String>>
+
+    // 获取发现页（Search Screen）原始区块结构
+    fun getDiscoveryBlocks(refresh: Boolean = true, cursor: String? = null): Flow<Result<List<com.lin0721.linmusic.data.remote.api.HomepageBlock>>>
+
+    // ================== 首页内容 ==================
     // 获取首页动态内容 (支持分页)
     fun getHomepageBlocks(refresh: Boolean = true, cursor: String? = null): Flow<Result<HomeFeedPage>>
 

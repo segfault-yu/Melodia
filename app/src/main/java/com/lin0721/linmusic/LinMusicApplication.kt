@@ -5,6 +5,7 @@ import coil.Coil
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import kotlinx.coroutines.Dispatchers
 import com.lin0721.linmusic.di.networkModule
 import com.lin0721.linmusic.di.repositoryModule
 import com.lin0721.linmusic.di.viewModelModule
@@ -21,23 +22,25 @@ class LinMusicApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // 提前在后台线程初始化 Coil，避免首次渲染时在主线程触发 DiskLruCache.initialize() 造成卡顿
-        Coil.setImageLoader {
-            ImageLoader.Builder(this)
-                .memoryCache {
-                    MemoryCache.Builder(this)
-                        .maxSizePercent(0.15) // 占堆内存 15%
-                        .build()
-                }
-                .diskCache {
-                    DiskCache.Builder()
-                        .directory(cacheDir.resolve("image_cache"))
-                        .maxSizePercent(0.02) // 占磁盘 2%，约 50MB
-                        .build()
-                }
-                .crossfade(true)   // 全局启用淡入，避免图片突变造成视觉跳变
-                .build()
-        }
+        val imageLoader = ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.15)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("image_cache"))
+                    .maxSizePercent(0.02)
+                    .build()
+            }
+            .decoderDispatcher(Dispatchers.IO.limitedParallelism(4))
+            .fetcherDispatcher(Dispatchers.IO.limitedParallelism(8))
+            .crossfade(true)
+            .build()
+        Coil.setImageLoader(imageLoader)
+        // 在后台线程强制触发 DiskLruCache.initialize()，避免首次图片加载时锁竞争
+        Thread { imageLoader.diskCache }.start()
 
         startKoin {
             androidLogger(if (BuildConfig.DEBUG) Level.DEBUG else Level.ERROR)

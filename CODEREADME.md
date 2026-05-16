@@ -36,6 +36,7 @@ app/src/main/java/com/lin0721/linmusic/
 └── ui/
     ├── home/                       # 首页模块
     ├── player/                     # 播放器组件
+    ├── playlist/                   # 歌单详情页
     └── theme/                      # 主题配置
 ```
 
@@ -103,13 +104,15 @@ app/src/main/java/com/lin0721/linmusic/
 - **ToplistCarousel + ToplistCard**: 首页新增 Spotify 风格深色榜单卡片，含封面渐变蒙版与前三名歌曲列表。
 - **首页布局顺序**: 个性化歌单 → 私人雷达 → 最近播放 → 今日推荐 → 排行榜 → 你最爱的艺人。
 
-### 2026-05-15 — 性能优化 (Coil 预热 + 图片裁剪)
-- **LinMusicApplication.kt**: 在 `onCreate()` 中通过 `Coil.setImageLoader {}` 提前初始化 `ImageLoader`，将 `DiskLruCache.initialize()` 从主线程移至后台，消除启动时 762ms 锁竞争（彼时 `Choreographer` 报告跳过 93 帧）。
-- **MemoryCache/DiskCache 上限**: 分别设置为堆内存 15% 和磁盘空间 2%，防止 OOM 与过度 I/O。
+### 2026-05-15 — 性能优化 (Coil 预热 + 解码并行度 + 列表懒加载)
+- **LinMusicApplication.kt**: 即时构建 `ImageLoader` 并赋值（非 lazy），将 `DiskLruCache.initialize()` 移至后台线程，消除启动时 762ms 锁竞争。
+- **解码并行度控制**: 添加 `decoderDispatcher(Dispatchers.IO.limitedParallelism(4))` 与 `fetcherDispatcher(Dispatchers.IO.limitedParallelism(8))`，根治 HWUI "Image decoding logging dropped" 警告。
+- **MemoryCache/DiskCache 上限**: 分别设置为堆内存 15% 和磁盘空间 2%。
+- **DailyRecommendCard**: 从 `Column+verticalScroll+forEachIndexed` 重构为 `LazyColumn+itemsIndexed`，消除日推列表的全量渲染。
+- **稳定 key**: 所有 `LazyRow` 均添加 `key = { it.id }`（歌单、排行榜、歌手、最近播放），避免不必要的 recomposition。
 - **图片尺寸规范**:
-  - `RecommendationCarousel`: `?param=200y200`（控件 160dp，2x 屏足够）。
-  - `ToplistCard`: `ImageRequest.size(540, 540)` 限制解码尺寸，防止 HWUI 分配过大纹理。
-  - `ArtistCircleCard`: `?param=200y200`，头像无需高清原图。
+  - `RecommendationCarousel` / `RecentPlaylistCarousel` / `ArtistCircleCard`: `?param=200y200`。
+  - `ToplistCard`: `ImageRequest.size(360, 360)`，ImageRequest 使用 `remember(item.coverUrl)` 缓存。
 
 ### 2026-05-16 — 你最爱的艺人
 - **ArtistInfo 领域模型**: 定义于 `MusicRepository.kt`，包含 id、name、avatarUrl。
@@ -120,6 +123,20 @@ app/src/main/java/com/lin0721/linmusic/
 - **ArtistSublistRequest**: 附带 `limit=25, offset=0, total=true`，避免 EApi 参数校验失败返回 400。
 - **FavoriteArtistsSection + ArtistCircleCard**: 圆形头像（`Modifier.clip(CircleShape)`）横向滚动列表，置于首页最末。
 - **头像字段优先级**: 使用 `img1v1Url` 作为方形头像主字段，`picUrl` 备用（部分歌手 picUrl 为宽幅图）。
+
+### 2026-05-16 — 歌单界面重构 + 品牌统一
+- **沉浸式顶部结构**: 引入 `WindowInsets.statusBars` 完美适配 Edge-to-Edge，修复顶栏内容与系统状态栏的重叠问题。
+- **隐藏式搜索栏**: 采用 `initialFirstVisibleItemIndex = 1` 首视区控制，配合 `Modifier.height` 和动态透明度，实现下拉滑出搜索框交互。
+- **动态色彩提取 (Color Extraction)**: 配置 Coil `allowHardware(false)` 解锁软渲染模式。使用手写 `10x10` 像素采样与 HSV 色彩自适应修正算法抓取封面主色调，统一作用于背景渐变、搜索栏底色与吸附 TopBar。
+- **折叠动效 (Binary Snap)**: 基于 `firstVisibleItemScrollOffset` 构建折叠进度 (`0f..1f`)。歌单名称、播放按钮等元素在 `progress >= 0.8f` 时瞬间切换（`isCollapsed`），不使用渐隐动画，头部信息与 TopBar 标题/FAB 同步显隐。
+- **品牌颜色统一**: 全面替换 `SpotifyGreen` 为 `NeteaseRed`，按钮文字从 `Color.Black` 改为 `Color.White`，与主页配色保持一致。
+
+### 2026-05-16 — 全局浮动播放器
+- **BottomFloatingIsland 提升**: 从 `HomeScreen` 移至 `LinMusicApp`（`MainActivity.kt`），使太空舱式播放器悬浮于所有界面之上。
+- **hazeState 全局化**: `HazeState` 在 `LinMusicApp` 层创建，通过 `.haze(hazeState)` 应用于内容包装 Box，保持毛玻璃效果。
+- **播放器状态集中收集**: `currentTrack`、`isPlaying`、`currentPosition`、`duration` 统一在 `LinMusicApp` 通过 `collectAsStateWithLifecycle` 获取。
+- **PlaylistScreen 清理**: 移除旧 `MiniPlayer` 组件及相关 import，底部 padding 增至 160dp 避免被浮动岛遮挡。
+- **首页精简**: 移除"播客"、"有声书"、"直播"筛选按钮，仅保留"全部"和"音乐"。
 
 ---
 
@@ -146,6 +163,9 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 首页排行榜
 - [x] 首页你最爱的艺人
 - [x] Coil 预热优化 (消除启动掉帧)
+- [x] 歌单详情页 (沉浸式折叠 + 动态色彩)
+- [x] 全局浮动播放器 (跨页面太空舱)
+- [x] 品牌颜色统一 (NeteaseRed)
 - [ ] 搜索、歌曲详情接口
 - [ ] 歌词解析与同步显示
 - [ ] 统一错误处理分发

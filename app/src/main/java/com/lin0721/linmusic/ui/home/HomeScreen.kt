@@ -52,16 +52,14 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
-    onPlaylistClick: (Long) -> Unit = {},
-    onOpenPlayer: () -> Unit = {}
+    onPlaylistClick: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val hazeState = remember { HazeState() }
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
-    
+
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val drawerWidth = 310.dp
@@ -92,10 +90,6 @@ fun HomeScreen(
         }
     }
 
-    val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
-    val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
-    val currentPosition by viewModel.playerManager.currentPosition.collectAsStateWithLifecycle()
-    val duration by viewModel.playerManager.duration.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
     val onAvatarClick: () -> Unit = {
@@ -171,7 +165,7 @@ fun HomeScreen(
                 .background(BackgroundDark)
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().haze(hazeState),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 160.dp)
             ) {
                 item { TopGreetingBar(userProfile = userProfile, onLoginClick = onAvatarClick) }
@@ -263,22 +257,6 @@ fun HomeScreen(
                         }
                     }
                 }
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 16.dp, vertical = 24.dp)
-            ) {
-                BottomFloatingIsland(
-                    hazeState = hazeState,
-                    currentTrack = currentTrack,
-                    isPlaying = isPlaying,
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    onTogglePlay = { viewModel.togglePlayPause() },
-                    onOpenPlayer = onOpenPlayer
-                )
             }
 
             // 3. 点击遮罩层 (当侧边栏打开时，主内容变暗且点击可关闭)
@@ -390,7 +368,7 @@ fun WelcomeBanner() {
 
 @Composable
 fun FilterPills() {
-    val filters = listOf("全部", "音乐", "播客", "有声书", "直播")
+    val filters = listOf("全部", "音乐")
     var selectedIndex by remember { mutableStateOf(0) }
     LazyRow(modifier = Modifier.padding(top = 24.dp), contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(filters.size) { index ->
@@ -413,7 +391,7 @@ fun SectionHeader(title: String, showAction: Boolean = true) {
 @Composable
 fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (PersonalizedPlaylist) -> Unit) {
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        items(playlists) { playlist ->
+        items(playlists, key = { it.id }) { playlist ->
             Column(modifier = Modifier.width(160.dp).clickable { onClick(playlist) }) {
                 // 卡片 160dp，200px 在 2x 屏幕上已足够，避免解码超大原图
                 AsyncImage(model = "${playlist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(160.dp).clip(RoundedCornerShape(24.dp)), contentScale = ContentScale.Crop)
@@ -428,10 +406,10 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
 @Composable
 fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>, onClick: (com.lin0721.linmusic.data.remote.api.RecentPlayItem) -> Unit) {
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        items(items) { item ->
+        items(items, key = { it.data.id }) { item ->
             val playlist = item.data
             Column(modifier = Modifier.width(120.dp).clickable { onClick(item) }) {
-                AsyncImage(model = "${playlist.picUrl}?param=300y300", contentDescription = null, modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.Crop)
+                AsyncImage(model = "${playlist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.Crop)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = playlist.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(text = "歌单 · ${playlist.creator?.nickname ?: "网易云音乐"}", color = Color.Gray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -454,6 +432,14 @@ fun ToplistCarousel(toplists: List<ToplistInfo>) {
 
 @Composable
 private fun ToplistCard(item: ToplistInfo) {
+    val context = LocalContext.current
+    val imageRequest = remember(item.coverUrl) {
+        coil.request.ImageRequest.Builder(context)
+            .data(item.coverUrl)
+            .size(360, 360)
+            .crossfade(true)
+            .build()
+    }
     Column(
         modifier = Modifier
             .width(180.dp)
@@ -467,11 +453,7 @@ private fun ToplistCard(item: ToplistInfo) {
                 .height(180.dp)
         ) {
             AsyncImage(
-                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                    .data(item.coverUrl)
-                    // 限制解码尺寸：卡片 180dp，3x 屏幕最大 540px，防止 HWUI 分配过大纹理
-                    .size(540, 540)
-                    .build(),
+                model = imageRequest,
                 contentDescription = item.name,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -662,34 +644,17 @@ fun DailyRecommendCard(
                     .fillMaxWidth()
                     .height(320.dp)
             ) {
-                val scrollState = rememberScrollState()
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(vertical = 8.dp)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
-                    songs.forEachIndexed { index, song ->
-                        var visible by remember { mutableStateOf(false) }
-                        LaunchedEffect(Unit) {
-                            kotlinx.coroutines.delay(index * 60L)
-                            visible = true
-                        }
-                        AnimatedVisibility(
-                            visible = visible,
-                            enter = fadeIn(animationSpec = tween(300)) +
-                                    slideInVertically(
-                                        animationSpec = tween(300, easing = EaseOutCubic),
-                                        initialOffsetY = { it / 2 }
-                                    )
-                        ) {
-                            DailySongRow(
-                                index = index + 1,
-                                song = song,
-                                isLast = index == songs.lastIndex,
-                                onClick = { onPlaySong(index) }
-                            )
-                        }
+                    itemsIndexed(songs) { index, song ->
+                        DailySongRow(
+                            index = index + 1,
+                            song = song,
+                            isLast = index == songs.lastIndex,
+                            onClick = { onPlaySong(index) }
+                        )
                     }
                 }
                 // 底部渐出蒙层，提示可继续滚动
@@ -785,7 +750,7 @@ fun FavoriteArtistsSection(artists: List<com.lin0721.linmusic.data.repository.Ar
             contentPadding = PaddingValues(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(artists) { artist ->
+            items(artists, key = { it.id }) { artist ->
                 ArtistCircleCard(artist)
             }
         }

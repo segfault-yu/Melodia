@@ -80,6 +80,13 @@ interface NeteaseApiService {
         @Body body: HomepageBlockRequest
     ): HomepageBlockResponse
 
+    // ================== 搜索 ==================
+    // 获取默认搜索词
+    @POST("/eapi/search/defaultkeyword")
+    suspend fun getSearchDefaultKeyword(
+        @Body body: EmptyBody = EmptyBody()
+    ): SearchDefaultResponse
+
     // ================== 最近播放 ==================
 
     // 获取最近播放歌单
@@ -124,6 +131,23 @@ interface NeteaseApiService {
 data class HomepageBlockRequest(
     val cursor: String? = null,
     val refresh: Boolean = false
+)
+
+// ======================= 搜索 DTO =======================
+@Serializable
+data class SearchDefaultResponse(
+    val code: Int = 0,
+    val data: SearchDefaultData? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class SearchDefaultData(
+    val showKeyword: String = "",
+    val realkeyword: String = "",
+    val searchType: Int = 0,
+    val action: Int = 0
 )
 
 /**

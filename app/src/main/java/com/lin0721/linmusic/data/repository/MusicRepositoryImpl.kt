@@ -10,6 +10,24 @@ class MusicRepositoryImpl(
     private val apiService: NeteaseApiService
 ) : MusicRepository {
 
+    override fun getDefaultSearchKeyword(): Flow<Result<String>> = flow {
+        val response = apiService.getSearchDefaultKeyword()
+        if (response.isSuccess && response.data != null) {
+            emit(Result.success(response.data.showKeyword))
+        } else {
+            emit(Result.failure(Exception("Failed to get default keyword")))
+        }
+    }.catch { e -> emit(Result.failure(e)) }
+
+    override fun getDiscoveryBlocks(refresh: Boolean, cursor: String?): Flow<Result<List<HomepageBlock>>> = flow {
+        val response = apiService.getHomepageBlocks(HomepageBlockRequest(cursor = cursor, refresh = refresh))
+        if (response.code == 200 && response.data != null) {
+            emit(Result.success(response.data.blocks))
+        } else {
+            emit(Result.failure(Exception("Failed to load discovery blocks")))
+        }
+    }.catch { e -> emit(Result.failure(e)) }
+
     override fun getHomepageBlocks(refresh: Boolean, cursor: String?): Flow<Result<HomeFeedPage>> = flow {
         val response = apiService.getHomepageBlocks(HomepageBlockRequest(cursor = cursor, refresh = refresh))
         if (response.code == 200 && response.data != null) {
