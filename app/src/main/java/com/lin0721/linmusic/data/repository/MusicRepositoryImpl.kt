@@ -121,6 +121,51 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
+    override fun getFavoriteArtists(): Flow<Result<List<ArtistInfo>>> = flow {
+        var artists = emptyList<ArtistInfo>()
+
+        // 尝试获取已关注歌手（实际返回: {"data":[...], "code":200}）
+        try {
+            val response = apiService.getArtistSublist()
+            if (response.code == 200 && response.data.isNotEmpty()) {
+                artists = response.data.map { dto ->
+                    ArtistInfo(
+                        id = dto.id,
+                        name = dto.name,
+                        avatarUrl = dto.img1v1Url.takeIf { it.isNotBlank() } ?: dto.picUrl
+                    )
+                }
+            }
+        } catch (_: Exception) {
+            // 网络失败或服务器返回空体，进入备用流程
+        }
+
+
+        if (artists.isNotEmpty()) {
+            emit(Result.success(artists))
+            return@flow
+        }
+
+        // \u5907\u7528\uff1a\u70ed\u95e8\u6b4c\u624b\u699c\u5355
+        try {
+            val response = apiService.getTopArtists()
+            if (response.isSuccess && response.artists.isNotEmpty()) {
+                artists = response.artists.map { dto ->
+                    ArtistInfo(
+                        id = dto.id,
+                        name = dto.name,
+                        avatarUrl = dto.img1v1Url.takeIf { it.isNotBlank() } ?: dto.picUrl
+                    )
+                }
+                emit(Result.success(artists))
+            } else {
+                emit(Result.failure(Exception("API Error (Code: ${response.code})")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
     override fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.data.remote.api.AccountInfoResponse>> = flow {
         val response = apiService.getAccountInfo()
         if (response.code == 200) {
@@ -171,6 +216,29 @@ class MusicRepositoryImpl(
             emit(Result.success(response.data.dailySongs))
         } else {
             emit(Result.failure(Exception("Failed to load history detail: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getToplistDetail(): Flow<Result<List<ToplistInfo>>> = flow {
+        val response = apiService.getToplistDetail()
+        if (response.code == 200) {
+            val domainList = response.list
+                // 过滤封面图为空的无效榜单条目
+                .filter { it.coverImgUrl.isNotBlank() && it.name.isNotBlank() }
+                .map { dto ->
+                    ToplistInfo(
+                        id = dto.id,
+                        name = dto.name,
+                        coverUrl = "${dto.coverImgUrl}?param=300y300",
+                        updateDesc = dto.updateFrequency,
+                        topSongs = dto.tracks?.map { "${it.first} - ${it.second}" } ?: emptyList()
+                    )
+                }
+            emit(Result.success(domainList))
+        } else {
+            emit(Result.failure(Exception("Failed to load toplist: code ${response.code}")))
         }
     }.catch { e ->
         emit(Result.failure(e))

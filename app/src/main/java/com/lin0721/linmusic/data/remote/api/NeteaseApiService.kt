@@ -52,10 +52,16 @@ interface NeteaseApiService {
         @Body body: SongUrlRequest
     ): SongUrlResponse
 
-    // ======================= 热门歌手 =======================
+    // ======================= 歌手相关 =======================
+
+    // 获取已关注歌手 (需登录)
+    @POST("/eapi/artist/sublist")
+    suspend fun getArtistSublist(
+        @Body body: ArtistSublistRequest = ArtistSublistRequest()
+    ): ArtistSublistResponse
 
     // 获取热门歌手
-    @POST("/eapi/v1/artist/top")
+    @POST("/eapi/artist/top")
     suspend fun getTopArtists(
         @Body body: TopArtistsRequest = TopArtistsRequest()
     ): TopArtistsResponse
@@ -103,6 +109,14 @@ interface NeteaseApiService {
     suspend fun getHistoryRecommendDetail(
         @Body body: HistoryDetailRequest
     ): HistoryDetailResponse
+
+    // ================== 排行榜 ==================
+
+    // 获取排行榜详情（含各榜单前三首歌曲）
+    @POST("/eapi/toplist/detail")
+    suspend fun getToplistDetail(
+        @Body body: EmptyBody = EmptyBody()
+    ): ToplistDetailResponse
 }
 
 // 首页动态内容请求体
@@ -312,7 +326,8 @@ data class FreeTrialInfo(
 @Serializable
 data class TopArtistsRequest(
     val offset: Int = 0,
-    val limit: Int = 30
+    val limit: Int = 30,
+    val total: Boolean = true
 )
 
 @Serializable
@@ -329,6 +344,20 @@ data class Artist(
     val name: String = "",
     val picUrl: String = "",
     val img1v1Url: String = "",
+)
+
+@Serializable
+data class ArtistSublistRequest(
+    val limit: Int = 25,
+    val offset: Int = 0,
+    val total: Boolean = true
+)
+
+@Serializable
+data class ArtistSublistResponse(
+    val code: Int = 0,
+    // 实际返回结构：{"data":[...], "code":200}，data 字段直接就是歌手数组
+    val data: List<Artist> = emptyList()
 )
 
 // ======================= 歌单详情 =======================
@@ -498,4 +527,28 @@ data class HistoryDetailResponse(
 @Serializable
 data class HistoryDetailData(
     val dailySongs: List<DailySong> = emptyList()
+)
+
+// ======================= 排行榜 DTO =======================
+
+@Serializable
+data class ToplistDetailResponse(
+    val code: Int = 0,
+    val list: List<ToplistDto> = emptyList()
+)
+
+@Serializable
+data class ToplistDto(
+    val id: Long = 0,
+    val name: String = "",
+    val coverImgUrl: String = "",
+    val updateFrequency: String = "",
+    // 部分榜单无歌曲预览数据
+    val tracks: List<ToplistTrackDto>? = null
+)
+
+@Serializable
+data class ToplistTrackDto(
+    val first: String = "",  // 歌名
+    val second: String = "" // 歌手
 )

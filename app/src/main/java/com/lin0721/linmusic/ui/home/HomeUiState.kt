@@ -4,6 +4,9 @@ import com.lin0721.linmusic.data.remote.api.PersonalizedPlaylist
 import com.lin0721.linmusic.data.remote.api.Artist
 import com.lin0721.linmusic.data.remote.api.RecentPlayItem
 import com.lin0721.linmusic.data.remote.api.DailySong
+import com.lin0721.linmusic.data.repository.ToplistInfo
+
+import com.lin0721.linmusic.data.repository.ArtistInfo
 
 // 首页 UI 状态
 sealed interface HomeUiState {
@@ -18,7 +21,8 @@ sealed interface HomeUiState {
 // 首页聚合数据
 data class HomeFeedData(
     val recommendPlaylists: List<PersonalizedPlaylist>,
-    val topArtists: List<Artist>,
+    val favoriteArtists: List<ArtistInfo> = emptyList(),
     val recentPlaylists: List<RecentPlayItem> = emptyList(),
-    val dailySongs: List<DailySong> = emptyList()
+    val dailySongs: List<DailySong> = emptyList(),
+    val toplistItems: List<ToplistInfo> = emptyList()
 )

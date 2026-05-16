@@ -7,6 +7,23 @@ import com.lin0721.linmusic.data.remote.api.DailySong
 import com.lin0721.linmusic.ui.home.HomeFeedPage
 import kotlinx.coroutines.flow.Flow
 
+// 排行榜领域模型（UI 层直接使用，与 DTO 解耦）
+data class ToplistInfo(
+    val id: Long,
+    val name: String,
+    val coverUrl: String,
+    val updateDesc: String,
+    // 前三首格式："歌名 - 歌手"
+    val topSongs: List<String>
+)
+
+// 歌手领域模型
+data class ArtistInfo(
+    val id: Long,
+    val name: String,
+    val avatarUrl: String
+)
+
 // 音乐数据层接口
 interface MusicRepository {
 
@@ -25,6 +42,9 @@ interface MusicRepository {
     // 获取热门歌手
     fun getTopArtists(): Flow<Result<List<Artist>>>
 
+    // 获取最爱的歌手（优先已关注，兜底热门）
+    fun getFavoriteArtists(): Flow<Result<List<ArtistInfo>>>
+
     // 获取当前登录账号信息
     fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.data.remote.api.AccountInfoResponse>>
 
@@ -41,4 +61,7 @@ interface MusicRepository {
 
     // 获取指定日期的历史日推详情
     fun getHistoryRecommendDetail(date: String): Flow<Result<List<DailySong>>>
+
+    // 获取排行榜详情（DTO 映射至领域模型）
+    fun getToplistDetail(): Flow<Result<List<ToplistInfo>>>
 }

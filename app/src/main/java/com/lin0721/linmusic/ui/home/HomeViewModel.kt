@@ -7,6 +7,7 @@ import com.lin0721.linmusic.data.local.UserProfile
 import com.lin0721.linmusic.data.remote.api.AccountInfoResponse
 import com.lin0721.linmusic.data.remote.api.DailySong
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.data.repository.ToplistInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -69,7 +70,7 @@ class HomeViewModel(
                 }
                 
                 val artistsDeferred = async { 
-                    runCatching { musicRepository.getTopArtists().first() }
+                    runCatching { musicRepository.getFavoriteArtists().first() }
                         .getOrElse { Result.success(emptyList()) }
                 }
 
@@ -83,18 +84,25 @@ class HomeViewModel(
                         .getOrDefault(Result.success(emptyList()))
                 }
 
+                val toplistDeferred = async {
+                    runCatching { musicRepository.getToplistDetail().first() }
+                        .getOrDefault(Result.success(emptyList<ToplistInfo>()))
+                }
+
                 val playlistsResult = playlistsDeferred.await()
                 val artistsResult = artistsDeferred.await()
                 val recentResult = recentDeferred.await()
                 val dailySongsResult = dailySongsDeferred.await()
+                val toplistResult = toplistDeferred.await()
 
                 if (playlistsResult.isSuccess) {
                     _uiState.value = HomeUiState.Success(
                         HomeFeedData(
                             recommendPlaylists = playlistsResult.getOrThrow().playlists,
-                            topArtists = artistsResult.getOrDefault(emptyList()),
+                            favoriteArtists = artistsResult.getOrDefault(emptyList()),
                             recentPlaylists = recentResult.getOrDefault(emptyList()),
-                            dailySongs = dailySongsResult.getOrDefault(emptyList())
+                            dailySongs = dailySongsResult.getOrDefault(emptyList()),
+                            toplistItems = toplistResult.getOrDefault(emptyList())
                         )
                     )
                 } else {

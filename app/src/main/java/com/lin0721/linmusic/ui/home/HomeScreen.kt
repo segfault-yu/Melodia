@@ -36,6 +36,7 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.data.remote.api.PersonalizedPlaylist
 import com.lin0721.linmusic.data.remote.api.Artist
 import com.lin0721.linmusic.data.remote.api.DailySong
+import com.lin0721.linmusic.data.repository.ToplistInfo
 import com.lin0721.linmusic.ui.theme.*
 import com.lin0721.linmusic.data.local.UserProfile
 import com.lin0721.linmusic.ui.components.LoginBottomSheet
@@ -194,17 +195,6 @@ fun HomeScreen(
                             )
                         }
 
-                        // 2. 热门歌手
-                        if (state.data.topArtists.isNotEmpty()) {
-                            item { SectionHeader(title = "关注的歌手") }
-                            item {
-                                ArtistCarousel(
-                                    artists = state.data.topArtists,
-                                    onClick = { /* artist click */ }
-                                )
-                            }
-                        }
-
                         // 3. 私人雷达 (推荐歌单的反转展示作为示例)
                         item { SectionHeader(title = "你的私人雷达", showAction = false) }
                         item {
@@ -259,6 +249,17 @@ fun HomeScreen(
                                     )
                                 }
                             }
+                        }
+
+                        // 6. 排行榜
+                        if (state.data.toplistItems.isNotEmpty()) {
+                            item { SectionHeader(title = "排行榜", showAction = false) }
+                            item { ToplistCarousel(toplists = state.data.toplistItems) }
+                        }
+
+                        // 7. 你最爱的艺人
+                        if (state.data.favoriteArtists.isNotEmpty()) {
+                            item { FavoriteArtistsSection(artists = state.data.favoriteArtists) }
                         }
                     }
                 }
@@ -414,7 +415,8 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         items(playlists) { playlist ->
             Column(modifier = Modifier.width(160.dp).clickable { onClick(playlist) }) {
-                AsyncImage(model = "${playlist.picUrl}?param=400y400", contentDescription = null, modifier = Modifier.size(160.dp).clip(RoundedCornerShape(24.dp)), contentScale = ContentScale.Crop)
+                // 卡片 160dp，200px 在 2x 屏幕上已足够，避免解码超大原图
+                AsyncImage(model = "${playlist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(160.dp).clip(RoundedCornerShape(24.dp)), contentScale = ContentScale.Crop)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(text = "根据你的口味生成", color = Color.Gray, fontSize = 12.sp, maxLines = 1)
@@ -433,6 +435,107 @@ fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.Rece
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = playlist.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(text = "歌单 · ${playlist.creator?.nickname ?: "网易云音乐"}", color = Color.Gray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+fun ToplistCarousel(toplists: List<ToplistInfo>) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        items(items = toplists, key = { it.id }) { item ->
+            ToplistCard(item = item)
+        }
+    }
+}
+
+@Composable
+private fun ToplistCard(item: ToplistInfo) {
+    Column(
+        modifier = Modifier
+            .width(180.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF1A1F2E))
+    ) {
+        // 封面图 + 渐变蒙层
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+        ) {
+            AsyncImage(
+                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                    .data(item.coverUrl)
+                    // 限制解码尺寸：卡片 180dp，3x 屏幕最大 540px，防止 HWUI 分配过大纹理
+                    .size(540, 540)
+                    .build(),
+                contentDescription = item.name,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            // 底部渐变遥控可读性
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color(0xFF1A1F2E))
+                        )
+                    )
+            )
+            // 更新频率徽章
+            if (item.updateDesc.isNotBlank()) {
+                Text(
+                    text = item.updateDesc,
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                        .background(
+                            Color.Black.copy(alpha = 0.45f),
+                            RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+        // 榜单名 + 前三首
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Text(
+                text = item.name,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (item.topSongs.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                item.topSongs.take(3).forEachIndexed { index, song ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${index + 1}",
+                            color = if (index == 0) NeteaseRed else Color.Gray,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.width(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = song,
+                            color = Color.Gray,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
         }
     }
@@ -675,15 +778,46 @@ private fun DailySongRow(
 }
 
 @Composable
-fun ArtistCarousel(artists: List<Artist>, onClick: (Artist) -> Unit) {
-    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-        items(artists) { artist ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onClick(artist) }) {
-                AsyncImage(model = "${artist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(90.dp).clip(CircleShape).border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape), contentScale = ContentScale.Crop)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = artist.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+fun FavoriteArtistsSection(artists: List<com.lin0721.linmusic.data.repository.ArtistInfo>) {
+    Column {
+        SectionHeader(title = "你最爱的艺人", showAction = false)
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(artists) { artist ->
+                ArtistCircleCard(artist)
             }
         }
+    }
+}
+
+@Composable
+fun ArtistCircleCard(artist: com.lin0721.linmusic.data.repository.ArtistInfo) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(100.dp).clickable { /* artist click */ }
+    ) {
+        // 圆形头像
+        AsyncImage(
+            model = "${artist.avatarUrl}?param=200y200", // 记得裁剪，头像不需要大图
+            contentDescription = artist.name,
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape), // 关键：裁剪为圆形
+            contentScale = ContentScale.Crop
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 歌手名
+        Text(
+            text = artist.name,
+            fontSize = 13.sp,
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
