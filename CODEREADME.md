@@ -37,6 +37,7 @@ app/src/main/java/com/lin0721/linmusic/
     ├── home/                       # 首页模块
     ├── player/                     # 播放器组件
     ├── playlist/                   # 歌单详情页
+    ├── search/                     # 搜索/发现页
     └── theme/                      # 主题配置
 ```
 
@@ -138,6 +139,46 @@ app/src/main/java/com/lin0721/linmusic/
 - **PlaylistScreen 清理**: 移除旧 `MiniPlayer` 组件及相关 import，底部 padding 增至 160dp 避免被浮动岛遮挡。
 - **首页精简**: 移除"播客"、"有声书"、"直播"筛选按钮，仅保留"全部"和"音乐"。
 
+### 2026-05-17 — 发现/搜索模块 与 氛围化 UI
+- **发现页路由**: 集成 `/eapi/homepage/block/page` 获取动态网格布局，`/eapi/search/defaultkeyword/get` 获取动态搜索占位符。
+- **SearchScreen.kt**: 
+  - **沉浸式适配**: 使用 `statusBarsPadding()` 避开状态栏，设置 `160.dp` 底部内边距避让全局播放器。
+  - **高对比度蒙版**: 为发现卡片封面增加 `Black 40% -> Transparent -> Black 60%` 的垂直渐变，确保标题文字在任何背景下清晰可见。
+  - **分类导航**: 横向滚动分类入口（排行榜、歌手、曲风等），图标统一使用 `NeteaseRed` 透明底色方案。
+- **氛围背景光 (Static Ambient Light)**: 在主页（HomeScreen）背景底层实现红色静态环境光晕。
+  - **绘制技术**: 使用 `Canvas` 与 `RadialGradient` 在上半区域绘制 `NeteaseRed` (25% Alpha) 光晕。
+  - **边缘消隐**: 配合 `Brush.verticalGradient` 遮罩，使光晕在屏幕中部平滑淡入主背景色（BackgroundDark）。
+- **交互优化**: 移除主页多余的铃铛按钮，简化搜索页顶栏（移除返回键），通过 `SearchViewModel` 统一管理发现区块与搜索关键词加载。
+
+### 2026-05-17 — 搜索全链路实现 + 热搜 + 精品歌单标签
+- **云搜索**: 接入 `/eapi/cloudsearch/pc`，支持 400ms 防抖、分页加载与当前播放曲目高亮。
+  - `SearchSongsResult` 领域模型封装 songs/totalCount/hasMore。
+  - `SearchResultsList` 使用 `derivedStateOf` 实现距底 5 条自动触发 `loadMore()`。
+- **热搜榜**: 接入 `/eapi/hotsearchlist/get`，展示前 10 条热搜关键词。
+  - `HotSearchRow`: 排名 1-3 使用 `NeteaseRed` + `FontWeight.Bold`，4+ 使用 `TextGray`。
+  - 支持 `iconUrl` 展示"热/新"徽标，右侧显示热度分数。
+  - 点击热搜词直接触发 `searchWithKeyword()`，自动激活搜索并填入关键词。
+- **精品歌单标签**: 并行调用 `/eapi/playlist/highquality/tags` + `/eapi/playlist/highquality/list`。
+  - `MusicRepositoryImpl.getPlaylistTags()`: 在 `coroutineScope` 内并发获取标签名与歌单列表，构建 tagName→coverImgUrl 映射。
+  - `PlaylistTagCard`: 有封面时展示封面图 + 暗色渐变蒙版 + 标签名；无封面时使用 10 色轮转色板作为背景。
+  - 2 列网格布局，卡片高度 100dp，圆角 8dp。
+- **搜索入口差异化**: `SearchScreen` 新增 `autoFocus` 参数。
+  - 从主页搜索栏进入 → `autoFocus=true`，自动弹出键盘。
+  - 从悬浮胶囊导航栏进入 → `autoFocus=false`，展示发现内容。
+- **API 路径修正**:
+  - `/eapi/search/defaultkeyword` → `/eapi/search/defaultkeyword/get`（末尾需 `/get`）。
+  - `/eapi/search/hot/detail` → `/eapi/hotsearchlist/get`（底层真实路径）。
+  - 精品歌单从 `/weapi/` 改为 `/eapi/`（weapi 被火山 CDN 风控拦截返回 0 字节）。
+
+### 2026-05-17 — 界面切换动画优化
+- **AnimatedContent 替代 Crossfade**: 屏幕转场从纯交叉淡入升级为方向感知的 fade + slide 组合动画。
+  - 前进导航（Home→Search/Playlist）: 新页面淡入 + 上滑 40px，旧页面淡出 + 上移 40px。
+  - 后退导航: 方向反转，新页面从上方滑下。
+  - 退出动画 200ms 先完成，进入动画延迟 100ms 后以 300ms 展开，消除双屏半透明重叠导致的白色闪屏。
+  - 统一使用 `FastOutSlowInEasing` 缓动曲线。
+- **全屏播放器过渡**: 在原有 `slideInVertically`/`slideOutVertically` 基础上叠加 `fadeIn`/`fadeOut`，使用 `FastOutSlowInEasing` 替代线性 tween，滑入 350ms / 滑出 300ms。
+- **白屏闪烁修复**: 根 Box 添加 `.background(BackgroundDark)` 确保深色底板始终可见；`SizeTransform(clip=false)` 防止裁切伪影。
+
 ---
 
 ## 网络路由速查
@@ -148,6 +189,12 @@ app/src/main/java/com/lin0721/linmusic/
 | `/weapi/*` | WeApi (AES-CBC+RSA) → `music.163.com` | PC UA，部分私有接口会被拦截返回 0 字节 |
 | `/eapi/toplist/detail` | EApi | 排行榜，weapi 版本被风控 |
 | `/eapi/artist/sublist` | EApi | 已关注歌手，weapi 版本返回 0 字节 |
+| `/eapi/search/defaultkeyword/get` | EApi | 搜索框默认占位文字 |
+| `/eapi/hotsearchlist/get` | EApi | 热搜榜详情（关键词+热度+徽标） |
+| `/eapi/cloudsearch/pc` | EApi | 云搜索（综合搜索歌曲） |
+| `/eapi/playlist/highquality/tags` | EApi | 精品歌单标签列表 |
+| `/eapi/playlist/highquality/list` | EApi | 精品歌单列表（含封面图） |
+| `/eapi/homepage/block/page` | EApi | 发现/首页动态区块布局 |
 | `/weapi/discovery/recommend/songs/history/*` | WeApi | 历史日推，仅 weapi 有此路径 |
 
 ---
@@ -166,6 +213,10 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 歌单详情页 (沉浸式折叠 + 动态色彩)
 - [x] 全局浮动播放器 (跨页面太空舱)
 - [x] 品牌颜色统一 (NeteaseRed)
-- [ ] 搜索、歌曲详情接口
+- [x] 发现/搜索页面 (网格布局 + 氛围背景光)
+- [x] 搜索全链路 (云搜索 + 防抖 + 分页 + 播放)
+- [x] 热搜榜 + 精品歌单标签卡片
+- [x] 界面切换动画 (方向感知 fade+slide)
+- [ ] 歌曲详情接口
 - [ ] 歌词解析与同步显示
 - [ ] 统一错误处理分发

@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -52,7 +53,8 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
-    onPlaylistClick: (Long) -> Unit = {}
+    onPlaylistClick: (Long) -> Unit = {},
+    onSearchClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -164,11 +166,22 @@ fun HomeScreen(
                 }
                 .background(BackgroundDark)
         ) {
+            // 动态光效底层
+            DynamicAmbientLight()
+
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding(),
                 contentPadding = PaddingValues(bottom = 160.dp)
             ) {
-                item { TopGreetingBar(userProfile = userProfile, onLoginClick = onAvatarClick) }
+                item { 
+                    TopGreetingBar(
+                        userProfile = userProfile, 
+                        onLoginClick = onAvatarClick,
+                        onSearchClick = onSearchClick
+                    ) 
+                }
                 item { WelcomeBanner() }
                 item { FilterPills() }
 
@@ -318,7 +331,11 @@ private fun getGreetingText(): String {
 }
 
 @Composable
-fun TopGreetingBar(userProfile: UserProfile?, onLoginClick: () -> Unit) {
+fun TopGreetingBar(
+    userProfile: UserProfile?, 
+    onLoginClick: () -> Unit,
+    onSearchClick: () -> Unit = {}
+) {
     val greeting = remember { getGreetingText() }
     Row(
         modifier = Modifier
@@ -349,8 +366,17 @@ fun TopGreetingBar(userProfile: UserProfile?, onLoginClick: () -> Unit) {
                 Text(text = "点击登录获取专属推荐", fontSize = 12.sp, color = Color.LightGray)
             }
         }
-        Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Notifications, null, tint = Color.White, modifier = Modifier.size(20.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.1f))
+                    .clickable { onSearchClick() }, 
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Rounded.Search, null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
         }
     }
 }
@@ -794,7 +820,9 @@ fun BottomFloatingIsland(
     currentPosition: Long,
     duration: Long,
     onTogglePlay: () -> Unit,
-    onOpenPlayer: () -> Unit
+    onOpenPlayer: () -> Unit,
+    currentScreen: com.lin0721.linmusic.Screen = com.lin0721.linmusic.Screen.Home,
+    onNavigate: (com.lin0721.linmusic.Screen) -> Unit = {}
 ) {
     Box(modifier = Modifier.fillMaxWidth().hazeChild(state = hazeState, shape = RoundedCornerShape(32.dp), style = HazeStyle(tint = Color.Black.copy(alpha = 0.4f), blurRadius = 24.dp)).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp))) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -816,18 +844,18 @@ fun BottomFloatingIsland(
                 }
             }
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
-                StaticNavItem("主页", Icons.Default.Home, true)
-                StaticNavItem("搜索", Icons.Default.Search, false)
-                StaticNavItem("音乐库", Icons.Default.LibraryMusic, false)
-                StaticNavItem("创建", Icons.Default.AddBox, false)
+                StaticNavItem("主页", Icons.Default.Home, currentScreen == com.lin0721.linmusic.Screen.Home) { onNavigate(com.lin0721.linmusic.Screen.Home) }
+                StaticNavItem("搜索", Icons.Default.Search, currentScreen == com.lin0721.linmusic.Screen.Search) { onNavigate(com.lin0721.linmusic.Screen.Search) }
+                StaticNavItem("音乐库", Icons.Default.LibraryMusic, false) { }
+                StaticNavItem("创建", Icons.Default.AddBox, false) { }
             }
         }
     }
 }
 
 @Composable
-fun StaticNavItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, isSelected: Boolean) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { }.padding(4.dp)) {
+fun StaticNavItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, isSelected: Boolean, onClick: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable(onClick = onClick).padding(4.dp)) {
         Icon(imageVector = icon, contentDescription = label, tint = if (isSelected) Color.White else Color.Gray, modifier = Modifier.size(24.dp))
         Text(text = label, color = if (isSelected) Color.White else Color.Gray, fontSize = 10.sp)
     }
@@ -1061,5 +1089,34 @@ fun HistoryRecommendSheet(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+fun DynamicAmbientLight() {
+    // 改为红色静态光效
+    Canvas(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.5f)) {
+        val width = size.width
+        val height = size.height
+
+        // 顶部中央偏左的红色光晕
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(NeteaseRed.copy(alpha = 0.25f), Color.Transparent),
+                center = Offset(width * 0.3f, height * 0.2f),
+                radius = width * 1.2f
+            ),
+            center = Offset(width * 0.3f, height * 0.2f),
+            radius = width * 1.2f
+        )
+
+        // 底部边缘柔化遮罩
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Transparent, BackgroundDark),
+                startY = height * 0.5f,
+                endY = height
+            )
+        )
     }
 }

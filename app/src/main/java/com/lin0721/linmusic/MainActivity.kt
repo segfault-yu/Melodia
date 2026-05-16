@@ -5,7 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,13 +20,14 @@ import com.lin0721.linmusic.ui.home.BottomFloatingIsland
 import com.lin0721.linmusic.ui.home.HomeScreen
 import com.lin0721.linmusic.ui.home.HomeViewModel
 import com.lin0721.linmusic.ui.player.FullPlayerScreen
+import com.lin0721.linmusic.ui.theme.BackgroundDark
 import com.lin0721.linmusic.ui.theme.LinMusicTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import org.koin.androidx.compose.koinViewModel
 
 enum class Screen {
-    Home, Playlist
+    Home, Playlist, Search
 }
 
 class MainActivity : ComponentActivity() {
@@ -50,12 +53,35 @@ fun LinMusicApp() {
     var isPlayerOpen by remember { mutableStateOf(false) }
     var currentScreen by remember { mutableStateOf(Screen.Home) }
     var activePlaylistId by remember { mutableStateOf<Long?>(null) }
+    var searchAutoFocus by remember { mutableStateOf(false) }
 
     val hazeState = remember { HazeState() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(BackgroundDark)) {
         Box(modifier = Modifier.fillMaxSize().haze(hazeState)) {
-            Crossfade(targetState = currentScreen, label = "screen_transition") { screen ->
+            AnimatedContent(
+                targetState = currentScreen,
+                transitionSpec = {
+                    val forward = targetState != Screen.Home
+                    val offsetY = 40
+                    if (forward) {
+                        (fadeIn(tween(300, delayMillis = 100, easing = FastOutSlowInEasing))
+                                + slideInVertically(tween(300, delayMillis = 100, easing = FastOutSlowInEasing)) { offsetY })
+                            .togetherWith(
+                                fadeOut(tween(200, easing = FastOutSlowInEasing))
+                                        + slideOutVertically(tween(200, easing = FastOutSlowInEasing)) { -offsetY }
+                            )
+                    } else {
+                        (fadeIn(tween(300, delayMillis = 100, easing = FastOutSlowInEasing))
+                                + slideInVertically(tween(300, delayMillis = 100, easing = FastOutSlowInEasing)) { -offsetY })
+                            .togetherWith(
+                                fadeOut(tween(200, easing = FastOutSlowInEasing))
+                                        + slideOutVertically(tween(200, easing = FastOutSlowInEasing)) { offsetY }
+                            )
+                    }.using(SizeTransform(clip = false))
+                },
+                label = "screen_transition"
+            ) { screen ->
                 when (screen) {
                     Screen.Home -> {
                         HomeScreen(
@@ -63,6 +89,10 @@ fun LinMusicApp() {
                             onPlaylistClick = { id ->
                                 activePlaylistId = id
                                 currentScreen = Screen.Playlist
+                            },
+                            onSearchClick = {
+                                searchAutoFocus = true
+                                currentScreen = Screen.Search
                             }
                         )
                     }
@@ -73,6 +103,12 @@ fun LinMusicApp() {
                                 onBack = { currentScreen = Screen.Home }
                             )
                         }
+                    }
+                    Screen.Search -> {
+                        com.lin0721.linmusic.ui.search.SearchScreen(
+                            autoFocus = searchAutoFocus,
+                            onBack = { currentScreen = Screen.Home }
+                        )
                     }
                 }
             }
@@ -90,14 +126,16 @@ fun LinMusicApp() {
                 currentPosition = currentPosition,
                 duration = duration,
                 onTogglePlay = { viewModel.togglePlayPause() },
-                onOpenPlayer = { isPlayerOpen = true }
+                onOpenPlayer = { isPlayerOpen = true },
+                currentScreen = currentScreen,
+                onNavigate = { searchAutoFocus = false; currentScreen = it }
             )
         }
 
         AnimatedVisibility(
             visible = isPlayerOpen,
-            enter = slideInVertically(initialOffsetY = { it }, animationSpec = tween(300)),
-            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)),
+            enter = slideInVertically(initialOffsetY = { it }, animationSpec = tween(350, easing = FastOutSlowInEasing)) + fadeIn(tween(250)),
+            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300, easing = FastOutSlowInEasing)) + fadeOut(tween(200)),
             modifier = Modifier.fillMaxSize()
         ) {
             FullPlayerScreen(

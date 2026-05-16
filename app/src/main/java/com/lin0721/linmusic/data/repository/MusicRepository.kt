@@ -24,12 +24,42 @@ data class ArtistInfo(
     val avatarUrl: String
 )
 
+// 搜索结果领域模型
+data class SearchSongsResult(
+    val songs: List<com.lin0721.linmusic.data.remote.api.SearchSong>,
+    val totalCount: Int,
+    val hasMore: Boolean
+)
+
+// 热搜领域模型
+data class HotSearch(
+    val keyword: String,
+    val score: Int,
+    val description: String = "",
+    val iconUrl: String? = null
+)
+
+// 歌单标签领域模型
+data class PlaylistTag(
+    val name: String,
+    val coverUrl: String = ""
+)
+
 // 音乐数据层接口
 interface MusicRepository {
 
     // ================== 发现/搜索 ==================
     // 获取默认搜索词
     fun getDefaultSearchKeyword(): Flow<Result<String>>
+
+    // 云搜索歌曲
+    fun searchSongs(keyword: String, offset: Int = 0, limit: Int = 30): Flow<Result<SearchSongsResult>>
+
+    // 获取热搜榜
+    fun getHotSearches(): Flow<Result<List<HotSearch>>>
+
+    // 获取精品歌单标签（含封面图）
+    fun getPlaylistTags(): Flow<Result<List<PlaylistTag>>>
 
     // 获取发现页（Search Screen）原始区块结构
     fun getDiscoveryBlocks(refresh: Boolean = true, cursor: String? = null): Flow<Result<List<com.lin0721.linmusic.data.remote.api.HomepageBlock>>>
