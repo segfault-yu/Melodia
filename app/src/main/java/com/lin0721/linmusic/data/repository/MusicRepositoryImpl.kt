@@ -328,4 +328,48 @@ class MusicRepositoryImpl(
     }.catch { e ->
         emit(Result.failure(e))
     }
+
+    override fun getUserPlaylists(uid: Long, limit: Int): Flow<Result<List<com.lin0721.linmusic.data.remote.api.UserPlaylist>>> = flow {
+        val response = apiService.getUserPlaylists(com.lin0721.linmusic.data.remote.api.UserPlaylistRequest(uid = uid, limit = limit))
+        if (response.isSuccess) {
+            emit(Result.success(response.playlist))
+        } else {
+            emit(Result.failure(Exception("Failed to load user playlists: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getCollectedAlbums(limit: Int): Flow<Result<List<com.lin0721.linmusic.data.remote.api.AlbumSubItem>>> = flow {
+        val response = apiService.getAlbumSublist(com.lin0721.linmusic.data.remote.api.AlbumSublistRequest(limit = limit))
+        if (response.isSuccess) {
+            emit(Result.success(response.data))
+        } else {
+            emit(Result.failure(Exception("Failed to load collected albums: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getUserSubcount(): Flow<Result<com.lin0721.linmusic.data.remote.api.UserSubcountResponse>> = flow {
+        val response = apiService.getUserSubcount()
+        if (response.isSuccess) {
+            emit(Result.success(response))
+        } else {
+            emit(Result.failure(Exception("Failed to load user subcount: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun createPlaylist(name: String, privacy: Int): Flow<Result<PlaylistDetail>> = flow {
+        val response = apiService.createPlaylist(com.lin0721.linmusic.data.remote.api.PlaylistCreateRequest(name = name, privacy = privacy))
+        if (response.isSuccess && response.playlist != null) {
+            emit(Result.success(response.playlist))
+        } else {
+            emit(Result.failure(Exception("Failed to create playlist: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
 }

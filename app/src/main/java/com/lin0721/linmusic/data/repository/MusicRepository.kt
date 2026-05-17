@@ -102,4 +102,17 @@ interface MusicRepository {
 
     // 获取排行榜详情（DTO 映射至领域模型）
     fun getToplistDetail(): Flow<Result<List<ToplistInfo>>>
+
+    // ================== 音乐库 (Library) ==================
+    // 获取用户歌单
+    fun getUserPlaylists(uid: Long, limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.data.remote.api.UserPlaylist>>>
+
+    // 获取收藏专辑
+    fun getCollectedAlbums(limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.data.remote.api.AlbumSubItem>>>
+
+    // 获取各分类收藏数
+    fun getUserSubcount(): Flow<Result<com.lin0721.linmusic.data.remote.api.UserSubcountResponse>>
+
+    // 创建歌单
+    fun createPlaylist(name: String, privacy: Int = 0): Flow<Result<PlaylistDetail>>
 }

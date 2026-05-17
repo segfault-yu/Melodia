@@ -150,6 +150,32 @@ interface NeteaseApiService {
     suspend fun getToplistDetail(
         @Body body: EmptyBody = EmptyBody()
     ): ToplistDetailResponse
+
+    // ================== 音乐库 (Library) ==================
+
+    // 获取用户歌单
+    @POST("/eapi/user/playlist")
+    suspend fun getUserPlaylists(
+        @Body body: UserPlaylistRequest
+    ): UserPlaylistResponse
+
+    // 获取收藏专辑
+    @POST("/eapi/album/sublist")
+    suspend fun getAlbumSublist(
+        @Body body: AlbumSublistRequest = AlbumSublistRequest()
+    ): AlbumSublistResponse
+
+    // 获取用户各分类收藏数
+    @POST("/eapi/user/subcount")
+    suspend fun getUserSubcount(
+        @Body body: EmptyBody = EmptyBody()
+    ): UserSubcountResponse
+
+    // 创建歌单
+    @POST("/eapi/playlist/create")
+    suspend fun createPlaylist(
+        @Body body: PlaylistCreateRequest
+    ): PlaylistCreateResponse
 }
 
 // 首页动态内容请求体
@@ -699,3 +725,86 @@ data class HighQualityPlaylist(
     val tags: List<String> = emptyList(),
     val playCount: Long = 0
 )
+
+// ======================= 音乐库 (Library) DTOs =======================
+
+@Serializable
+data class UserPlaylistRequest(
+    val uid: Long,
+    val limit: Int = 1000,
+    val offset: Int = 0
+)
+
+@Serializable
+data class UserPlaylistResponse(
+    val code: Int = 0,
+    val playlist: List<UserPlaylist> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class UserPlaylist(
+    val id: Long = 0,
+    val name: String = "",
+    val coverImgUrl: String = "",
+    val playCount: Long = 0,
+    val trackCount: Int = 0,
+    val userId: Long = 0,
+    val creator: PlaylistCreator? = null,
+    val updateTime: Long = 0
+)
+
+@Serializable
+data class AlbumSublistRequest(
+    val limit: Int = 1000,
+    val offset: Int = 0,
+    val total: Boolean = true
+)
+
+@Serializable
+data class AlbumSublistResponse(
+    val code: Int = 0,
+    val data: List<AlbumSubItem> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class AlbumSubItem(
+    val id: Long = 0,
+    val name: String = "",
+    val picUrl: String = "",
+    val artists: List<Artist> = emptyList(),
+    val size: Int = 0,
+    val subTime: Long = 0
+)
+
+@Serializable
+data class UserSubcountResponse(
+    val code: Int = 0,
+    val artistCount: Int = 0,
+    val playlistCount: Int = 0,
+    val mvCount: Int = 0,
+    val createPlaylistCount: Int = 0,
+    val subPlaylistCount: Int = 0,
+    val albumCount: Int = 0
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class PlaylistCreateRequest(
+    val name: String,
+    val privacy: Int = 0,
+    val type: String = "NORMAL"
+)
+
+@Serializable
+data class PlaylistCreateResponse(
+    val code: Int = 0,
+    val id: Long = 0,
+    val playlist: PlaylistDetail? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}

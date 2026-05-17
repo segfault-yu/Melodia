@@ -54,7 +54,8 @@ import org.koin.androidx.compose.koinViewModel
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onPlaylistClick: (Long) -> Unit = {},
-    onSearchClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    onOpenSidebar: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -63,28 +64,6 @@ fun HomeScreen(
     var showWebViewLogin by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    val drawerWidth = 310.dp
-    val drawerWidthPx = with(density) { drawerWidth.toPx() }
-
-    val drawerState = remember {
-        AnchoredDraggableState<HomeSidebarState>(
-            initialValue = HomeSidebarState.Closed,
-            positionalThreshold = { distance: Float -> distance * 0.5f },
-            velocityThreshold = { with(density) { 100.dp.toPx() } },
-            snapAnimationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-            decayAnimationSpec = exponentialDecay()
-        )
-    }
-
-    LaunchedEffect(drawerWidthPx) {
-        drawerState.updateAnchors(
-            DraggableAnchors {
-                HomeSidebarState.Closed at 0f
-                HomeSidebarState.Open at drawerWidthPx
-            }
-        )
-    }
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
@@ -96,13 +75,7 @@ fun HomeScreen(
 
     val onAvatarClick: () -> Unit = {
         if (userProfile != null) {
-            scope.launch {
-                if (drawerState.currentValue == HomeSidebarState.Closed) {
-                    drawerState.animateTo(HomeSidebarState.Open)
-                } else {
-                    drawerState.animateTo(HomeSidebarState.Closed)
-                }
-            }
+            onOpenSidebar()
         } else {
             showLoginSheet = true
         }
@@ -111,62 +84,9 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .anchoredDraggable(
-                state = drawerState,
-                orientation = Orientation.Horizontal,
-                enabled = userProfile != null
-            )
-            .background(BackgroundBlack)
+            .background(BackgroundDark)
     ) {
-        // 1. 侧边栏层 (位于底部或同步移动)
-        userProfile?.let { profile ->
-            Box(
-                modifier = Modifier
-                    .width(drawerWidth)
-                    .fillMaxHeight()
-                    .graphicsLayer {
-                        val offset = drawerState.offset
-                        val progress = if (offset.isNaN()) 0f else (offset / drawerWidthPx).coerceIn(0f, 1f)
-                        
-                        translationX = (if (offset.isNaN()) 0f else offset) - drawerWidthPx
-                        
-                        // 侧边栏本身的渐变
-                        alpha = 0.5f + (0.5f * progress)
-                    }
-            ) {
-                ProfileSidebar(
-                    userProfile = profile,
-                    onLogout = {
-                        viewModel.logout()
-                        scope.launch { drawerState.animateTo(HomeSidebarState.Closed) }
-                    },
-                    onDismiss = {
-                        scope.launch { drawerState.animateTo(HomeSidebarState.Closed) }
-                    }
-                )
-            }
-        }
-
-        // 2. 主内容层 (跟随偏移，带高级视差与缩放效果)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    val offset = drawerState.offset
-                    val progress = if (offset.isNaN()) 0f else (offset / drawerWidthPx).coerceIn(0f, 1f)
-                    
-                    translationX = if (offset.isNaN()) 0f else offset
-                    
-                    // 进阶视觉效果：圆角过渡
-                    clip = true
-                    shape = RoundedCornerShape((progress * 32).dp)
-                    
-                    // 动态阴影
-                    shadowElevation = (progress * 30f)
-                }
-                .background(BackgroundDark)
-        ) {
-            // 动态光效底层
+        // 动态光效底层
             DynamicAmbientLight()
 
             LazyColumn(
@@ -213,12 +133,51 @@ fun HomeScreen(
 
                         // 4. 最近播放
                         if (state.data.recentPlaylists.isNotEmpty()) {
-                            item { SectionHeader(title = "最近播放") }
                             item {
-                                RecentPlaylistCarousel(
-                                    items = state.data.recentPlaylists,
-                                    onClick = { item -> onPlaylistClick(item.data.id) }
-                                )
+                                var recentViewIsGrid by remember { mutableStateOf(false) }
+
+                                Column {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 20.dp, end = 8.dp, top = 36.dp, bottom = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Rounded.History,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "最近播放",
+                                            color = Color.White,
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        IconButton(onClick = { recentViewIsGrid = !recentViewIsGrid }) {
+                                            Icon(
+                                                if (recentViewIsGrid) Icons.Rounded.List else Icons.Rounded.GridView,
+                                                contentDescription = "切换视图",
+                                                tint = Color.White
+                                            )
+                                        }
+                                    }
+
+                                    if (recentViewIsGrid) {
+                                        RecentPlaylistGrid(
+                                            items = state.data.recentPlaylists,
+                                            onClick = { item -> onPlaylistClick(item.data.id) }
+                                        )
+                                    } else {
+                                        RecentPlaylistCarousel(
+                                            items = state.data.recentPlaylists,
+                                            onClick = { item -> onPlaylistClick(item.data.id) }
+                                        )
+                                    }
+                                }
                             }
                         }
 
@@ -272,22 +231,6 @@ fun HomeScreen(
                 }
             }
 
-            // 3. 点击遮罩层 (当侧边栏打开时，主内容变暗且点击可关闭)
-            val currentOffset = drawerState.offset
-            if (!currentOffset.isNaN() && currentOffset > 0f) {
-                val progress = currentOffset / drawerWidthPx
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f * progress))
-                        .clickable(
-                            enabled = drawerState.currentValue == HomeSidebarState.Open,
-                            onClick = { scope.launch { drawerState.animateTo(HomeSidebarState.Closed) } }
-                        )
-                )
-            }
-        }
-
         // 登录相关的弹窗保持在最顶层
         if (showLoginSheet) {
             LoginBottomSheet(
@@ -313,10 +256,6 @@ fun HomeScreen(
             )
         }
     }
-}
-
-enum class HomeSidebarState {
-    Closed, Open
 }
 
 private fun getGreetingText(): String {
@@ -439,6 +378,60 @@ fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.Rece
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = playlist.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(text = "歌单 · ${playlist.creator?.nickname ?: "网易云音乐"}", color = Color.Gray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentPlaylistGrid(
+    items: List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>,
+    onClick: (com.lin0721.linmusic.data.remote.api.RecentPlayItem) -> Unit
+) {
+    val gridItems = items.take(9)
+    val rows = gridItems.chunked(3)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        rows.forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                row.forEach { item ->
+                    val playlist = item.data
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onClick(item) }
+                    ) {
+                        AsyncImage(
+                            model = "${playlist.picUrl}?param=300y300",
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = playlist.name,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                repeat(3 - row.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
@@ -846,7 +839,7 @@ fun BottomFloatingIsland(
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
                 StaticNavItem("主页", Icons.Default.Home, currentScreen == com.lin0721.linmusic.Screen.Home) { onNavigate(com.lin0721.linmusic.Screen.Home) }
                 StaticNavItem("搜索", Icons.Default.Search, currentScreen == com.lin0721.linmusic.Screen.Search) { onNavigate(com.lin0721.linmusic.Screen.Search) }
-                StaticNavItem("音乐库", Icons.Default.LibraryMusic, false) { }
+                StaticNavItem("音乐库", Icons.Default.LibraryMusic, currentScreen == com.lin0721.linmusic.Screen.Library) { onNavigate(com.lin0721.linmusic.Screen.Library) }
                 StaticNavItem("创建", Icons.Default.AddBox, false) { }
             }
         }

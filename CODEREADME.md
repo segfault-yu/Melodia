@@ -35,9 +35,11 @@ app/src/main/java/com/lin0721/linmusic/
 │   └── PlayerManager.kt              # 播放控制器
 └── ui/
     ├── home/                       # 首页模块
+    ├── library/                    # 音乐库模块
     ├── player/                     # 播放器组件
     ├── playlist/                   # 歌单详情页
     ├── search/                     # 搜索/发现页
+    ├── components/                 # 通用组件 (登录、侧边栏等)
     └── theme/                      # 主题配置
 ```
 
@@ -179,6 +181,42 @@ app/src/main/java/com/lin0721/linmusic/
 - **全屏播放器过渡**: 在原有 `slideInVertically`/`slideOutVertically` 基础上叠加 `fadeIn`/`fadeOut`，使用 `FastOutSlowInEasing` 替代线性 tween，滑入 350ms / 滑出 300ms。
 - **白屏闪烁修复**: 根 Box 添加 `.background(BackgroundDark)` 确保深色底板始终可见；`SizeTransform(clip=false)` 防止裁切伪影。
 
+### 2026-05-17 — 音乐库 (Music Library)
+- **多接口并行聚合**: 并发拉取 `/eapi/user/playlist` (用户歌单)、`/eapi/album/sublist` (收藏专辑) 以及已有的 `/eapi/artist/sublist` (关注歌手)，在 `coroutineScope` 内使用 `async/await` 提升并行度，秒级加载全量资产。
+- **数据归一化设计**: 将不同领域模型的 DTO 数据提取并转换映射为统一的 `LibraryItem`，支持类型区分 (`PLAYLIST`, `ARTIST`, `ALBUM`)。
+- **精细化 UI & 特殊处理**:
+  - 对“已点赞的歌曲”做定制化处理：渲染为蓝到红的高级流光渐变背景 (`Color(0xFF6366F1)` → `Color(0xFFA855F7)` → `Color(0xFFEC4899)`) 并显示白色心形 icon。
+  - 关注歌手头像圆图处理 (`CircleShape`)，歌单与专辑采用方图 (`RoundedCornerShape(8.dp)`)。
+  - 支持横向滚动过滤药丸（全部/歌单/专辑/歌手），带选中色调切换微动效。
+- **本地置顶 (Pinned) & 排序**:
+  - 本地 SharedPreferences 记录 Pinned 状态，置顶项目在副标题行旁显示翡翠绿图钉（Emerald Pin，`Color(0xFF10B981)`），并始终浮动置于列表顶部。
+  - 排序规则支持“最近播放”（基于 updateTime）、“创建时间”与“字母排序”，支持 DropdownMenu 随时切换。
+- **本地检索 (Local Search) & 创建歌单**:
+  - 点击顶栏搜索图标触发 `AnimatedContent`，极速展开展开式搜索框，进行前端关键词过滤。
+  - 新建歌单调取 `/eapi/playlist/create` 异步创建，内置暗色高水准 `AlertDialog` 输入框，完美处理未登录防错重定向。
+
+### 2026-05-17 — 全局侧边栏重构 (Global Sidebar Refactoring)
+- **顶级手势容器与状态提升**: 将侧边栏状态、手势拖拽（`anchoredDraggable`）和弹出蒙版从主页和音乐库剥离，统一提升至 `MainActivity.kt` 顶层容器，实现全局手势滑动唤起。
+- **3D 浮雕平移圆角过渡**: 侧边栏滑出时，主内容层（包括导航胶囊、转场层等）整体平移，动态附加 `0.dp -> 32.dp` 圆角裁剪及 `0f -> 30f` 外层投影，呈现震撼的浮雕式空间折叠交互动效。
+- **架构解耦与精简**: `HomeScreen.kt` 与 `LibraryScreen.kt` 移除了全部局部的侧边栏手势及界面嵌套代码，精炼为向顶层回传 `onOpenSidebar` 统一接口，极大精简了代码复杂度。
+- **搜索页无缝头像弹出**: 将 `SearchScreen.kt` 顶部头像重构为 clickable，点击即可全局唤醒侧滑抽屉，为核心版块铺平了一致性的多端手势操作。
+
+### 2026-05-17 — 搜索页顶栏重构 + 视图切换
+- **搜索页标题栏分离**: 将搜索页顶部重构为独立标题栏 + 搜索栏两层结构。
+  - 标题栏包含：登录用户头像（`AsyncImage` 加载 `userProfile.avatarUrl`，未登录显示 `AccountCircle` 图标）、"搜索" 粗体标题（24sp）、听歌识曲入口图标。
+  - 搜索栏保持原有设计不变。
+- **SearchViewModel 扩展**: 新增 `UserPreferences` 构造函数参数，通过 `stateIn()` 暴露 `userProfile: StateFlow<UserProfile?>` 驱动头像显示。
+- **热搜双排布局**: 热搜榜从单列卡片改为双列紧凑网格（`chunked(2)` + `HotSearchCompactItem`）。每项包含排名序号（前 3 名 `NeteaseRed` 加粗）、关键词、可选热度徽标图。
+- **最近播放视图切换 (HomeScreen)**: "最近播放" section 新增列表/网格切换按钮。
+  - `recentViewIsGrid` remember 状态控制视图模式。
+  - 自定义 header：`History` 图标 + "最近播放" 标题 + `IconButton`（`GridView`/`List` 图标切换）。
+  - `RecentPlaylistGrid`: 3×3 大封面网格（`chunked(3)` + `Column/Row`），封面 `aspectRatio(1f)` + `RoundedCornerShape(12.dp)`。
+  - 条件渲染：`recentViewIsGrid` → `RecentPlaylistGrid`，否则 → `RecentPlaylistCarousel`。
+- **音乐库视图切换 (LibraryScreen)**: 排序栏右侧图标升级为功能性 `IconButton`。
+  - `viewIsGrid` remember 状态，点击切换 `GridView`/`List` 图标与视图模式。
+  - `LibraryGridItem`: 3 列网格项，支持"已点赞歌曲"渐变背景 + 心形图标、歌手圆图、歌单/专辑方图。
+  - 网格模式使用 `LazyColumn` + `chunked(3)` 行布局，不足 3 项时 `Spacer` 占位保持对齐。
+
 ---
 
 ## 网络路由速查
@@ -196,6 +234,10 @@ app/src/main/java/com/lin0721/linmusic/
 | `/eapi/playlist/highquality/list` | EApi | 精品歌单列表（含封面图） |
 | `/eapi/homepage/block/page` | EApi | 发现/首页动态区块布局 |
 | `/weapi/discovery/recommend/songs/history/*` | WeApi | 历史日推，仅 weapi 有此路径 |
+| `/eapi/user/playlist` | EApi | 获取当前登录用户的歌单列表 |
+| `/eapi/album/sublist` | EApi | 获取收藏的专辑列表 |
+| `/eapi/user/subcount` | EApi | 获取用户收藏/关注数量统计（用于初始化计数） |
+| `/eapi/playlist/create` | EApi | 新建歌单（支持公开/私密模式） |
 
 ---
 
@@ -217,6 +259,10 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 搜索全链路 (云搜索 + 防抖 + 分页 + 播放)
 - [x] 热搜榜 + 精品歌单标签卡片
 - [x] 界面切换动画 (方向感知 fade+slide)
+- [x] 音乐库页面 (多维聚合 + 过滤搜索 + 排序置顶 + 新建歌单)
+- [x] 搜索页顶栏重构 (用户头像 + 双排热搜 + 听歌识曲入口)
+- [x] 视图切换 (最近播放/音乐库支持列表与3×3网格切换)
 - [ ] 歌曲详情接口
 - [ ] 歌词解析与同步显示
 - [ ] 统一错误处理分发
+

@@ -2,6 +2,8 @@ package com.lin0721.linmusic.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.data.local.UserProfile
 import com.lin0721.linmusic.data.remote.api.SearchSong
 import com.lin0721.linmusic.data.repository.HotSearch
 import com.lin0721.linmusic.data.repository.MusicRepository
@@ -13,10 +15,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class SearchUiState(
@@ -29,8 +33,12 @@ data class SearchUiState(
 
 class SearchViewModel(
     private val repository: MusicRepository,
-    val playerManager: PlayerManager
+    val playerManager: PlayerManager,
+    userPreferences: UserPreferences
 ) : ViewModel() {
+
+    val userProfile: StateFlow<UserProfile?> = userPreferences.userProfile
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()

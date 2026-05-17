@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -19,11 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,7 +44,6 @@ import com.lin0721.linmusic.ui.theme.SurfaceDark
 import com.lin0721.linmusic.ui.theme.TextGray
 import org.koin.androidx.compose.koinViewModel
 
-// 标签卡片无封面时的备用色板
 private val tagFallbackColors = listOf(
     Color(0xFFE13300),
     Color(0xFF1E3264),
@@ -58,7 +61,8 @@ private val tagFallbackColors = listOf(
 fun SearchScreen(
     viewModel: SearchViewModel = koinViewModel(),
     autoFocus: Boolean = false,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenSidebar: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
@@ -67,7 +71,9 @@ fun SearchScreen(
     val searchLoading by viewModel.searchLoading.collectAsStateWithLifecycle()
     val hasMore by viewModel.hasMore.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
@@ -88,77 +94,114 @@ fun SearchScreen(
             .fillMaxSize()
             .background(BackgroundDark)
             .statusBarsPadding()
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(PointerEventPass.Initial)
+                        focusManager.clearFocus()
+                    }
+                }
+            }
     ) {
-        // 顶部搜索栏
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(36.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(SurfaceDark)
-                    .then(
-                        if (!isSearching) Modifier.clickable { viewModel.activateSearch() }
-                        else Modifier
-                    )
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            if (userProfile != null) {
+                AsyncImage(
+                    model = "${userProfile!!.avatarUrl}?param=200y200",
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable { onOpenSidebar() }
+                )
+            } else {
                 Icon(
-                    Icons.Rounded.Search,
+                    Icons.Rounded.AccountCircle,
                     contentDescription = null,
                     tint = TextGray,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-
-                if (isSearching) {
-                    BasicTextField(
-                        value = query,
-                        onValueChange = { viewModel.updateQuery(it) },
-                        singleLine = true,
-                        textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                        cursorBrush = SolidColor(NeteaseRed),
-                        decorationBox = { inner ->
-                            Box(contentAlignment = Alignment.CenterStart) {
-                                if (query.isEmpty()) {
-                                    Text(uiState.defaultKeyword, color = TextGray, fontSize = 14.sp)
-                                }
-                                inner()
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(focusRequester)
-                    )
-                    if (query.isNotEmpty()) {
-                        IconButton(
-                            onClick = { viewModel.updateQuery("") },
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(Icons.Rounded.Close, null, tint = TextGray, modifier = Modifier.size(16.dp))
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clickable {
+                            Toast.makeText(context, "请先在主页登录以显示侧边栏哦！", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                } else {
-                    Text(
-                        text = uiState.defaultKeyword,
-                        color = TextGray,
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                )
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "搜索",
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = { /* 听歌识曲 */ }) {
+                Icon(Icons.Rounded.MusicNote, contentDescription = "听歌识曲", tint = Color.White)
+            }
+        }
 
-            if (!isSearching) {
-                IconButton(onClick = { /* 听歌识曲 */ }) {
-                    Icon(Icons.Rounded.Mic, contentDescription = "听歌识曲", tint = Color.White)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 8.dp)
+                .height(36.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(SurfaceDark)
+                .then(
+                    if (!isSearching) Modifier.clickable { viewModel.activateSearch() }
+                    else Modifier
+                )
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Rounded.Search,
+                contentDescription = null,
+                tint = TextGray,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+
+            if (isSearching) {
+                BasicTextField(
+                    value = query,
+                    onValueChange = { viewModel.updateQuery(it) },
+                    singleLine = true,
+                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+                    cursorBrush = SolidColor(NeteaseRed),
+                    decorationBox = { inner ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (query.isEmpty()) {
+                                Text(uiState.defaultKeyword, color = TextGray, fontSize = 14.sp)
+                            }
+                            inner()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester)
+                )
+                if (query.isNotEmpty()) {
+                    IconButton(
+                        onClick = { viewModel.updateQuery("") },
+                        modifier = Modifier.size(20.dp)
+                    ) {
+                        Icon(Icons.Rounded.Close, null, tint = TextGray, modifier = Modifier.size(16.dp))
+                    }
                 }
+            } else {
+                Text(
+                    text = uiState.defaultKeyword,
+                    color = TextGray,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
 
@@ -248,7 +291,6 @@ private fun SearchResultsList(
     }
 }
 
-// 搜索结果歌曲行
 @Composable
 private fun SearchSongRow(song: SearchSong, isActive: Boolean, onClick: () -> Unit) {
     Row(
@@ -277,7 +319,7 @@ private fun SearchSongRow(song: SearchSong, isActive: Boolean, onClick: () -> Un
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                song.ar.joinToString(" • ") { it.name },
+                song.ar.joinToString(" / ") { it.name },
                 color = TextGray,
                 fontSize = 13.sp,
                 maxLines = 1,
@@ -297,7 +339,6 @@ private fun SearchSongRow(song: SearchSong, isActive: Boolean, onClick: () -> Un
     }
 }
 
-// 发现页内容
 @Composable
 private fun DiscoveryContent(
     uiState: SearchUiState,
@@ -314,20 +355,34 @@ private fun DiscoveryContent(
         contentPadding = PaddingValues(bottom = 160.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        // 热搜榜
         if (uiState.hotSearches.isNotEmpty()) {
             item(key = "hot_header") {
                 SectionHeader("热搜榜")
             }
-            itemsIndexed(
-                uiState.hotSearches.take(10),
-                key = { index, _ -> "hot_$index" }
-            ) { index, item ->
-                HotSearchRow(
-                    rank = index + 1,
-                    item = item,
-                    onClick = { onHotSearchClick(item.keyword) }
-                )
+
+            val hotRows = uiState.hotSearches.take(10).chunked(2)
+            items(hotRows.size, key = { "hot_row_$it" }) { rowIndex ->
+                val pair = hotRows[rowIndex]
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    pair.forEachIndexed { colIndex, item ->
+                        val rank = rowIndex * 2 + colIndex + 1
+                        HotSearchCompactItem(
+                            rank = rank,
+                            item = item,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onHotSearchClick(item.keyword) }
+                        )
+                    }
+                    if (pair.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
 
@@ -427,65 +482,45 @@ private fun PlaylistTagCard(
 }
 
 @Composable
-private fun HotSearchRow(
+private fun HotSearchCompactItem(
     rank: Int,
     item: HotSearch,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val isTop3 = rank <= 3
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(SurfaceDark)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "$rank",
             color = if (isTop3) NeteaseRed else TextGray,
             fontWeight = if (isTop3) FontWeight.Bold else FontWeight.Normal,
-            fontSize = 16.sp,
-            modifier = Modifier.width(32.dp)
+            fontSize = 15.sp,
+            modifier = Modifier.width(20.dp)
         )
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = item.keyword,
-                    color = Color.White,
-                    fontWeight = if (isTop3) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 15.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (!item.iconUrl.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    AsyncImage(
-                        model = item.iconUrl,
-                        contentDescription = null,
-                        modifier = Modifier.height(14.dp)
-                    )
-                }
-            }
-            if (item.description.isNotBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = item.description,
-                    color = TextGray,
-                    fontSize = 12.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
         Text(
-            text = "${item.score}",
-            color = TextGray,
-            fontSize = 12.sp,
-            modifier = Modifier.padding(start = 8.dp)
+            text = item.keyword,
+            color = Color.White,
+            fontWeight = if (isTop3) FontWeight.Bold else FontWeight.Normal,
+            fontSize = 14.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
+        if (!item.iconUrl.isNullOrBlank()) {
+            Spacer(modifier = Modifier.width(4.dp))
+            AsyncImage(
+                model = item.iconUrl,
+                contentDescription = null,
+                modifier = Modifier.height(12.dp)
+            )
+        }
     }
 }
