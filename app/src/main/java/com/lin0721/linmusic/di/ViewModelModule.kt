@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.di
 
+import com.lin0721.linmusic.ui.create.CreateViewModel
 import com.lin0721.linmusic.ui.home.HomeViewModel
 import com.lin0721.linmusic.ui.library.LibraryViewModel
 import com.lin0721.linmusic.ui.playlist.PlaylistViewModel
@@ -18,5 +19,6 @@ val viewModelModule = module {
     viewModelOf(::PlaylistViewModel)
     viewModelOf(::SearchViewModel)
     viewModelOf(::LibraryViewModel)
+    viewModelOf(::CreateViewModel)
 
 }

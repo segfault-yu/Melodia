@@ -36,6 +36,7 @@ import com.lin0721.linmusic.ui.components.ProfileSidebar
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
+import com.lin0721.linmusic.ui.create.CreatePopupMenu
 
 enum class Screen {
     Home, Playlist, Search, Library
@@ -70,6 +71,7 @@ fun LinMusicApp() {
     var currentScreen by remember { mutableStateOf(Screen.Home) }
     var activePlaylistId by remember { mutableStateOf<Long?>(null) }
     var searchAutoFocus by remember { mutableStateOf(false) }
+    var showCreateSheet by remember { mutableStateOf(false) }
 
     val hazeState = remember { HazeState() }
 
@@ -221,22 +223,57 @@ fun LinMusicApp() {
                 }
             }
 
+            // 创建菜单遮罩
+            if (showCreateSheet) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable { showCreateSheet = false }
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 16.dp, vertical = 24.dp)
             ) {
-                BottomFloatingIsland(
-                    hazeState = hazeState,
-                    currentTrack = currentTrack,
-                    isPlaying = isPlaying,
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    onTogglePlay = { viewModel.togglePlayPause() },
-                    onOpenPlayer = { isPlayerOpen = true },
-                    currentScreen = currentScreen,
-                    onNavigate = { searchAutoFocus = false; currentScreen = it }
-                )
+                Column {
+                    AnimatedVisibility(
+                        visible = showCreateSheet,
+                        enter = slideInVertically(
+                            initialOffsetY = { it / 2 },
+                            animationSpec = tween(250, easing = FastOutSlowInEasing)
+                        ) + fadeIn(tween(200)),
+                        exit = slideOutVertically(
+                            targetOffsetY = { it / 2 },
+                            animationSpec = tween(200, easing = FastOutSlowInEasing)
+                        ) + fadeOut(tween(150))
+                    ) {
+                        CreatePopupMenu(
+                            onDismiss = { showCreateSheet = false },
+                            onLoginRequest = {
+                                // TODO: 触发登录流程
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    BottomFloatingIsland(
+                        hazeState = hazeState,
+                        currentTrack = currentTrack,
+                        isPlaying = isPlaying,
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        onTogglePlay = { viewModel.togglePlayPause() },
+                        onOpenPlayer = { isPlayerOpen = true },
+                        currentScreen = currentScreen,
+                        onNavigate = { searchAutoFocus = false; currentScreen = it },
+                        onCreateClick = { showCreateSheet = !showCreateSheet },
+                        isCreateMenuOpen = showCreateSheet
+                    )
+                }
             }
 
             // 侧边栏打开时的遮罩与点击收起事件
@@ -269,5 +306,6 @@ fun LinMusicApp() {
                 onClose = { isPlayerOpen = false }
             )
         }
+
     }
 }

@@ -333,7 +333,7 @@ fun WelcomeBanner() {
 
 @Composable
 fun FilterPills() {
-    val filters = listOf("全部", "音乐")
+    val filters = listOf("全部", "音乐", "播客")
     var selectedIndex by remember { mutableStateOf(0) }
     LazyRow(modifier = Modifier.padding(top = 24.dp), contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(filters.size) { index ->
@@ -815,7 +815,9 @@ fun BottomFloatingIsland(
     onTogglePlay: () -> Unit,
     onOpenPlayer: () -> Unit,
     currentScreen: com.lin0721.linmusic.Screen = com.lin0721.linmusic.Screen.Home,
-    onNavigate: (com.lin0721.linmusic.Screen) -> Unit = {}
+    onNavigate: (com.lin0721.linmusic.Screen) -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    isCreateMenuOpen: Boolean = false
 ) {
     Box(modifier = Modifier.fillMaxWidth().hazeChild(state = hazeState, shape = RoundedCornerShape(32.dp), style = HazeStyle(tint = Color.Black.copy(alpha = 0.4f), blurRadius = 24.dp)).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp))) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -840,7 +842,7 @@ fun BottomFloatingIsland(
                 StaticNavItem("主页", Icons.Default.Home, currentScreen == com.lin0721.linmusic.Screen.Home) { onNavigate(com.lin0721.linmusic.Screen.Home) }
                 StaticNavItem("搜索", Icons.Default.Search, currentScreen == com.lin0721.linmusic.Screen.Search) { onNavigate(com.lin0721.linmusic.Screen.Search) }
                 StaticNavItem("音乐库", Icons.Default.LibraryMusic, currentScreen == com.lin0721.linmusic.Screen.Library) { onNavigate(com.lin0721.linmusic.Screen.Library) }
-                StaticNavItem("创建", Icons.Default.AddBox, false) { }
+                StaticNavItem("创建", if (isCreateMenuOpen) Icons.Rounded.Close else Icons.Default.AddBox, false) { onCreateClick() }
             }
         }
     }

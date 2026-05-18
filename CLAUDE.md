@@ -43,7 +43,7 @@ app/src/main/java/com/lin0721/linmusic/
 ├── data/local/               # DataStore 持久化
 ├── di/                       # Koin 模块
 ├── player/                   # Media3 服务 + PlayerManager
-└── ui/{home,search,library,playlist,player,components,theme}/
+└── ui/{home,search,library,create,playlist,player,components,theme}/
 ```
 
 ## 关键约定

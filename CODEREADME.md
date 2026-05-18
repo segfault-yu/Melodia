@@ -36,6 +36,7 @@ app/src/main/java/com/lin0721/linmusic/
 └── ui/
     ├── home/                       # 首页模块
     ├── library/                    # 音乐库模块
+    ├── create/                     # 创建模块 (BottomSheet + ViewModel)
     ├── player/                     # 播放器组件
     ├── playlist/                   # 歌单详情页
     ├── search/                     # 搜索/发现页
@@ -217,6 +218,20 @@ app/src/main/java/com/lin0721/linmusic/
   - `LibraryGridItem`: 3 列网格项，支持"已点赞歌曲"渐变背景 + 心形图标、歌手圆图、歌单/专辑方图。
   - 网格模式使用 `LazyColumn` + `chunked(3)` 行布局，不足 3 项时 `Spacer` 占位保持对齐。
 
+### 2026-05-18 — 创建界面 (Create BottomSheet + Playlist Creation)
+- **全局创建入口**: 底部导航栏"创建"按钮从空操作升级为弹出 `ModalBottomSheet` 菜单。
+  - `BottomFloatingIsland` 新增 `onCreateClick` 回调参数，`MainActivity` 统一管理 `showCreateSheet` 状态。
+- **CreateViewModel**: 专用 ViewModel，注入 `MusicRepository`、`PlayerManager`、`UserPreferences`。
+  - `createNewPlaylist(name, isPrivate)`: 调用 `repository.createPlaylist(name, privacy)`，支持 `isCreating` 防重复提交。
+  - 暴露 `toastEvent` 通知创建结果，`userProfile` 检查登录状态。
+- **CreateBottomSheet 菜单**: 四项创建入口（新建歌单 / 导入外部歌单 / 上传本地音乐 / 发起一起听）。
+  - 每项为 `CreateMenuItem` 组件：圆角图标容器（44dp, `SurfaceLight`）+ 标题/副标题 + 右箭头。
+  - 正在播放上下文卡片：检测 `playerManager.currentTrack`，显示当前播放歌曲封面、标题和歌手。
+- **新建歌单对话框**: `AlertDialog` 包含名称输入框（`BasicTextField`，占位符"我的新歌单"）和隐私歌单 `Switch` 开关（`NeteaseRed` 激活色）。
+  - 确认按钮在创建过程中显示 `CircularProgressIndicator` 替代文字，禁用重复点击。
+  - 未登录时 Toast 提示并触发 `onLoginRequest` 回调。
+- **Koin 注册**: `ViewModelModule` 新增 `viewModelOf(::CreateViewModel)`。
+
 ---
 
 ## 网络路由速查
@@ -262,6 +277,7 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 音乐库页面 (多维聚合 + 过滤搜索 + 排序置顶 + 新建歌单)
 - [x] 搜索页顶栏重构 (用户头像 + 双排热搜 + 听歌识曲入口)
 - [x] 视图切换 (最近播放/音乐库支持列表与3×3网格切换)
+- [x] 创建界面 (BottomSheet菜单 + 新建歌单 + 隐私开关 + 播放上下文)
 - [ ] 歌曲详情接口
 - [ ] 歌词解析与同步显示
 - [ ] 统一错误处理分发
