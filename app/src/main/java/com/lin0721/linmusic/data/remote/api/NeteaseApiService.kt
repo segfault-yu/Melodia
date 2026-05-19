@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 // 网易云音乐 Retrofit 接口定义。所有 POST 请求会被 [CryptoInterceptor] 自动加密。
 interface NeteaseApiService {
@@ -176,6 +177,42 @@ interface NeteaseApiService {
     suspend fun createPlaylist(
         @Body body: PlaylistCreateRequest
     ): PlaylistCreateResponse
+
+    // ================== 歌词 ==================
+
+    @POST("/eapi/song/lyric/v1")
+    suspend fun getLyrics(
+        @Body body: LyricRequest
+    ): LyricResponse
+
+    // ================== 歌曲详情 ==================
+
+    @POST("/eapi/v3/song/detail")
+    suspend fun getSongDetail(
+        @Body body: SongDetailRequest
+    ): SongDetailResponse
+
+    // ================== 相似歌手 ==================
+
+    @POST("/eapi/discovery/simiArtist")
+    suspend fun getSimiArtists(
+        @Body body: SimiArtistRequest
+    ): SimiArtistResponse
+
+    // ================== 艺人详情 ==================
+
+    @POST("/eapi/artist/head/info/get")
+    suspend fun getArtistDetail(
+        @Body body: ArtistDetailRequest
+    ): ArtistDetailResponse
+
+    // ================== 艺人专辑 ==================
+
+    @POST("/weapi/artist/albums/{id}")
+    suspend fun getArtistAlbums(
+        @Path("id") id: Long,
+        @Body body: ArtistAlbumRequest = ArtistAlbumRequest()
+    ): ArtistAlbumResponse
 }
 
 // 首页动态内容请求体
@@ -808,3 +845,121 @@ data class PlaylistCreateResponse(
 ) {
     val isSuccess: Boolean get() = code == 200
 }
+
+// ======================= 歌词 DTO =======================
+
+@Serializable
+data class LyricRequest(
+    val id: Long,
+    val cp: Boolean = false,
+    val tv: Int = 0,
+    val lv: Int = 0,
+    val rv: Int = 0,
+    val kv: Int = 0,
+    val yv: Int = 0,
+    val ytv: Int = 0,
+    val yrv: Int = 0
+)
+
+@Serializable
+data class LyricResponse(
+    val code: Int = 0,
+    val lrc: LyricContent? = null,
+    val tlyric: LyricContent? = null,
+    val romalrc: LyricContent? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class LyricContent(
+    val version: Int = 0,
+    val lyric: String? = null
+)
+
+// ======================= 歌曲详情 DTO =======================
+
+@Serializable
+data class SongDetailRequest(
+    val c: String
+)
+
+@Serializable
+data class SongDetailResponse(
+    val code: Int = 0,
+    val songs: List<Track> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= 相似歌手 DTO =======================
+
+@Serializable
+data class SimiArtistRequest(
+    val artistid: Long
+)
+
+@Serializable
+data class SimiArtistResponse(
+    val code: Int = 0,
+    val artists: List<Artist> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= 艺人详情 DTO =======================
+
+@Serializable
+data class ArtistDetailRequest(val id: Long)
+
+@Serializable
+data class ArtistDetailResponse(
+    val code: Int = 0,
+    val data: ArtistDetailData? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class ArtistDetailData(
+    val artist: ArtistDetailInfo? = null
+)
+
+@Serializable
+data class ArtistDetailInfo(
+    val id: Long = 0,
+    val name: String = "",
+    val cover: String = "",
+    val avatar: String = "",
+    val briefDesc: String = "",
+    val albumSize: Int = 0,
+    val musicSize: Int = 0,
+    val identifyTag: List<String>? = null
+)
+
+// ======================= 艺人专辑 DTO =======================
+
+@Serializable
+data class ArtistAlbumRequest(
+    val limit: Int = 10,
+    val offset: Int = 0,
+    val total: Boolean = true
+)
+
+@Serializable
+data class ArtistAlbumResponse(
+    val code: Int = 0,
+    val hotAlbums: List<ArtistAlbum> = emptyList(),
+    val more: Boolean = false
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class ArtistAlbum(
+    val id: Long = 0,
+    val name: String = "",
+    val picUrl: String = "",
+    val publishTime: Long = 0,
+    val size: Int = 0
+)

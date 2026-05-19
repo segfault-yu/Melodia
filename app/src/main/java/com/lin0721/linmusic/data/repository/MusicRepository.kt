@@ -2,8 +2,11 @@ package com.lin0721.linmusic.data.repository
 
 import com.lin0721.linmusic.data.remote.api.PlaylistDetail
 import com.lin0721.linmusic.data.remote.api.PersonalizedData
+import com.lin0721.linmusic.data.remote.api.ArtistAlbum
+import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
 import com.lin0721.linmusic.data.remote.api.Artist
 import com.lin0721.linmusic.data.remote.api.DailySong
+import com.lin0721.linmusic.data.remote.api.Track
 import com.lin0721.linmusic.ui.home.HomeFeedPage
 import kotlinx.coroutines.flow.Flow
 
@@ -43,6 +46,13 @@ data class HotSearch(
 data class PlaylistTag(
     val name: String,
     val coverUrl: String = ""
+)
+
+// 歌词行领域模型
+data class LyricLine(
+    val timeMs: Long,
+    val text: String,
+    val translation: String? = null
 )
 
 // 音乐数据层接口
@@ -115,4 +125,23 @@ interface MusicRepository {
 
     // 创建歌单
     fun createPlaylist(name: String, privacy: Int = 0): Flow<Result<PlaylistDetail>>
+
+    // ================== 歌词 ==================
+
+    // 获取歌曲歌词（已解析 LRC 格式）
+    fun getLyrics(songId: Long): Flow<Result<List<LyricLine>>>
+
+    // ================== 歌曲详情 ==================
+
+    fun getSongDetail(songId: Long): Flow<Result<Track>>
+
+    // ================== 相似歌手 ==================
+
+    fun getSimilarArtists(artistId: Long): Flow<Result<List<ArtistInfo>>>
+
+    // ================== 艺人详情 ==================
+
+    fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>>
+
+    fun getArtistAlbums(artistId: Long, limit: Int = 10): Flow<Result<List<ArtistAlbum>>>
 }

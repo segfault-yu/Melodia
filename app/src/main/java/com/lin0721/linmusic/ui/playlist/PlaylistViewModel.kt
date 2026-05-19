@@ -40,6 +40,7 @@ class PlaylistViewModel(
     }
 
     fun playSong(songId: Long, title: String, artist: String, coverUrl: String) {
+        val playlistName = (_uiState.value as? PlaylistUiState.Success)?.playlist?.name
         viewModelScope.launch {
             repository.getSongUrl(songId).collect { result ->
                 result.fold(
@@ -49,7 +50,8 @@ class PlaylistViewModel(
                             url = url,
                             title = title,
                             artist = artist,
-                            coverUrl = coverUrl
+                            coverUrl = coverUrl,
+                            playContext = playlistName
                         )
 
                     },

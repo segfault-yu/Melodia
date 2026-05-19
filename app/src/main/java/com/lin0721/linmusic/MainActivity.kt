@@ -302,7 +302,10 @@ fun LinMusicApp() {
             FullPlayerScreen(
                 currentTrack = currentTrack,
                 isPlaying = isPlaying,
+                currentPosition = currentPosition,
+                duration = duration,
                 onTogglePlay = { viewModel.togglePlayPause() },
+                onSeek = { viewModel.playerManager.seekTo(it) },
                 onClose = { isPlayerOpen = false }
             )
         }

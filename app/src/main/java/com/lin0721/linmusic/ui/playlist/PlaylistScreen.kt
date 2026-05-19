@@ -21,7 +21,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.core.graphics.drawable.toBitmap
+import com.lin0721.linmusic.ui.theme.extractDominantColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -437,42 +437,5 @@ private fun SongRow(track: Track, isActive: Boolean, onClick: () -> Unit) {
                 modifier = Modifier.size(18.dp).padding(end = 4.dp))
         }
         Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(20.dp))
-    }
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// 颜色提取工具
-// ────────────────────────────────────────────────────────────────────────────
-private fun extractDominantColor(drawable: android.graphics.drawable.Drawable): Color {
-    return try {
-        val bitmap = drawable.toBitmap()
-        // 将图片缩小为 10x10，通过遍历这 100 个像素求平均色，效率高且能代表整体氛围
-        val scaled = android.graphics.Bitmap.createScaledBitmap(bitmap, 10, 10, true)
-        var r = 0L
-        var g = 0L
-        var b = 0L
-        for (x in 0 until 10) {
-            for (y in 0 until 10) {
-                val color = scaled.getPixel(x, y)
-                r += android.graphics.Color.red(color)
-                g += android.graphics.Color.green(color)
-                b += android.graphics.Color.blue(color)
-            }
-        }
-        val avgR = (r / 100).toInt()
-        val avgG = (g / 100).toInt()
-        val avgB = (b / 100).toInt()
-
-        // 转换为 HSV 调整亮度和饱和度，保证作为背景色的质感
-        val hsv = FloatArray(3)
-        android.graphics.Color.RGBToHSV(avgR, avgG, avgB, hsv)
-        
-        // 稍微提高一点饱和度，但严格控制亮度（不能太亮以免盖过白色文字，不能太暗以免失去色彩感）
-        hsv[1] = hsv[1].coerceAtLeast(0.4f)
-        hsv[2] = hsv[2].coerceIn(0.2f, 0.45f)
-        
-        Color(android.graphics.Color.HSVToColor(hsv))
-    } catch (e: Exception) {
-        Color(0xFF333333)
     }
 }

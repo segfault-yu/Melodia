@@ -372,4 +372,99 @@ class MusicRepositoryImpl(
     }.catch { e ->
         emit(Result.failure(e))
     }
+
+    override fun getLyrics(songId: Long): Flow<Result<List<LyricLine>>> = flow {
+        val response = apiService.getLyrics(com.lin0721.linmusic.data.remote.api.LyricRequest(id = songId))
+        if (!response.isSuccess) {
+            emit(Result.failure(Exception("Failed to load lyrics: code ${response.code}")))
+            return@flow
+        }
+
+        val lrcText = response.lrc?.lyric
+        if (lrcText.isNullOrBlank()) {
+            emit(Result.success(emptyList()))
+            return@flow
+        }
+
+        val translationMap = parseLrcToMap(response.tlyric?.lyric)
+        val lines = parseLrc(lrcText).map { line ->
+            line.copy(translation = translationMap[line.timeMs])
+        }
+        emit(Result.success(lines))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    private val lrcPattern = Regex("""\[(\d{2}):(\d{2})[.:](\d{2,3})](.*)""")
+
+    private fun parseLrc(lrcText: String): List<LyricLine> {
+        return lrcText.lines().mapNotNull { line ->
+            lrcPattern.find(line)?.let { match ->
+                val min = match.groupValues[1].toLongOrNull() ?: return@let null
+                val sec = match.groupValues[2].toLongOrNull() ?: return@let null
+                val msRaw = match.groupValues[3]
+                val ms = if (msRaw.length == 2) msRaw.toLong() * 10 else msRaw.toLong()
+                val text = match.groupValues[4].trim()
+                if (text.isEmpty()) return@let null
+                LyricLine(timeMs = min * 60_000 + sec * 1000 + ms, text = text)
+            }
+        }.sortedBy { it.timeMs }
+    }
+
+    private fun parseLrcToMap(lrcText: String?): Map<Long, String> {
+        if (lrcText.isNullOrBlank()) return emptyMap()
+        return parseLrc(lrcText).associate { it.timeMs to it.text }
+    }
+
+    override fun getSongDetail(songId: Long): Flow<Result<com.lin0721.linmusic.data.remote.api.Track>> = flow {
+        val c = """[{"id":$songId}]"""
+        val response = apiService.getSongDetail(SongDetailRequest(c = c))
+        if (response.isSuccess && response.songs.isNotEmpty()) {
+            emit(Result.success(response.songs[0]))
+        } else {
+            emit(Result.failure(Exception("Failed to load song detail: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getSimilarArtists(artistId: Long): Flow<Result<List<ArtistInfo>>> = flow {
+        val response = apiService.getSimiArtists(SimiArtistRequest(artistid = artistId))
+        if (response.isSuccess) {
+            val artists = response.artists.map { artist ->
+                ArtistInfo(
+                    id = artist.id,
+                    name = artist.name,
+                    avatarUrl = artist.img1v1Url.ifEmpty { artist.picUrl }
+                )
+            }
+            emit(Result.success(artists))
+        } else {
+            emit(Result.failure(Exception("Failed to load similar artists: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>> = flow {
+        val response = apiService.getArtistDetail(ArtistDetailRequest(id = artistId))
+        if (response.isSuccess && response.data?.artist != null) {
+            emit(Result.success(response.data.artist))
+        } else {
+            emit(Result.failure(Exception("Failed to load artist detail: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getArtistAlbums(artistId: Long, limit: Int): Flow<Result<List<ArtistAlbum>>> = flow {
+        val response = apiService.getArtistAlbums(id = artistId, body = ArtistAlbumRequest(limit = limit))
+        if (response.isSuccess) {
+            emit(Result.success(response.hotAlbums))
+        } else {
+            emit(Result.failure(Exception("Failed to load artist albums: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
 }

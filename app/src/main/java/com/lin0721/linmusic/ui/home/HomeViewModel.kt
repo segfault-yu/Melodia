@@ -116,11 +116,11 @@ class HomeViewModel(
         }
     }
 
-    fun playSong(songId: Long, title: String, artist: String, coverUrl: String, startPosition: Long = 0) {
+    fun playSong(songId: Long, title: String, artist: String, coverUrl: String, startPosition: Long = 0, playContext: String? = null) {
         viewModelScope.launch {
             musicRepository.getSongUrl(songId).collect { result ->
                 result.onSuccess { url ->
-                    playerManager.playAudio(songId, url, title, artist, coverUrl, startPosition)
+                    playerManager.playAudio(songId, url, title, artist, coverUrl, startPosition, playContext)
                 }.onFailure { error ->
                     _toastEvent.emit(error.message ?: "无法获取播放链接")
                 }
@@ -136,7 +136,8 @@ class HomeViewModel(
                 songId = song.id,
                 title = song.name,
                 artist = song.ar.joinToString { it.name },
-                coverUrl = song.al.picUrl
+                coverUrl = song.al.picUrl,
+                playContext = "每日推荐"
             )
         } else {
             viewModelScope.launch { _toastEvent.emit("每日推荐暂无歌曲") }

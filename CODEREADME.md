@@ -232,6 +232,18 @@ app/src/main/java/com/lin0721/linmusic/
   - 未登录时 Toast 提示并触发 `onLoginRequest` 回调。
 - **Koin 注册**: `ViewModelModule` 新增 `viewModelOf(::CreateViewModel)`。
 
+### 2026-05-19 — 播客分类与播放页视觉重构 (Podcast Filter & FullPlayer Visual Refactoring)
+- **播客胶囊**: 主页的 `FilterPills` 过滤栏中重新接入 `"播客"` 胶囊，恢复为三胶囊分类布局。
+- **嵌入式播放页顶栏 (Embedded Player TopBar)**:
+  - 移除了非滚动状态下固定的顶栏容器。原有的返回箭头、播放来源文本（如“正在播放：搜索”）和更多选项按键被直接嵌入至 `CoverArt` 封面图顶部。
+  - 这些元素现在与封面绑定为同一 LazyColumn item，并随滑动做平滑上移、缩放与渐变。
+- **氛围化滚动顶栏 (Scrolled TopBar UI)**:
+  - 滚动隐藏封面时，顶栏背景统一为歌曲主色调 (`animatedDominant`)，消除与状态栏的色差。
+  - 歌曲信息（标题/艺人）更改为**靠左对齐**垂直布局，右侧新增**收藏爱心图标**以及**播放/暂停控制状态按钮**。
+- **歌词卡片渐变与卡片重排 (Lyrics HSV & Section Reorder)**:
+  - 实现 `Color.toOpaqueHsv` 进行 HSV 色度修正（增强饱和度与亮度调节），重新构建歌词渐变蒙版背景。
+  - 调整卡片展示顺序为：歌曲信息 → 播放控制 → 歌词 → 关于艺人 → 相似艺人 → 艺人专辑 → 制作人（底栏置底）。
+
 ---
 
 ## 网络路由速查
@@ -253,6 +265,20 @@ app/src/main/java/com/lin0721/linmusic/
 | `/eapi/album/sublist` | EApi | 获取收藏的专辑列表 |
 | `/eapi/user/subcount` | EApi | 获取用户收藏/关注数量统计（用于初始化计数） |
 | `/eapi/playlist/create` | EApi | 新建歌单（支持公开/私密模式） |
+
+### 2026-05-20 — 全屏播放器视觉精修 Phase 5 (Glassmorphism + Lyrics + Micro-interactions)
+- **毛玻璃 TopBar (Haze Glassmorphism)**: 滚动吸附顶栏从扁平半透明升级为 Haze 实时模糊效果。`HazeState` 挂载于 LazyColumn，`hazeChild` 在 TopBar 滚动展开时激活（`blurRadius = 24.dp`，`tint = BackgroundDark 50% alpha`）。
+- **歌词动画高亮 (Animated Lyrics Highlight)**:
+  - 当前行: 22sp `ExtraBold`，使用 `lerp(dominant, White, 0.85f)` 得到的高光色。
+  - 非当前行: 16sp `Medium`，`TextGray` alpha 按与当前行距离递减。
+  - `animateFloatAsState(tween(400))` 控制 alpha，`animateFloatAsState(tween(350))` 控制 fontSize。
+  - 纯音乐（`lyrics.isEmpty()`）自动隐藏歌词卡片。
+- **鲜艳度优先色彩提取 (Vibrant-Score Extraction)**: `ColorExtraction.kt` 从面积均值算法重构为 `score = S × V` 逐像素评分，确保提取专辑封面中最鲜艳的颜色而非面积最大的颜色。上半区取 dominant，下半区取 secondary。
+- **纯不透明 HSV 渐变 (Opaque HSV Gradient)**: 歌词卡片背景使用 `Brush.linearGradient`，两端颜色通过 `Color.toOpaqueHsv()` 进行纯 HSV 重构（强制 S≥0.75/V∈0.6..0.85 和 S=1.0/V=0.3），彻底消除 alpha compositeOver 导致的灰度污染。
+- **封面滚动缩放 (Cover Scroll Scale)**: 基于 `derivedStateOf` + `LazyListState.layoutInfo` 计算封面滚出比例，通过 `graphicsLayer { scaleX/scaleY }` 实现 1.0→0.85 的渐进缩放。
+- **播放按钮弹性动画**: `Animatable` + `spring(dampingRatio=0.4f, stiffness=400f)` 实现播放/暂停切换时的回弹缩放效果（0.85→1.0）。
+- **非歌词卡片统一底色**: 关于艺人、相似艺人、艺人专辑、制作人等卡片统一使用 `SurfaceDark` 固定底色，仅歌词卡片保留动态渐变。
+- **TopBar 图标统一**: 滚动顶栏收藏图标从翡翠绿勾选 (`CheckCircle + #10B981`) 替换为白色实心爱心 (`Favorite + White`)，统一 TopBar 配色。
 
 ---
 
@@ -278,6 +304,8 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 搜索页顶栏重构 (用户头像 + 双排热搜 + 听歌识曲入口)
 - [x] 视图切换 (最近播放/音乐库支持列表与3×3网格切换)
 - [x] 创建界面 (BottomSheet菜单 + 新建歌单 + 隐私开关 + 播放上下文)
+- [x] 全屏播放器精修 (毛玻璃TopBar + 歌词动画 + 封面缩放 + 弹性按钮)
+- [x] 鲜艳度色彩提取 (S×V评分算法 + 纯HSV渐变)
 - [ ] 歌曲详情接口
 - [ ] 歌词解析与同步显示
 - [ ] 统一错误处理分发

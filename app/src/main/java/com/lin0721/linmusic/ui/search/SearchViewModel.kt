@@ -160,7 +160,8 @@ class SearchViewModel(
                     playerManager.playAudio(
                         song.id, url, song.name,
                         song.ar.joinToString { it.name },
-                        song.al.picUrl
+                        song.al.picUrl,
+                        playContext = "搜索"
                     )
                 }.onFailure { error ->
                     _toastEvent.emit(error.message ?: "无法获取播放链接")

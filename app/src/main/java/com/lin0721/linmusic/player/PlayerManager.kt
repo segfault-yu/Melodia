@@ -44,6 +44,9 @@ class PlayerManager(
     private val _duration = MutableStateFlow(0L)
     val duration: StateFlow<Long> = _duration.asStateFlow()
 
+    private val _playContext = MutableStateFlow<String?>(null)
+    val playContext: StateFlow<String?> = _playContext.asStateFlow()
+
     init {
         // 每秒更新播放进度
         scope.launch {
@@ -110,9 +113,10 @@ class PlayerManager(
         }
     }
 
-    fun playAudio(songId: Long, url: String, title: String, artist: String, coverUrl: String, startPosition: Long = 0) {
+    fun playAudio(songId: Long, url: String, title: String, artist: String, coverUrl: String, startPosition: Long = 0, playContext: String? = null) {
         val bundle = Bundle().apply {
             putLong("songId", songId)
+            if (playContext != null) putString("playContext", playContext)
         }
         val mediaMetadata = MediaMetadata.Builder()
             .setTitle(title)
@@ -186,6 +190,7 @@ class PlayerManager(
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
         _currentTrack.value = mediaItem
+        _playContext.value = mediaItem?.mediaMetadata?.extras?.getString("playContext")
         if (mediaItem != null) {
             _duration.value = controller?.duration ?: 0L
             saveState()
