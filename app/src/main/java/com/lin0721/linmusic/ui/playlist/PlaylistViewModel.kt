@@ -2,8 +2,10 @@ package com.lin0721.linmusic.ui.playlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lin0721.linmusic.data.remote.api.Track
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
+import com.lin0721.linmusic.player.QueueItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,27 +41,12 @@ class PlaylistViewModel(
         }
     }
 
-    fun playSong(songId: Long, title: String, artist: String, coverUrl: String) {
+    fun playSongInList(track: Track, allTracks: List<Track>) {
         val playlistName = (_uiState.value as? PlaylistUiState.Success)?.playlist?.name
-        viewModelScope.launch {
-            repository.getSongUrl(songId).collect { result ->
-                result.fold(
-                    onSuccess = { url ->
-                        playerManager.playAudio(
-                            songId = songId,
-                            url = url,
-                            title = title,
-                            artist = artist,
-                            coverUrl = coverUrl,
-                            playContext = playlistName
-                        )
-
-                    },
-                    onFailure = { error ->
-                        _toastEvent.emit(error.message ?: "无法获取播放链接")
-                    }
-                )
-            }
+        val queueItems = allTracks.map { t ->
+            QueueItem(t.id, t.name, t.ar.joinToString { it.name }, t.al.picUrl)
         }
+        val startIndex = allTracks.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
+        playerManager.playQueue(queueItems, startIndex, playlistName)
     }
 }

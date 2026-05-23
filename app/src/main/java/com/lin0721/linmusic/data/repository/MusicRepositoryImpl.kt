@@ -380,9 +380,25 @@ class MusicRepositoryImpl(
             return@flow
         }
 
+        // 如果是纯音乐，返回带有“纯音乐”标识的单个歌词行；若是未收录，则返回空列表以隐藏卡片
+        if (response.nolyric) {
+            emit(Result.success(listOf(LyricLine(0, "纯音乐"))))
+            return@flow
+        }
+        if (response.uncollected) {
+            emit(Result.success(emptyList()))
+            return@flow
+        }
+
         val lrcText = response.lrc?.lyric
         if (lrcText.isNullOrBlank()) {
             emit(Result.success(emptyList()))
+            return@flow
+        }
+
+        // 检测歌词文本内容中是否包含“纯音乐”或“Instrumental”标识，若包含则视为纯音乐并返回对应标识以隐藏卡片
+        if (lrcText.contains("纯音乐") || lrcText.contains("Instrumental", ignoreCase = true)) {
+            emit(Result.success(listOf(LyricLine(0, "纯音乐"))))
             return@flow
         }
 
@@ -463,6 +479,161 @@ class MusicRepositoryImpl(
             emit(Result.success(response.hotAlbums))
         } else {
             emit(Result.failure(Exception("Failed to load artist albums: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    // 获取歌手粉丝数量（作为每月听众数）
+    override fun getArtistFansCount(artistId: Long): Flow<Result<Long>> = flow {
+        // 使用 getArtistFollowCount 接口获取正确的粉丝数，而不是没有粉丝数信息的 getArtistDetailDynamic
+        val response = apiService.getArtistFollowCount(ArtistFollowCountRequest(id = artistId))
+        if (response.isSuccess) {
+            val data = response.data
+            val fans = data?.fansCnt ?: data?.fansCount ?: data?.fans ?: 0L
+            emit(Result.success(fans))
+        } else {
+            emit(Result.failure(Exception("Failed to load artist fans count: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getLikedSongIds(uid: Long): Flow<Result<List<Long>>> = flow {
+        val response = apiService.getLikedSongIds(LikeSongListRequest(uid = uid))
+        if (response.isSuccess) {
+            emit(Result.success(response.ids))
+        } else {
+            emit(Result.failure(Exception("Failed to load liked songs: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun likeSong(songId: Long, like: Boolean): Flow<Result<Unit>> = flow {
+        val response = apiService.likeSong(LikeSongRequest(trackId = songId, like = like))
+        if (response.isSuccess) {
+            emit(Result.success(Unit))
+        } else {
+            emit(Result.failure(Exception("Failed to like song: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun getComments(songId: Long, limit: Int, offset: Int): Flow<Result<CommentsResponse>> = flow {
+        val threadId = "R_SO_4_$songId"
+        val response = apiService.getComments(
+            threadId = threadId,
+            body = CommentsRequest(
+                threadId = threadId,
+                rid = songId.toString(),
+                limit = limit,
+                offset = offset
+            )
+        )
+        if (response.isSuccess) {
+            emit(Result.success(response))
+        } else {
+            emit(Result.failure(Exception("Failed to load comments: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    // 获取合并后的歌曲详情与百科信息，具有极强的容错防御
+    override fun getSongWiki(songId: Long): Flow<Result<SongWikiData>> = flow {
+        coroutineScope {
+            // 并发请求三个核心接口
+            val detailDeferred = async {
+                runCatching {
+                    val c = """[{"id":$songId}]"""
+                    apiService.getSongDetail(SongDetailRequest(c = c))
+                }
+            }
+            val wikiDeferred = async {
+                runCatching {
+                    apiService.getSongWikiSummary(SongWikiSummaryRequest(songId = songId))
+                }
+            }
+            val creatorsDeferred = async {
+                runCatching {
+                    apiService.getSongCreators(SongCreatorsRequest(songId = songId))
+                }
+            }
+
+            val detailResult = detailDeferred.await().getOrNull()
+            val wikiResult = wikiDeferred.await().getOrNull()
+            val creatorsResult = creatorsDeferred.await().getOrNull()
+
+            // 解析基础数据：专辑名与发行时间
+            val albumName = detailResult?.songs?.firstOrNull()?.al?.name ?: ""
+            val publishTime = detailResult?.songs?.firstOrNull()?.publishTime ?: 0L
+            val publishDateStr = if (publishTime > 0) {
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                sdf.format(java.util.Date(publishTime))
+            } else {
+                ""
+            }
+
+            var style = ""
+            var language = ""
+            var bpm = ""
+            var entertainment = ""
+
+            // 解析百科简要信息中的 Block 列表
+            wikiResult?.data?.blocks?.forEach { block ->
+                if (block.code == "SONG_PLAY_ABOUT_SONG_BASIC") {
+                    block.creatives.forEach { creative ->
+                        when (creative.creativeType) {
+                            "songTag" -> {
+                                style = creative.resources.mapNotNull { it.uiElement?.mainTitle?.title }
+                                    .filter { it.isNotEmpty() }
+                                    .joinToString(" / ")
+                            }
+                            "language" -> {
+                                language = creative.uiElement?.textLinks?.firstOrNull()?.text ?: ""
+                            }
+                            "bpm" -> {
+                                bpm = creative.uiElement?.textLinks?.firstOrNull()?.text ?: ""
+                            }
+                            "entertainment" -> {
+                                entertainment = creative.resources.mapNotNull { it.uiElement?.mainTitle?.title }
+                                    .filter { it.isNotEmpty() }
+                                    .joinToString(" / ")
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 解析制作人员信息：优先提取作词、作曲、编曲
+            val creatorRoles = creatorsResult?.data?.songCreatorsRoleVos
+            val creatorsStr = if (!creatorRoles.isNullOrEmpty()) {
+                val rolesToExtract = listOf("作词", "作曲", "编曲")
+                val parts = mutableListOf<String>()
+                rolesToExtract.forEach { role ->
+                    val artists = creatorRoles.firstOrNull { it.roleName == role }?.creatorMetaVOS?.map { it.artistName }
+                    if (!artists.isNullOrEmpty()) {
+                        parts.add("$role ${artists.joinToString(" ")}")
+                    }
+                }
+                parts.joinToString(" / ")
+            } else {
+                ""
+            }
+
+            emit(Result.success(
+                SongWikiData(
+                    style = style,
+                    album = albumName,
+                    language = language,
+                    publishTime = publishDateStr,
+                    bpm = bpm,
+                    creators = creatorsStr,
+                    entertainment = entertainment
+                )
+            ))
         }
     }.catch { e ->
         emit(Result.failure(e))

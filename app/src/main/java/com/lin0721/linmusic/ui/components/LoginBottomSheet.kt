@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,8 +24,7 @@ import com.lin0721.linmusic.ui.theme.SurfaceLight
 @Composable
 fun LoginBottomSheet(
     onDismiss: () -> Unit,
-    onWebLogin: () -> Unit,
-    onQrLogin: () -> Unit
+    onWebLogin: () -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -62,29 +60,20 @@ fun LoginBottomSheet(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
-                text = "登录后享受完整的个性化推荐体验",
+                text = "登录后享受完整体验",
                 fontSize = 13.sp,
                 color = Color.Gray,
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            // 网页登录（推荐）
+            // 网页登录
             LoginOptionButton(
-                text = "网页登录 (推荐)",
+                text = "网页登录",
                 icon = Icons.Default.Language,
                 isPrimary = true,
                 onClick = onWebLogin
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 二维码登录
-            LoginOptionButton(
-                text = "二维码登录",
-                icon = Icons.Default.QrCode2,
-                isPrimary = false,
-                onClick = onQrLogin
-            )
         }
     }
 }

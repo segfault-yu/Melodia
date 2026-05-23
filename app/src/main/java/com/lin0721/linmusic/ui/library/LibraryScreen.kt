@@ -439,10 +439,6 @@ fun LibraryScreen(
                     showLoginSheet = false
                     showWebViewLogin = true
                 },
-                onQrLogin = {
-                    showLoginSheet = false
-                    Toast.makeText(context, "请先在主页使用二维码登录功能哦！", Toast.LENGTH_LONG).show()
-                }
             )
         }
 
@@ -498,7 +494,7 @@ private fun NotLoggedInView(onLoginClick: () -> Unit) {
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "登录后即可同步您的歌单、收藏的歌手与专辑，畅享无限个性化音乐体验。",
+            text = "登录后即可同步您的歌单、收藏的歌手与专辑。",
             color = TextGray,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,

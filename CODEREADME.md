@@ -265,6 +265,12 @@ app/src/main/java/com/lin0721/linmusic/
 | `/eapi/album/sublist` | EApi | 获取收藏的专辑列表 |
 | `/eapi/user/subcount` | EApi | 获取用户收藏/关注数量统计（用于初始化计数） |
 | `/eapi/playlist/create` | EApi | 新建歌单（支持公开/私密模式） |
+| `/weapi/song/play/about/block/page` | WeApi | 音乐百科简要信息（获取曲风、语种、BPM、影综） |
+| `/weapi/song/creators` | WeApi | 获取制作团队（作词、作曲、编曲等）成员 |
+| `/weapi/artist/follow/count/get` | WeApi | 获取歌手粉丝数量/关注数（避开 EApi 0 字节风控） |
+| `/eapi/song/like` | EApi | 喜欢/红心歌曲操作 |
+| `/eapi/song/like/get` | EApi | 获取当前用户已红心的歌曲 ID 列表 |
+| `/eapi/v1/resource/comments/{threadId}` | EApi | 获取歌曲的评论列表（含热门评论与普通评论） |
 
 ### 2026-05-20 — 全屏播放器视觉精修 Phase 5 (Glassmorphism + Lyrics + Micro-interactions)
 - **毛玻璃 TopBar (Haze Glassmorphism)**: 滚动吸附顶栏从扁平半透明升级为 Haze 实时模糊效果。`HazeState` 挂载于 LazyColumn，`hazeChild` 在 TopBar 滚动展开时激活（`blurRadius = 24.dp`，`tint = BackgroundDark 50% alpha`）。
@@ -279,6 +285,32 @@ app/src/main/java/com/lin0721/linmusic/
 - **播放按钮弹性动画**: `Animatable` + `spring(dampingRatio=0.4f, stiffness=400f)` 实现播放/暂停切换时的回弹缩放效果（0.85→1.0）。
 - **非歌词卡片统一底色**: 关于艺人、相似艺人、艺人专辑、制作人等卡片统一使用 `SurfaceDark` 固定底色，仅歌词卡片保留动态渐变。
 - **TopBar 图标统一**: 滚动顶栏收藏图标从翡翠绿勾选 (`CheckCircle + #10B981`) 替换为白色实心爱心 (`Favorite + White`)，统一 TopBar 配色。
+
+### 2026-05-22 — 播放队列 UI 优化与纯音乐歌词
+- **播放队列重叠与背景优化 (PlayQueueSheet)**:
+  - 将歌曲行改为完全不透明的暗色背景（当前项 `SurfaceDark`，拖拽项 `SurfaceLight`），隐藏下方 `SwipeToDismiss` 的红色垃圾桶删除背景，解决底色穿透和垃圾桶与三条杠拖动手柄重叠的问题。
+  - 保留三条杠拖动手柄，移除尾部的垃圾桶图标，改由左滑歌曲卡片触发删除手势。
+- **纯音乐小歌词适配**:
+  - `MusicRepositoryImpl` 在获取歌词时，检测到无歌词或存在"纯音乐"关键字时返回标示为纯音乐的歌词行。
+  - 全屏播放器检测到纯音乐时，隐藏大型歌词卡片，同时在进度条上方的小歌词（`MiniLyricLine`）处显示 `纯音乐`。
+- **进度条 Slider 游标居中对齐**:
+  - 在 `ProgressSection` 内使用 20.dp 大小 Box 容器包裹自定义大小白球并设置 `contentAlignment = Alignment.Center`，解决游标在 M3 Slider 限制下对齐偏上的问题。
+
+### 2026-05-23 — 歌曲详情卡片、红心收藏与精选评论
+- **移除制作人卡片**: 移除原有的主要艺人展示卡片（`CreditsCard`），由数据更丰富、排版更精美的 `SongDetailCard` 取而代之。
+- **并发防御请求 (MusicRepositoryImpl)**:
+  - 使用 `coroutineScope` 并发请求歌曲详情、百科摘要（`/song/wiki/summary`）和创作者列表（`/song/creators`）三个核心接口。
+  - 为所有属性提供极强的兜底防御：当接口报错或无数据时，卡片仍能正常展示专辑名与发行日期等基础数据，避免报错导致播放器崩溃。
+- **SongDetailCard UI 实现**:
+  - 每行属性（曲风、专辑、语种、发行时间、BPM、制作、影综）标签左对齐；“制作”行展示词/曲/编主创且右侧带 `>` 向右指示箭头。
+- **艺人粉丝数据接入 (getArtistFollowCount)**:
+  - 实现 `/weapi/artist/follow/count/get` 接口，解决 EApi 原生歌手详情字段在特定 Cookie 下被风控导致每月听众返回 0 的缺陷。
+  - `PlayerViewModel` 异步加载 `artistFansCount`，在关于歌手卡片中渲染真实的“每月听众：X万”指标。
+- **歌曲红心与喜欢同步 (toggleLike)**:
+  - 对接 `/eapi/song/like` 与 `/eapi/song/like/get`，初始化登录用户的红心歌单 ID，全屏播放器顶栏收藏图标点击时触发微动画与状态反转，失败时自动做数据回滚。
+- **精选评论卡片 (CommentsCard)**:
+  - 增加歌曲下方的评论区域，调用 `/eapi/v1/resource/comments/{threadId}` 接口聚合精选热门评论与普通最新评论。
+  - 格式化渲染用户头像、发布时间、评论内容及点赞数（如 1.2w+），支持加载中/加载失败重试等交互反馈。
 
 ---
 
@@ -306,7 +338,7 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 创建界面 (BottomSheet菜单 + 新建歌单 + 隐私开关 + 播放上下文)
 - [x] 全屏播放器精修 (毛玻璃TopBar + 歌词动画 + 封面缩放 + 弹性按钮)
 - [x] 鲜艳度色彩提取 (S×V评分算法 + 纯HSV渐变)
-- [ ] 歌曲详情接口
+- [x] 歌曲详情接口 (曲风/专辑/语种/发行时间/BPM/制作/影综/红心/评论/粉丝数聚合)
 - [ ] 歌词解析与同步显示
 - [ ] 统一错误处理分发
 

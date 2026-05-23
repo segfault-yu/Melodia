@@ -40,9 +40,8 @@ import com.lin0721.linmusic.ui.theme.SurfaceDark
 import com.lin0721.linmusic.ui.theme.SurfaceLight
 import com.lin0721.linmusic.ui.theme.TextGray
 
-/**
- * 用户个人中心侧边栏 (Spotify 风格重构)
- */
+
+ // 侧边栏 
 @Composable
 fun ProfileSidebar(
     userProfile: UserProfile,
@@ -207,10 +206,9 @@ fun ProfileSidebar(
     }
 }
 
-/**
- * 菜单项组件 (SidebarMenuItem)
- * 添加了平滑的按压反馈动效
- */
+// 菜单项组件 (SidebarMenuItem)
+ 
+ 
 @Composable
 private fun SidebarMenuItem(
     icon: ImageVector,
@@ -258,9 +256,7 @@ private fun SidebarMenuItem(
     }
 }
 
-/**
- * 社交圆圈项组件
- */
+// 社交圆圈项组件
 @Composable
 private fun SocialCircleItem(
     content: @Composable () -> Unit,

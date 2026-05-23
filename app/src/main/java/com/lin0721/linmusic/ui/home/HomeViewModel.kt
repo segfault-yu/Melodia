@@ -20,6 +20,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.player.PlayerManager
+import com.lin0721.linmusic.player.QueueItem
 
 // 首页 ViewModel
 class HomeViewModel(
@@ -131,34 +132,16 @@ class HomeViewModel(
     fun playDailySong(index: Int = 0) {
         val state = uiState.value
         if (state is HomeUiState.Success && state.data.dailySongs.isNotEmpty()) {
-            val song = state.data.dailySongs.getOrElse(index) { state.data.dailySongs[0] }
-            playSong(
-                songId = song.id,
-                title = song.name,
-                artist = song.ar.joinToString { it.name },
-                coverUrl = song.al.picUrl,
-                playContext = "每日推荐"
-            )
+            val queueItems = state.data.dailySongs.map { song ->
+                QueueItem(song.id, song.name, song.ar.joinToString { it.name }, song.al.picUrl)
+            }
+            playerManager.playQueue(queueItems, index.coerceIn(0, queueItems.size - 1), "每日推荐")
         } else {
             viewModelScope.launch { _toastEvent.emit("每日推荐暂无歌曲") }
         }
     }
-    
+
     fun togglePlayPause() {
-        val currentTrack = playerManager.currentTrack.value
-        if (!playerManager.isPlaying.value && currentTrack != null) {
-            val songId = currentTrack.mediaMetadata.extras?.getLong("songId") ?: -1L
-            if (songId != -1L && currentTrack.localConfiguration == null) {
-                playSong(
-                    songId = songId,
-                    title = currentTrack.mediaMetadata.title?.toString() ?: "",
-                    artist = currentTrack.mediaMetadata.artist?.toString() ?: "",
-                    coverUrl = currentTrack.mediaMetadata.artworkUri?.toString() ?: "",
-                    startPosition = playerManager.currentPosition.value
-                )
-                return
-            }
-        }
         playerManager.togglePlayPause()
     }
 
@@ -228,16 +211,12 @@ class HomeViewModel(
         }
     }
 
-    // 播放历史推荐中的歌曲
     fun playHistorySong(index: Int) {
         val songs = _historySongs.value
         if (songs.isEmpty()) return
-        val song = songs.getOrElse(index) { songs[0] }
-        playSong(
-            songId = song.id,
-            title = song.name,
-            artist = song.ar.joinToString { it.name },
-            coverUrl = song.al.picUrl
-        )
+        val queueItems = songs.map { song ->
+            QueueItem(song.id, song.name, song.ar.joinToString { it.name }, song.al.picUrl)
+        }
+        playerManager.playQueue(queueItems, index.coerceIn(0, queueItems.size - 1), "历史日推")
     }
 }

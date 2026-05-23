@@ -91,13 +91,11 @@ fun PlaylistScreen(
                     currentTrackId = currentTrack?.mediaId,
                     onBack         = onBack,
                     onPlaySong     = { track ->
-                        viewModel.playSong(track.id, track.name,
-                            track.ar.firstOrNull()?.name ?: "Unknown", track.al.picUrl)
+                        viewModel.playSongInList(track, state.playlist.tracks)
                     },
                     onPlayAll = {
                         state.playlist.tracks.firstOrNull()?.let { first ->
-                            viewModel.playSong(first.id, first.name,
-                                first.ar.firstOrNull()?.name ?: "Unknown", first.al.picUrl)
+                            viewModel.playSongInList(first, state.playlist.tracks)
                         }
                     }
                 )

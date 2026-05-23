@@ -9,6 +9,7 @@ import com.lin0721.linmusic.data.repository.HotSearch
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.data.repository.PlaylistTag
 import com.lin0721.linmusic.player.PlayerManager
+import com.lin0721.linmusic.player.QueueItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -154,19 +155,11 @@ class SearchViewModel(
     }
 
     fun playSong(song: SearchSong) {
-        viewModelScope.launch {
-            repository.getSongUrl(song.id).collect { result ->
-                result.onSuccess { url ->
-                    playerManager.playAudio(
-                        song.id, url, song.name,
-                        song.ar.joinToString { it.name },
-                        song.al.picUrl,
-                        playContext = "搜索"
-                    )
-                }.onFailure { error ->
-                    _toastEvent.emit(error.message ?: "无法获取播放链接")
-                }
-            }
+        val results = _searchResults.value
+        val queueItems = results.map { s ->
+            QueueItem(s.id, s.name, s.ar.joinToString { it.name }, s.al.picUrl)
         }
+        val startIndex = results.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
+        playerManager.playQueue(queueItems, startIndex, "搜索")
     }
 }

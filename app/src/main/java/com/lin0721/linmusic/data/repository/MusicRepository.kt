@@ -104,7 +104,7 @@ interface MusicRepository {
     // 获取每日推荐歌曲（需登录）
     fun getDailyRecommendSongs(): Flow<Result<List<DailySong>>>
 
-    // 获取历史日推可用日期列表（黑胶 VIP）
+    // 获取历史日推可用日期列表（VIP）
     fun getHistoryRecommendDates(): Flow<Result<List<String>>>
 
     // 获取指定日期的历史日推详情
@@ -113,7 +113,7 @@ interface MusicRepository {
     // 获取排行榜详情（DTO 映射至领域模型）
     fun getToplistDetail(): Flow<Result<List<ToplistInfo>>>
 
-    // ================== 音乐库 (Library) ==================
+    // ================== 音乐库 ==================
     // 获取用户歌单
     fun getUserPlaylists(uid: Long, limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.data.remote.api.UserPlaylist>>>
 
@@ -144,4 +144,32 @@ interface MusicRepository {
     fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>>
 
     fun getArtistAlbums(artistId: Long, limit: Int = 10): Flow<Result<List<ArtistAlbum>>>
+
+    // 获取艺人粉丝数（每月听众数）
+    fun getArtistFansCount(artistId: Long): Flow<Result<Long>>
+
+    // ================== 红心/喜欢 ==================
+
+    fun getLikedSongIds(uid: Long): Flow<Result<List<Long>>>
+
+    fun likeSong(songId: Long, like: Boolean): Flow<Result<Unit>>
+
+    // ================== 评论 ==================
+
+    fun getComments(songId: Long, limit: Int = 20, offset: Int = 0): Flow<Result<com.lin0721.linmusic.data.remote.api.CommentsResponse>>
+
+    // ================== 百科与乐谱详情 ==================
+    // 获取合并后的歌曲详情与百科信息
+    fun getSongWiki(songId: Long): Flow<Result<SongWikiData>>
 }
+
+// 歌曲详情/百科信息领域模型
+data class SongWikiData(
+    val style: String = "",         // 曲风，如 "流行-华语流行"
+    val album: String = "",         // 专辑名
+    val language: String = "",      // 语种，如 "国语"
+    val publishTime: String = "",   // 发行日期，如 "2003-07-31"
+    val bpm: String = "",           // BPM
+    val creators: String = "",      // 制作人/主创列表，如 "作词 周杰伦 / 作曲 周杰伦"
+    val entertainment: String = ""  // 影综背景，如 "电影《不能说的秘密》插曲"
+)

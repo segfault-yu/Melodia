@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -239,10 +240,6 @@ fun HomeScreen(
                     showLoginSheet = false
                     showWebViewLogin = true
                 },
-                onQrLogin = {
-                    Toast.makeText(context, "二维码登录正在开发中", Toast.LENGTH_SHORT).show()
-                    showLoginSheet = false
-                }
             )
         }
         
@@ -819,7 +816,7 @@ fun BottomFloatingIsland(
     onCreateClick: () -> Unit = {},
     isCreateMenuOpen: Boolean = false
 ) {
-    Box(modifier = Modifier.fillMaxWidth().hazeChild(state = hazeState, shape = RoundedCornerShape(32.dp), style = HazeStyle(tint = Color.Black.copy(alpha = 0.4f), blurRadius = 24.dp)).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp))) {
+    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp)).hazeChild(state = hazeState, shape = RoundedCornerShape(32.dp), style = HazeStyle(tint = Color.Black.copy(alpha = 0.4f), blurRadius = 24.dp)).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { }) {
         Column(modifier = Modifier.padding(12.dp)) {
             AnimatedVisibility(visible = currentTrack != null) {
                 Column {

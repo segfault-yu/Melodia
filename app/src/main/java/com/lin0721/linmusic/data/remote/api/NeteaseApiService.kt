@@ -9,20 +9,6 @@ import retrofit2.http.Path
 // 网易云音乐 Retrofit 接口定义。所有 POST 请求会被 [CryptoInterceptor] 自动加密。
 interface NeteaseApiService {
 
-    // ======================= 登录 (二维码) =======================
-
-    // 二维码登录：第一步 - 获取 Key
-    @POST("/weapi/login/qr/key")
-    suspend fun getQrKey(@Body body: EmptyBody = EmptyBody()): NeteaseResponse<QrKeyData>
-
-    // 二维码登录：第二步 - 获取二维码
-    @POST("/weapi/login/qr/create")
-    suspend fun createQr(@Body body: QrCreateRequest): NeteaseResponse<QrCreateData>
-
-    // 二维码登录：第三步 - 检查二维码状态 (800:过期, 801:等待, 802:待确认, 803:成功)
-    @POST("/weapi/login/qr/check")
-    suspend fun checkQr(@Body body: QrCheckRequest): NeteaseResponse<QrCheckData>
-
     // ===================== 推荐歌单 =====================
 
     // 获取每日推荐歌单 (需要登录后的 Cookie)
@@ -206,6 +192,18 @@ interface NeteaseApiService {
         @Body body: ArtistDetailRequest
     ): ArtistDetailResponse
 
+    // ================== 艺人动态信息（粉丝数等） ==================
+    @POST("/eapi/artist/detail/dynamic")
+    suspend fun getArtistDetailDynamic(
+        @Body body: ArtistFollowCountRequest
+    ): ArtistFollowCountResponse
+
+    // 使用 WEAPI 接口获取歌手粉丝数量（规避 EAPI 混合 PC Cookie 下被风控返回 0 粉丝的问题）
+    @POST("/weapi/artist/follow/count/get")
+    suspend fun getArtistFollowCount(
+        @Body body: ArtistFollowCountRequest
+    ): ArtistFollowCountGetResponse
+
     // ================== 艺人专辑 ==================
 
     @POST("/weapi/artist/albums/{id}")
@@ -213,6 +211,39 @@ interface NeteaseApiService {
         @Path("id") id: Long,
         @Body body: ArtistAlbumRequest = ArtistAlbumRequest()
     ): ArtistAlbumResponse
+
+    // ================== 红心/喜欢 ==================
+
+    @POST("/eapi/song/like")
+    suspend fun likeSong(
+        @Body body: LikeSongRequest
+    ): LikeSongResponse
+
+    @POST("/eapi/song/like/get")
+    suspend fun getLikedSongIds(
+        @Body body: LikeSongListRequest
+    ): LikeSongListResponse
+
+    // ================== 百科 (WeApi) ==================
+
+    // 获取歌曲百科简要信息
+    @POST("/weapi/song/play/about/block/page")
+    suspend fun getSongWikiSummary(
+        @Body body: SongWikiSummaryRequest
+    ): SongWikiSummaryResponse
+
+    // 获取歌曲创作者信息
+    @POST("/weapi/song/creators")
+    suspend fun getSongCreators(
+        @Body body: SongCreatorsRequest
+    ): SongCreatorsResponse
+
+    // ================== 评论 ==================
+    @POST("/eapi/v1/resource/comments/{threadId}")
+    suspend fun getComments(
+        @Path("threadId") threadId: String,
+        @Body body: CommentsRequest
+    ): CommentsResponse
 }
 
 // 首页动态内容请求体
@@ -239,52 +270,6 @@ data class SearchDefaultData(
     val action: Int = 0
 )
 
-/**
- * 二维码 Key 响应数据
- */
-@Serializable
-data class QrKeyData(
-    val unikey: String = ""
-)
-
-/**
- * 创建二维码请求
- */
-@Serializable
-data class QrCreateRequest(
-    val key: String,
-    val qr64: Boolean = true
-)
-
-/**
- * 二维码创建响应数据
- */
-@Serializable
-data class QrCreateData(
-    val qrurl: String = "",
-    val qrimg: String = ""
-)
-
-/**
- * 检查二维码状态请求
- */
-@Serializable
-data class QrCheckRequest(
-    val key: String
-)
-
-/**
- * 二维码状态响应数据
- */
-@Serializable
-data class QrCheckData(
-    /** 状态码 */
-    val code: Int = 0,
-    /** 状态消息 */
-    val message: String = "",
-    /** 成功时的 Cookie (MUSIC_U) */
-    val cookie: String = ""
-)
 
 // 空请求体，用于不需要参数的 POST 接口
 @Serializable
@@ -506,7 +491,8 @@ data class Track(
     val name: String = "",
     val ar: List<Artist> = emptyList(),
     val al: Album = Album(),
-    val fee: Int = 0 
+    val fee: Int = 0,
+    val publishTime: Long = 0 // 歌曲发行时间戳，部分接口在歌曲详情中包含
 )
 
 @Serializable
@@ -580,6 +566,28 @@ data class LikeSongRequest(
     val trackId: Long,
     val like: Boolean = true
 )
+
+@Serializable
+data class LikeSongResponse(
+    val code: Int = 0,
+    val playlistId: Long = 0
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class LikeSongListRequest(
+    val uid: Long
+)
+
+@Serializable
+data class LikeSongListResponse(
+    val code: Int = 0,
+    val ids: List<Long> = emptyList(),
+    val checkPoint: Long = 0
+) {
+    val isSuccess: Boolean get() = code == 200
+}
 
 @Serializable
 data class TrashFmRequest(
@@ -866,7 +874,9 @@ data class LyricResponse(
     val code: Int = 0,
     val lrc: LyricContent? = null,
     val tlyric: LyricContent? = null,
-    val romalrc: LyricContent? = null
+    val romalrc: LyricContent? = null,
+    val nolyric: Boolean = false, // 标识是否有歌词，若为 true 则通常无歌词
+    val uncollected: Boolean = false // 标识歌曲是否未收录歌词
 ) {
     val isSuccess: Boolean get() = code == 200
 }
@@ -937,6 +947,41 @@ data class ArtistDetailInfo(
     val identifyTag: List<String>? = null
 )
 
+// ======================= 艺人粉丝数量 DTO =======================
+
+@Serializable
+data class ArtistFollowCountRequest(val id: Long)
+
+@Serializable
+data class ArtistFollowCountResponse(
+    val code: Int = 0,
+    val message: String? = null,
+    val fansCount: Long = 0,
+    val isFollow: Boolean = false,
+    val followCount: Int = 0
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+// 歌手关注与粉丝数详细数据
+@Serializable
+data class ArtistFollowCountData(
+    @SerialName("fans") val fans: Long? = null,             // 粉丝数
+    @SerialName("fansCnt") val fansCnt: Long? = null,       // 粉丝计数 (EAPI返回)
+    @SerialName("fansCount") val fansCount: Long? = null,   // 粉丝总数
+    @SerialName("followCount") val followCount: Long? = null // 关注数
+)
+
+// 歌手关注数获取响应体 ( concrete 实体类，避免泛型反序列化问题 )
+@Serializable
+data class ArtistFollowCountGetResponse(
+    @SerialName("code") val code: Int = 0,              // 响应状态码
+    @SerialName("message") val message: String? = null, // 响应消息
+    @SerialName("data") val data: ArtistFollowCountData? = null // 核心业务数据
+) {
+    /** 请求是否成功 */
+    val isSuccess: Boolean get() = code == 200
+}
+
 // ======================= 艺人专辑 DTO =======================
 
 @Serializable
@@ -962,4 +1007,139 @@ data class ArtistAlbum(
     val picUrl: String = "",
     val publishTime: Long = 0,
     val size: Int = 0
+)
+
+// ======================= 评论 DTO =======================
+
+@Serializable
+data class CommentsRequest(
+    val threadId: String,
+    val rid: String,
+    val limit: Int = 20,
+    val offset: Int = 0,
+    val beforeTime: Long = 0
+)
+
+@Serializable
+data class CommentsResponse(
+    val code: Int = 0,
+    val total: Int = 0,
+    val more: Boolean = false,
+    val comments: List<CommentItem> = emptyList(),
+    val hotComments: List<CommentItem> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class CommentItem(
+    val commentId: Long = 0,
+    val user: CommentUser = CommentUser(),
+    val content: String = "",
+    val time: Long = 0,
+    val timeStr: String? = null,
+    val likedCount: Int = 0,
+    val liked: Boolean = false,
+    val beReplied: List<BeRepliedComment>? = null
+)
+
+@Serializable
+data class CommentUser(
+    val userId: Long = 0,
+    val nickname: String = "",
+    val avatarUrl: String = ""
+)
+
+@Serializable
+data class BeRepliedComment(
+    val user: CommentUser? = null,
+    val content: String? = null,
+    val beRepliedCommentId: Long? = null
+)
+
+// ======================= 歌曲百科简要信息 DTO =======================
+
+@Serializable
+data class SongWikiSummaryRequest(
+    val songId: Long
+)
+
+@Serializable
+data class SongWikiSummaryResponse(
+    val code: Int = 0,
+    val data: SongWikiSummaryData? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class SongWikiSummaryData(
+    val blocks: List<SongWikiBlock> = emptyList()
+)
+
+@Serializable
+data class SongWikiBlock(
+    val code: String = "",
+    val showType: String = "",
+    val creatives: List<SongWikiCreative> = emptyList()
+)
+
+@Serializable
+data class SongWikiCreative(
+    val creativeType: String = "",
+    val resources: List<SongWikiResource> = emptyList(),
+    val uiElement: SongWikiUiElement? = null
+)
+
+@Serializable
+data class SongWikiResource(
+    val uiElement: SongWikiUiElement? = null
+)
+
+@Serializable
+data class SongWikiUiElement(
+    val mainTitle: SongWikiMainTitle? = null,
+    val textLinks: List<SongWikiTextLink> = emptyList()
+)
+
+@Serializable
+data class SongWikiMainTitle(
+    val title: String = ""
+)
+
+@Serializable
+data class SongWikiTextLink(
+    val text: String = ""
+)
+
+
+// ======================= 歌曲创作者 DTO =======================
+
+@Serializable
+data class SongCreatorsRequest(
+    val songId: Long
+)
+
+@Serializable
+data class SongCreatorsResponse(
+    val code: Int = 0,
+    val data: SongCreatorsData? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class SongCreatorsData(
+    val songCreatorsRoleVos: List<SongCreatorRole> = emptyList()
+)
+
+@Serializable
+data class SongCreatorRole(
+    val roleName: String = "",
+    val creatorMetaVOS: List<CreatorMeta> = emptyList()
+)
+
+@Serializable
+data class CreatorMeta(
+    val artistName: String = ""
 )

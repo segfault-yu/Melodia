@@ -1,6 +1,6 @@
 package com.lin0721.linmusic.data.remote.crypto
 
-import android.util.Base64
+import java.util.Base64
 import java.math.BigInteger
 import java.security.MessageDigest
 import javax.crypto.Cipher
@@ -20,8 +20,9 @@ object NeteaseCrypto {
     private const val IV = "0102030405060708"
     private const val PRESET_KEY = "0CoJUm6Qyw8W8jud"
     private const val PUBLIC_KEY = "010001"
+    // 修正后的 RSA 模数 (Modulus)，用于 WeApi 加密中的 RSA 过程，原有的模数尾部存在拼写错误导致解密失败
     private const val MODULUS =
-        "00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c368ce7036923453ea27b382f8e04ddde5d4eeb5c67c29bb725790538c538742878d655fba737e6b5da40e9decc985ce"
+        "e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7"
 
     private const val LINUX_API_KEY = "rpaWUfe92PZ4WjM9"
     private const val EAPI_KEY = "e82ckenh8dichen8"
@@ -38,6 +39,14 @@ object NeteaseCrypto {
         val encSecKey = rsaEncrypt(secretKey, PUBLIC_KEY, MODULUS)
         
         return mapOf("params" to params, "encSecKey" to encSecKey)
+    }
+
+    // 用于调试的固定秘钥 weapi
+    fun testWeapi(text: String, secretKey: String): Map<String, String> {
+        val firstEncrypt = aesEncrypt(text, PRESET_KEY)
+        val params = aesEncrypt(firstEncrypt, secretKey)
+        val encSecKey = rsaEncrypt(secretKey, PUBLIC_KEY, MODULUS)
+        return mapOf("params" to params, "encSecKey" to encSecKey, "p1" to firstEncrypt)
     }
 
     // LinuxApi 加密
@@ -65,8 +74,8 @@ object NeteaseCrypto {
         val ivParameterSpec = IvParameterSpec(IV.toByteArray(Charsets.UTF_8))
         cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec)
         val encryptedBytes = cipher.doFinal(text.toByteArray(Charsets.UTF_8))
-        // 致命坑点修复1：强制禁用换行符 NO_WRAP
-        return Base64.encodeToString(encryptedBytes, Base64.NO_WRAP)
+        // 致命坑点修复1：强制禁用换行符 (java.util.Base64 默认不包含换行符)
+        return Base64.getEncoder().encodeToString(encryptedBytes)
     }
 
     // AES 加密 (Hex)

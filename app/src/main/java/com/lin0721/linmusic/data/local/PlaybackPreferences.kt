@@ -2,11 +2,16 @@ package com.lin0721.linmusic.data.local
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.lin0721.linmusic.player.PlayMode
+import com.lin0721.linmusic.player.QueueItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private val Context.dataStore by preferencesDataStore(name = "playback_prefs")
 
@@ -18,6 +23,12 @@ data class PlaybackState(
     val lastPositionMs: Long = 0
 )
 
+data class QueueState(
+    val queue: List<QueueItem> = emptyList(),
+    val currentIndex: Int = -1,
+    val playContext: String? = null
+)
+
 class PlaybackPreferences(private val context: Context) {
 
     companion object {
@@ -26,6 +37,11 @@ class PlaybackPreferences(private val context: Context) {
         private val KEY_ARTIST = stringPreferencesKey("last_song_artist")
         private val KEY_COVER = stringPreferencesKey("last_song_cover")
         private val KEY_POSITION = longPreferencesKey("last_position_ms")
+        private val KEY_PLAY_MODE = stringPreferencesKey("play_mode")
+        private val KEY_QUEUE = stringPreferencesKey("play_queue")
+        private val KEY_QUEUE_INDEX = intPreferencesKey("queue_index")
+        private val KEY_PLAY_CONTEXT = stringPreferencesKey("play_context")
+        private val json = Json { ignoreUnknownKeys = true }
     }
 
     val playbackState: Flow<PlaybackState> = context.dataStore.data.map { prefs ->
@@ -38,6 +54,11 @@ class PlaybackPreferences(private val context: Context) {
         )
     }
 
+    val playMode: Flow<PlayMode> = context.dataStore.data.map { prefs ->
+        val name = prefs[KEY_PLAY_MODE]
+        runCatching { PlayMode.valueOf(name ?: "") }.getOrDefault(PlayMode.LIST_LOOP)
+    }
+
     suspend fun savePlaybackState(state: PlaybackState) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SONG_ID] = state.songId
@@ -45,6 +66,32 @@ class PlaybackPreferences(private val context: Context) {
             prefs[KEY_ARTIST] = state.artist
             prefs[KEY_COVER] = state.coverUrl
             prefs[KEY_POSITION] = state.lastPositionMs
+        }
+    }
+
+    suspend fun savePlayMode(mode: PlayMode) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_PLAY_MODE] = mode.name
+        }
+    }
+
+    val queueState: Flow<QueueState> = context.dataStore.data.map { prefs ->
+        val queueJson = prefs[KEY_QUEUE]
+        val queue = if (queueJson.isNullOrBlank()) emptyList()
+                    else runCatching { json.decodeFromString<List<QueueItem>>(queueJson) }.getOrDefault(emptyList())
+        QueueState(
+            queue = queue,
+            currentIndex = prefs[KEY_QUEUE_INDEX] ?: -1,
+            playContext = prefs[KEY_PLAY_CONTEXT]
+        )
+    }
+
+    suspend fun saveQueueState(queue: List<QueueItem>, currentIndex: Int, playContext: String?) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_QUEUE] = json.encodeToString(queue)
+            prefs[KEY_QUEUE_INDEX] = currentIndex
+            if (playContext != null) prefs[KEY_PLAY_CONTEXT] = playContext
+            else prefs.remove(KEY_PLAY_CONTEXT)
         }
     }
 }

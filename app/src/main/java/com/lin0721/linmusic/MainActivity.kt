@@ -2,6 +2,7 @@ package com.lin0721.linmusic
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
@@ -32,6 +33,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
 import com.lin0721.linmusic.ui.components.ProfileSidebar
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.*
@@ -68,7 +72,34 @@ fun LinMusicApp() {
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
     var isPlayerOpen by remember { mutableStateOf(false) }
-    var currentScreen by remember { mutableStateOf(Screen.Home) }
+
+    // 导航历史栈与当前屏幕状态
+    val backStack = remember { mutableStateListOf<Screen>(Screen.Home) }
+    val currentScreen by remember { derivedStateOf { backStack.lastOrNull() ?: Screen.Home } }
+
+    // 页面跳转函数
+    val navigateTo: (Screen) -> Unit = { screen ->
+        if (backStack.lastOrNull() != screen) {
+            if (screen == Screen.Home) {
+                backStack.clear()
+                backStack.add(Screen.Home)
+            } else if (screen == Screen.Search || screen == Screen.Library) {
+                backStack.clear()
+                backStack.add(Screen.Home)
+                backStack.add(screen)
+            } else {
+                backStack.add(screen)
+            }
+        }
+    }
+
+    // 页面回退函数
+    val navigateBack: () -> Unit = {
+        if (backStack.size > 1) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+    }
+
     var activePlaylistId by remember { mutableStateOf<Long?>(null) }
     var searchAutoFocus by remember { mutableStateOf(false) }
     var showCreateSheet by remember { mutableStateOf(false) }
@@ -89,6 +120,9 @@ fun LinMusicApp() {
         )
     }
 
+    // 侧边栏边缘滑动判断：避免抽屉打开手势与列表左右滑动冲突
+    var isTouchStartingAtEdge by remember { mutableStateOf(false) }
+
     LaunchedEffect(drawerWidthPx) {
         drawerState.updateAnchors(
             DraggableAnchors {
@@ -103,13 +137,55 @@ fun LinMusicApp() {
         scope.launch { drawerState.animateTo(AppSidebarState.Open) }
     }
 
+    // 系统返回键与侧滑返回拦截逻辑：按优先级关闭或返回上一级
+    val isAnyOverlayOpen = isPlayerOpen ||
+            (drawerState.currentValue == AppSidebarState.Open) ||
+            showCreateSheet ||
+            (backStack.size > 1)
+
+    BackHandler(enabled = isAnyOverlayOpen) {
+        when {
+            isPlayerOpen -> {
+                isPlayerOpen = false
+            }
+            drawerState.currentValue == AppSidebarState.Open -> {
+                scope.launch { drawerState.animateTo(AppSidebarState.Closed) }
+            }
+            showCreateSheet -> {
+                showCreateSheet = false
+            }
+            backStack.size > 1 -> {
+                navigateBack()
+            }
+        }
+    }
+
+    val isDrawerDraggable = userProfile != null && (drawerState.currentValue == AppSidebarState.Open || isTouchStartingAtEdge)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(drawerState.currentValue) {
+                val edgeWidthPx = with(density) { 32.dp.toPx() }
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val down = event.changes.firstOrNull { it.changedToDown() }
+                        if (down != null) {
+                            // 侧边栏已打开时允许在任意位置向左滑动关闭；侧边栏关闭时，仅允许在左边缘向右拉出
+                            isTouchStartingAtEdge = drawerState.currentValue == AppSidebarState.Open || down.position.x < edgeWidthPx
+                        }
+                        val allUp = event.changes.all { !it.pressed }
+                        if (allUp) {
+                            isTouchStartingAtEdge = false
+                        }
+                    }
+                }
+            }
             .anchoredDraggable(
                 state = drawerState,
                 orientation = Orientation.Horizontal,
-                enabled = userProfile != null
+                enabled = isDrawerDraggable
             )
             .background(BackgroundDark)
     ) {
@@ -185,11 +261,11 @@ fun LinMusicApp() {
                                 viewModel = viewModel,
                                 onPlaylistClick = { id ->
                                     activePlaylistId = id
-                                    currentScreen = Screen.Playlist
+                                    navigateTo(Screen.Playlist)
                                 },
                                 onSearchClick = {
                                     searchAutoFocus = true
-                                    currentScreen = Screen.Search
+                                    navigateTo(Screen.Search)
                                 },
                                 onOpenSidebar = openSidebar
                             )
@@ -198,14 +274,14 @@ fun LinMusicApp() {
                             activePlaylistId?.let { id ->
                                 com.lin0721.linmusic.ui.playlist.PlaylistScreen(
                                     playlistId = id,
-                                    onBack = { currentScreen = Screen.Home }
+                                    onBack = navigateBack
                                 )
                             }
                         }
                         Screen.Search -> {
                             com.lin0721.linmusic.ui.search.SearchScreen(
                                 autoFocus = searchAutoFocus,
-                                onBack = { currentScreen = Screen.Home },
+                                onBack = navigateBack,
                                 onOpenSidebar = openSidebar
                             )
                         }
@@ -213,9 +289,9 @@ fun LinMusicApp() {
                             com.lin0721.linmusic.ui.library.LibraryScreen(
                                 onPlaylistClick = { id ->
                                     activePlaylistId = id
-                                    currentScreen = Screen.Playlist
+                                    navigateTo(Screen.Playlist)
                                 },
-                                onBack = { currentScreen = Screen.Home },
+                                onBack = navigateBack,
                                 onOpenSidebar = openSidebar
                             )
                         }
@@ -269,7 +345,7 @@ fun LinMusicApp() {
                         onTogglePlay = { viewModel.togglePlayPause() },
                         onOpenPlayer = { isPlayerOpen = true },
                         currentScreen = currentScreen,
-                        onNavigate = { searchAutoFocus = false; currentScreen = it },
+                        onNavigate = { searchAutoFocus = false; navigateTo(it) },
                         onCreateClick = { showCreateSheet = !showCreateSheet },
                         isCreateMenuOpen = showCreateSheet
                     )
@@ -306,7 +382,8 @@ fun LinMusicApp() {
                 duration = duration,
                 onTogglePlay = { viewModel.togglePlayPause() },
                 onSeek = { viewModel.playerManager.seekTo(it) },
-                onClose = { isPlayerOpen = false }
+                onClose = { isPlayerOpen = false },
+                isPlayerOpen = isPlayerOpen
             )
         }
 
