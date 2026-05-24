@@ -416,14 +416,16 @@ class PlayerManager(
         _currentTrack.value = mediaItem
         _playContext.value = mediaItem?.mediaMetadata?.extras?.getString("playContext")
         if (mediaItem != null) {
-            _duration.value = controller?.duration ?: 0L
+            val dur = controller?.duration ?: 0L
+            _duration.value = if (dur > 0L) dur else 0L
             saveState()
         }
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
         if (playbackState == Player.STATE_READY) {
-            _duration.value = controller?.duration ?: 0L
+            val dur = controller?.duration ?: 0L
+            _duration.value = if (dur > 0L) dur else 0L
         }
         // 单曲循环由 ExoPlayer REPEAT_MODE_ONE 处理，不会到达 STATE_ENDED
         if (playbackState == Player.STATE_ENDED && _playMode.value != PlayMode.SINGLE_LOOP) {

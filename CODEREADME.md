@@ -312,6 +312,21 @@ app/src/main/java/com/lin0721/linmusic/
   - 增加歌曲下方的评论区域，调用 `/eapi/v1/resource/comments/{threadId}` 接口聚合精选热门评论与普通最新评论。
   - 格式化渲染用户头像、发布时间、评论内容及点赞数（如 1.2w+），支持加载中/加载失败重试等交互反馈。
 
+### 2026-05-24 — 歌词与进度条对齐优化、双行播放来源及点播时长兜底
+- **歌词卡片对齐与缩放修正**:
+  - 移除 `LyricsPreview` 中单行歌词包装的居中 `Box`，将主歌词和翻译文本重置为 `TextAlign.Start` 靠左对齐。
+  - 将 `graphicsLayer` 的 `transformOrigin` 重新设定为左侧边缘 `TransformOrigin(0f, 0.5f)`。使高亮行在 1.15 倍缩放时，行首锁定，完美与未激活行首对齐，避免左右错位与偏移。
+  - 保留单行 Column `fillMaxWidth(0.85f)`，确保即使横向放大其右侧仍有足够留白以规避被卡片圆角裁剪的问题。
+- **歌词卡片纵横比微调**:
+  - `LyricsCard` 弃用 `aspectRatio(1f)`（正方形），改为高度比宽度稍短的长方形，计算公式为：`cardHeight = cardWidth * 0.88f`。
+- **播放来源栏双行排版与微调**:
+  - `CoverArt` 内部的双行标题栏改用居中对齐的 Column，首行显示来源类型（如 "播放自歌单" 等，`11.sp` 粗体与白 60% 透明度），第二行显示具体歌单/推荐名称，加双引号 `“”` 包裹（`14.sp` 纯白粗体），并缩窄两行间距。
+  - 微调 `CoverArt` 顶栏 Row 底部间距从 `56.dp` 到 `51.dp`，使整体控制面板精准下移 `15.dp`。
+- **进度条完美对齐与时长 DTO 兜底**:
+  - `ProgressSection` 中显示时间的 Row 增加 `.padding(horizontal = 6.dp)`，使时间文本与 `Slider` 滑轨两端完美对齐。
+  - `NeteaseApiService.kt` 中为 `Track` DTO 增加 `val dt: Long = 0` 时长字段；`PlayerManager.kt` 对 `ExoPlayer` 返回的 duration 强限制非负。
+  - 在全屏播放器初始化或切歌缓冲期间，如果播放器时长为 0，自动降级采用 `songDetail.dt` 歌曲详情时长进行兜底，彻底解决点开音乐长度显示 `0:00` 的问题。
+
 ---
 
 ## 待办事项

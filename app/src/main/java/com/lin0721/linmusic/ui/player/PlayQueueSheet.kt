@@ -60,9 +60,9 @@ fun PlayQueueSheet(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        if (currentIndex >= 0 && currentIndex < queue.size) {
-            listState.scrollToItem(maxOf(0, currentIndex))
+    LaunchedEffect(currentIndex) {
+        if (currentIndex in queue.indices) {
+            listState.scrollToItem(0)
         }
     }
 

@@ -12,6 +12,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -24,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -49,6 +52,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -145,19 +150,46 @@ fun FullPlayerScreen(
 
     val tintedCardColor = animatedDominant.copy(alpha = 0.08f).compositeOver(SurfaceDark)
 
-    fun Color.toOpaqueHsv(minSat: Float, valRange: ClosedFloatingPointRange<Float>): Color {
+    val gradientStart = remember(animatedDominant) {
+        // 右下角偏白点 (gradientStart)：以主色饱和度 0.6 倍动态缩减，限最低 0.35f，亮度设为 0.92f，确保有饱和的色彩感
         val hsv = FloatArray(3)
         android.graphics.Color.RGBToHSV(
-            (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt(), hsv
+            (animatedDominant.red * 255).toInt(),
+            (animatedDominant.green * 255).toInt(),
+            (animatedDominant.blue * 255).toInt(),
+            hsv
         )
-        hsv[1] = hsv[1].coerceAtLeast(minSat)
-        hsv[2] = hsv[2].coerceIn(valRange.start, valRange.endInclusive)
-        return Color(android.graphics.Color.HSVToColor(hsv))
+        hsv[1] = (hsv[1] * 0.6f).coerceIn(0.35f, 1f)
+        hsv[2] = 0.92f
+        Color(android.graphics.Color.HSVToColor(hsv))
     }
 
-    val gradientStart = animatedSecondary.toOpaqueHsv(minSat = 0.8f, valRange = 0.55f..0.7f)
-    val gradientEnd = animatedSecondary.toOpaqueHsv(minSat = 0.9f, valRange = 0.35f..0.45f)
-    val lyricsCardBrush = Brush.linearGradient(colors = listOf(gradientEnd, gradientStart))
+    val gradientEnd = remember(animatedDominant) {
+        // 左上角深色点 (gradientEnd)：在主色基础上增加饱和度 0.35f，限最低 0.75f，亮度设为 0.3f，使色彩丰富艳丽
+        val hsv = FloatArray(3)
+        android.graphics.Color.RGBToHSV(
+            (animatedDominant.red * 255).toInt(),
+            (animatedDominant.green * 255).toInt(),
+            (animatedDominant.blue * 255).toInt(),
+            hsv
+        )
+        hsv[1] = (hsv[1] + 0.35f).coerceIn(0.75f, 1f)
+        hsv[2] = 0.3f
+        Color(android.graphics.Color.HSVToColor(hsv))
+    }
+    val accentColor = remember(animatedDominant) {
+        // 活力色光源 accentColor：将主色饱和度拉满 (1.0f)，并将亮度调整为 0.75f，代表封面最亮眼的点缀色彩
+        val hsv = FloatArray(3)
+        android.graphics.Color.RGBToHSV(
+            (animatedDominant.red * 255).toInt(),
+            (animatedDominant.green * 255).toInt(),
+            (animatedDominant.blue * 255).toInt(),
+            hsv
+        )
+        hsv[1] = 1.0f
+        hsv[2] = 0.75f
+        Color(android.graphics.Color.HSVToColor(hsv))
+    }
 
     val lyricsHighlight = lerp(start = animatedDominant, stop = Color.White, fraction = 0.85f)
 
@@ -426,9 +458,10 @@ fun FullPlayerScreen(
 
             // 进度条
             item(key = "progress") {
+                val displayDuration = if (duration > 0L) duration else (songDetail?.dt ?: 0L)
                 ProgressSection(
                     currentPosition = currentPosition,
-                    duration = duration,
+                    duration = displayDuration,
                     onSeek = onSeek
                 )
             }
@@ -459,7 +492,9 @@ fun FullPlayerScreen(
                         lyrics = lyrics,
                         currentIndex = currentLyricIndex,
                         isLoading = isLyricsLoading,
-                        cardBrush = lyricsCardBrush,
+                        gradientStart = gradientStart,
+                        gradientEnd = gradientEnd,
+                        accentColor = accentColor,
                         highlightColor = lyricsHighlight
                     )
                 }
@@ -611,7 +646,7 @@ private fun TopBar(
                     Icon(
                         if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         contentDescription = null,
-                        tint = if (isLiked) NeteaseRed else Color.White,
+                        tint = Color.White, // 统一修改为白色图标
                         modifier = Modifier.size(26.dp)
                     )
                 }
@@ -643,17 +678,20 @@ private fun CoverArt(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 32.dp)
-            .padding(top = 4.dp, bottom = 16.dp),
+            .padding(top = 16.dp, bottom = 8.dp), // 顶部 16.dp，底部 8.dp 外边距以对齐视觉间距
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
+                .padding(bottom = 51.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onClose) {
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.size(32.dp) // 容器大小限制为 32.dp，其中心点对齐封面左侧圆角与直线的交汇点 (32.dp + 16.dp = 48.dp)
+            ) {
                 Icon(
                     Icons.Rounded.KeyboardArrowDown,
                     contentDescription = null,
@@ -661,17 +699,47 @@ private fun CoverArt(
                     modifier = Modifier.size(32.dp)
                 )
             }
-            Text(
-                text = if (playContext != null) "正在播放：$playContext" else "NOW PLAYING",
-                color = if (playContext != null) TextGray else Color.White,
-                fontSize = if (playContext != null) 13.sp else 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = if (playContext != null) 0.sp else 2.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.MoreVert, contentDescription = null, tint = Color.White)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                val (sourceText, detailText) = when (playContext) {
+                    null -> "NOW PLAYING" to null
+                    "搜索" -> "播放自" to "搜索"
+                    "每日推荐" -> "播放自" to "每日推荐"
+                    "历史日推" -> "播放自" to "历史日推"
+                    else -> "播放自歌单" to playContext
+                }
+                Text(
+                    text = sourceText,
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (detailText != null) {
+                    Text(
+                        text = "“$detailText”",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            IconButton(
+                onClick = { },
+                modifier = Modifier.size(32.dp) // 容器大小限制为 32.dp，其中心点对齐封面右侧圆角与直线的交汇点
+            ) {
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp) // 图标尺寸为 24.dp 并在容器中自动居中
+                )
             }
         }
 
@@ -700,8 +768,8 @@ private fun SongInfo(title: String, artist: String, isLiked: Boolean, onToggleLi
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(top = 24.dp),
+            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
+            .padding(top = 12.dp), // 顶部外边距设为 12.dp
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -723,11 +791,14 @@ private fun SongInfo(title: String, artist: String, isLiked: Boolean, onToggleLi
                 overflow = TextOverflow.Ellipsis
             )
         }
-        IconButton(onClick = onToggleLike) {
+        IconButton(
+            onClick = onToggleLike,
+            modifier = Modifier.offset(x = 10.dp) // 红心按钮向右偏移 10.dp 以对齐
+        ) {
             Icon(
                 if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                 contentDescription = null,
-                tint = if (isLiked) NeteaseRed else Color.White,
+                tint = Color.White, // 统一修改为白色图标
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -750,7 +821,8 @@ private fun MiniLyricLine(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 10.dp),
+            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
+            .padding(vertical = 6.dp), // 垂直 padding 缩减至 6.dp
         contentAlignment = Alignment.CenterStart
     ) {
         AnimatedContent(
@@ -758,8 +830,9 @@ private fun MiniLyricLine(
             transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
             label = "mini_lyric"
         ) { text ->
+            // 歌词为空时不显示 "· · ·" 占位符，避免在未播放时出现三个点
             Text(
-                text = text.ifEmpty { "· · ·" },
+                text = text,
                 color = if (text.isEmpty()) TextGray.copy(alpha = 0.4f) else lyricsHighlight.copy(alpha = 0.7f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
@@ -785,7 +858,7 @@ private fun ProgressSection(
     } else 0f
 
     val thumbSize by animateDpAsState(
-        targetValue = if (isSeeking) 14.dp else 6.dp,
+        targetValue = if (isSeeking) 16.dp else 8.dp, // 放大滑块大小
         animationSpec = tween(150),
         label = "thumb_size"
     )
@@ -793,8 +866,8 @@ private fun ProgressSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(top = 16.dp)
+            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
+            .padding(top = 8.dp) // 顶部 padding 缩减至 8.dp
     ) {
         Slider(
             value = progress.coerceIn(0f, 1f),
@@ -807,9 +880,9 @@ private fun ProgressSection(
                 onSeek((seekPosition * duration).toLong())
             },
             thumb = {
-                // 使用默认的 20.dp 大小作为容器并进行内容居中，避免自定义较小的 thumbSize 导致在 M3 Slider 中对齐偏上
+                // 使用较大的 24.dp 作为容器进行内容居中，适应放大的滑块
                 Box(
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -824,15 +897,15 @@ private fun ProgressSection(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(3.dp)
-                        .clip(RoundedCornerShape(1.5.dp))
+                        .height(4.dp) // 增加进度条粗细
+                        .clip(RoundedCornerShape(2.dp))
                         .background(SurfaceLight)
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(fraction)
-                            .height(3.dp)
-                            .clip(RoundedCornerShape(1.5.dp))
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
                             .background(Color.White)
                     )
                 }
@@ -841,12 +914,14 @@ private fun ProgressSection(
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             val displayPosition = if (isSeeking) (seekPosition * duration).toLong() else currentPosition
-            Text(formatTime(displayPosition), color = TextGray, fontSize = 12.sp)
-            Text(formatTime(duration), color = TextGray, fontSize = 12.sp)
+            Text(formatTime(displayPosition), color = TextGray, fontSize = 13.sp) // 放大时间文本
+            Text(formatTime(duration), color = TextGray, fontSize = 13.sp)
         }
     }
 }
@@ -870,49 +945,62 @@ private fun PlaybackControls(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
+            .padding(top = 4.dp), // 顶部 padding 缩减至 4.dp
+        horizontalArrangement = Arrangement.SpaceBetween, // 采用 SpaceBetween 布局，使两侧按钮与边界完全贴合对齐
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onToggleShuffle) {
+        IconButton(
+            onClick = onToggleShuffle,
+            modifier = Modifier.offset(x = (-10).dp) // 随机播放按钮向左偏移 10.dp
+        ) {
             Icon(
                 Icons.Default.Shuffle,
                 contentDescription = null,
                 tint = if (playMode == PlayMode.SHUFFLE) Color.White else TextGray,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp) // 放大随机播放按钮
             )
         }
-        IconButton(onClick = onPlayPrevious) {
-            Icon(Icons.Rounded.SkipPrevious, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
-        }
-        FloatingActionButton(
-            onClick = onTogglePlay,
-            containerColor = Color.White,
-            shape = CircleShape,
-            modifier = Modifier
-                .size(64.dp)
-                .graphicsLayer {
-                    scaleX = bounceScale.value
-                    scaleY = bounceScale.value
-                }
+        
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(28.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = null,
-                tint = Color.Black,
-                modifier = Modifier.size(36.dp)
-            )
+            IconButton(onClick = onPlayPrevious) {
+                Icon(Icons.Rounded.SkipPrevious, contentDescription = null, tint = Color.White, modifier = Modifier.size(46.dp)) // 放大上一首按钮
+            }
+            FloatingActionButton(
+                onClick = onTogglePlay,
+                containerColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(72.dp) // 白色圆圈外径 72.dp
+                    .graphicsLayer {
+                        scaleX = bounceScale.value
+                        scaleY = bounceScale.value
+                    }
+            ) {
+                Icon(
+                    if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.Black,
+                    modifier = Modifier.size(42.dp) // 内部图标从 36.dp 放大至 42.dp
+                )
+            }
+            IconButton(onClick = onPlayNext) {
+                Icon(Icons.Rounded.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(46.dp)) // 放大下一首按钮
+            }
         }
-        IconButton(onClick = onPlayNext) {
-            Icon(Icons.Rounded.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
-        }
-        IconButton(onClick = onToggleRepeat) {
+
+        IconButton(
+            onClick = onToggleRepeat,
+            modifier = Modifier.offset(x = 10.dp) // 循环播放按钮向右偏移 10.dp
+        ) {
             Icon(
                 if (playMode == PlayMode.SINGLE_LOOP) Icons.Default.RepeatOne else Icons.Default.Repeat,
                 contentDescription = null,
                 tint = if (playMode == PlayMode.SINGLE_LOOP) Color.White else TextGray,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp) // 放大循环播放按钮
             )
         }
     }
@@ -923,21 +1011,28 @@ private fun ActionButtons(onQueueClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
+            .padding(top = 8.dp, bottom = 16.dp), // 顶部 8.dp，底部 16.dp
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row {
-            IconButton(onClick = { }) {
-                Icon(Icons.Rounded.Devices, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
+            IconButton(
+                onClick = { },
+                modifier = Modifier.offset(x = (-12).dp) // 播控设备按钮向左偏移 12.dp
+            ) {
+                Icon(Icons.Rounded.Devices, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp)) // 放大设备按钮
             }
         }
         Row {
             IconButton(onClick = { }) {
-                Icon(Icons.Default.Share, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Share, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp)) // 放大分享按钮
             }
-            IconButton(onClick = onQueueClick) {
-                Icon(Icons.AutoMirrored.Rounded.QueueMusic, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
+            IconButton(
+                onClick = onQueueClick,
+                modifier = Modifier.offset(x = 12.dp) // 队列列表按钮向右偏移 12.dp
+            ) {
+                Icon(Icons.AutoMirrored.Rounded.QueueMusic, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp)) // 放大播放列表按钮
             }
         }
     }
@@ -948,17 +1043,115 @@ private fun LyricsCard(
     lyrics: List<LyricLine>,
     currentIndex: Int,
     isLoading: Boolean,
-    cardBrush: Brush,
+    gradientStart: Color,
+    gradientEnd: Color,
+    accentColor: Color,
     highlightColor: Color
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "fluid_mesh")
+
+    // 左上角亮色光源的 X 坐标：0.05f ~ 0.35f
+    val accentCenterX by infiniteTransition.animateFloat(
+        initialValue = 0.05f,
+        targetValue = 0.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(12000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "accent_x"
+    )
+    // 左上角亮色光源的 Y 坐标：0.1f ~ 0.35f
+    val accentCenterY by infiniteTransition.animateFloat(
+        initialValue = 0.1f,
+        targetValue = 0.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(14000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "accent_y"
+    )
+    // 左上角亮色光源的半径比例：0.75f ~ 0.90f
+    val accentRadiusScale by infiniteTransition.animateFloat(
+        initialValue = 0.75f,
+        targetValue = 0.90f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(8000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "accent_radius"
+    )
+
+    // 右下角白色光源的 X 坐标：1.20f ~ 1.35f
+    val whiteCenterX by infiniteTransition.animateFloat(
+        initialValue = 1.20f,
+        targetValue = 1.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(15000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "white_x"
+    )
+    // 右下角白色光源的 Y 坐标：1.20f ~ 1.35f
+    val whiteCenterY by infiniteTransition.animateFloat(
+        initialValue = 1.20f,
+        targetValue = 1.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(13000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "white_y"
+    )
+    // 右下角白色光源的半径比例：0.40f ~ 0.50f
+    val whiteRadiusScale by infiniteTransition.animateFloat(
+        initialValue = 0.40f,
+        targetValue = 0.50f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(10000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "white_radius"
+    )
+
+    val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
+    val cardHeight = cardWidth * 0.88f
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            // 1:1 square card
-            .aspectRatio(1f)
+            .height(cardHeight)
             .clip(RoundedCornerShape(16.dp))
-            .background(cardBrush)
+            .drawBehind {
+                val baseSize = size.minDimension
+                // 1. 填充深色基底
+                drawRect(color = gradientEnd)
+                
+                // 2. 绘制左上角亮彩色光雾
+                val accentRadius = baseSize * accentRadiusScale
+                val accentCenter = Offset(size.width * accentCenterX, size.height * accentCenterY)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(accentColor.copy(alpha = 0.8f), Color.Transparent),
+                        center = accentCenter,
+                        radius = accentRadius
+                    ),
+                    center = accentCenter,
+                    radius = accentRadius
+                )
+                
+                // 3. 绘制右下角白色弥散光源
+                val whiteRadius = baseSize * whiteRadiusScale
+                val whiteCenter = Offset(size.width * whiteCenterX, size.height * whiteCenterY)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(gradientStart.copy(alpha = 0.7f), Color.Transparent),
+                        center = whiteCenter,
+                        radius = whiteRadius
+                    ),
+                    center = whiteCenter,
+                    radius = whiteRadius
+                )
+            }
     ) {
         Column(
             modifier = Modifier
@@ -1114,35 +1307,31 @@ private fun LyricsPreview(
                 label         = "lyric_trans_alpha_$index"
             )
 
-            // NO animateContentSize – item heights are now invariant.
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(0.85f)
                     .graphicsLayer {
                         scaleX = animatedScale
                         scaleY = animatedScale
                         alpha  = animatedAlpha
-                        // Scale from the left edge to match TextAlign.Start.
                         transformOrigin =
                             androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
                     }
             ) {
                 Text(
                     text       = line.text,
-                    fontSize   = 20.sp,   // 常量 - 视觉大小调整通过 scaleX/Y 实现
-                    color      = if (isCurrent) Color.White else highlightColor, // 激活歌词使用白色，未激活使用高亮主题色
-                    fontWeight = if (isCurrent) FontWeight.ExtraBold else FontWeight.Normal,
+                    fontSize   = 20.sp,
+                    color      = if (isCurrent) Color.White else highlightColor,
+                    fontWeight = FontWeight.ExtraBold,
                     textAlign  = TextAlign.Start,
                     modifier   = Modifier.fillMaxWidth()
                 )
-                // 翻译在有歌词时始终存在于布局中 - 仅通过 graphicsLayer 更改其 alpha。这保持了行高的稳定性。
                 if (line.translation != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text      = line.translation,
                         fontSize  = 15.sp,
-                        // 通过 graphicsLayer 驱动可见性，而不是切换组合项，因此布局高度永远不会改变。
-                        color     = Color.White.copy(alpha = animatedTransAlpha), // 激活的翻译使用带透明度的白色
+                        color     = Color.White.copy(alpha = animatedTransAlpha),
                         textAlign = TextAlign.Start,
                         modifier  = Modifier.fillMaxWidth()
                     )
@@ -1158,10 +1347,13 @@ private fun SongDetailCard(
     songDetail: Track?,
     cardColor: Color
 ) {
+    val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
+    val cardHeight = cardWidth * 0.88f // 使用和歌词卡片一样的大小比例，使卡片尺寸协调一致
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .height(cardHeight),
         shape = RoundedCornerShape(16.dp),
         color = cardColor
     ) {
@@ -1385,16 +1577,17 @@ private fun AboutArtistCard(
         color = cardColor
     ) {
         Column {
-            // 顶部艺人图片容器，高度约220dp
+            // 顶部艺人图片容器，高度调整为180dp以防过度拉伸
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
+                    .height(180.dp)
             ) {
                 AsyncImage(
                     model = coverUrl,
                     contentDescription = artistDetail.name,
                     contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center, // 居中对齐，避免截断艺人的脸部或头部
                     modifier = Modifier.fillMaxSize()
                 )
                 // 顶部半透明渐变罩，确保“关于艺人”文本可读
@@ -1472,10 +1665,9 @@ private fun AboutArtistCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // 艺人简介，末尾带“查看更多”或“收起”字样，支持展开与收回
                 if (artistDetail.briefDesc.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp)) // 仅在有简介时显示间距，避免空白过大
                     var isExpanded by remember { mutableStateOf(false) }
                     val cleanDesc = artistDetail.briefDesc.trim()
                     val annotatedText = buildAnnotatedString {
@@ -1599,10 +1791,13 @@ private fun CommentsPreviewCard(
     cardColor: Color,
     onRetry: () -> Unit
 ) {
+    val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
+    val cardHeight = cardWidth * 0.88f // 使用和歌词卡片一样的大小比例，使卡片尺寸协调一致
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .height(cardHeight),
         shape = RoundedCornerShape(16.dp),
         color = cardColor
     ) {
@@ -1692,32 +1887,38 @@ private fun CommentsPreviewCard(
                             modifier = Modifier.padding(vertical = 16.dp)
                         )
                     } else {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            allComments.forEachIndexed { index, comment ->
-                                CommentRowItem(comment = comment)
-                                if (index < allComments.size - 1) {
-                                    HorizontalDivider(
-                                        color = Color.White.copy(alpha = 0.08f),
-                                        thickness = 0.5.dp
-                                    )
+                        // 包装在 Column 中提供 ColumnScope，以支持 verticalScroll 滚动和 align(Alignment.CenterHorizontally) 水平居中
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                allComments.forEachIndexed { index, comment ->
+                                    CommentRowItem(comment = comment)
+                                    if (index < allComments.size - 1) {
+                                        HorizontalDivider(
+                                            color = Color.White.copy(alpha = 0.08f),
+                                            thickness = 0.5.dp
+                                        )
+                                    }
                                 }
                             }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Footer
+                            Text(
+                                text = "查看全部 ${commentsState.total} 条评论",
+                                color = NeteaseRed,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(vertical = 4.dp)
+                            )
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Footer
-                        Text(
-                            text = "查看全部 ${commentsState.total} 条评论",
-                            color = NeteaseRed,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .padding(vertical = 4.dp)
-                        )
                     }
                 }
             }
