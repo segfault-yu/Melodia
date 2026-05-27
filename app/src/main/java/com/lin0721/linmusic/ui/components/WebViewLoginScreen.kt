@@ -40,7 +40,6 @@ fun WebViewLoginScreen(
     modifier: Modifier = Modifier
 ) {
     var isLoading by remember { mutableStateOf(true) }
-    var loadProgress by remember { mutableIntStateOf(0) }
     
     // 1. 深度伪装：净化 UA（剔除 wv/WebView 关键字）
     val baseUA = "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36"
@@ -61,124 +60,92 @@ fun WebViewLoginScreen(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "关闭",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BackgroundBlack
-                )
-            )
-        },
-        containerColor = Color.Black
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(BackgroundBlack)
-        ) {
-            AndroidView(
-                factory = { context ->
-                    WebView(context).apply {
-                        // 2. 完全隔离容器：初始化前清空旧状态
-                        CookieManager.getInstance().let { manager ->
-                            manager.setAcceptCookie(true)
-                            manager.setAcceptThirdPartyCookies(this, true)
-                            manager.removeAllCookies(null)
-                            manager.flush()
-                        }
+					)
+				},
+				navigationIcon = {
+					IconButton(onClick = onClose) {
+						Icon(
+							imageVector = Icons.Default.Close,
+							contentDescription = "关闭",
+							tint = Color.White
+						)
+					}
+				},
+				colors = TopAppBarDefaults.topAppBarColors(
+					containerColor = BackgroundBlack
+				)
+			)
+		},
+        containerColor = Color(0xFFF5F5F7) // 容器底色改为网页同款浅灰，彻底避免键盘弹出或加载时闪黑屏/白屏
+	) { paddingValues ->
+		Box(
+			modifier = Modifier
+				.fillMaxSize()
+				.padding(paddingValues)
+                .background(Color(0xFFF5F5F7)) // 外层容器底色一致
+		) {
+			AndroidView(
+				factory = { context ->
+					WebView(context).apply {
+						// 2. 完全隔离容器：初始化前清空旧状态
+						CookieManager.getInstance().let { manager ->
+							manager.setAcceptCookie(true)
+							manager.setAcceptThirdPartyCookies(this, true)
+							manager.removeAllCookies(null)
+							manager.flush()
+						}
 
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                                loadProgress = newProgress
-                                if (newProgress >= 100) {
-                                    isLoading = false
-                                }
-                            }
-                        }
-                        
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            loadWithOverviewMode = true
-                            useWideViewPort = true
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            // 净化 UA
-                            userAgentString = baseUA
-                        }
+                        // 将 WebView 底色置为浅灰，防止 resize 布局重绘时闪烁
+                        setBackgroundColor(android.graphics.Color.parseColor("#F5F5F7"))
 
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                // 3. JS 自动化劫持与 UI 优化
-                                val script = """
-                                    (function() {
-                                        // A. 暗黑模式注入与元素精简
-                                        var style = document.createElement('style');
-                                        style.innerHTML = `
-                                            body, .m-login, .g-bd { background-color: #121212 !important; color: #ffffff !important; }
-                                            .m-topbar, .m-footer, .u-logo, .u-btn-back { display: none !important; }
-                                            input { background-color: #1a1a1a !important; color: #ffffff !important; border: 1px solid #333 !important; }
-                                            .u-btn-red { background-color: #EA4848 !important; border: none !important; }
-                                            .m-login-type { padding-top: 50px !important; }
-                                        `;
-                                        document.head.appendChild(style);
+                        webChromeClient = WebChromeClient()
+						
+						settings.apply {
+							javaScriptEnabled = true
+							domStorageEnabled = true
+							loadWithOverviewMode = true
+							useWideViewPort = true
+							mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+							// 净化 UA
+							userAgentString = baseUA
+						}
 
-                                        // B. 自动跳过首屏：点击协议并进入手机登录
-                                        setTimeout(function() {
-                                            // 勾选同意协议
-                                            var checkbox = document.querySelector('.u-chkbx input') || document.querySelector('input[type="checkbox"]');
-                                            if (checkbox && !checkbox.checked) checkbox.click();
-                                            
-                                            // 自动点击“手机号登录”
-                                            var phoneBtn = document.querySelector('.u-btn-phone') || document.querySelector('.u-btn-red');
-                                            if (phoneBtn && phoneBtn.innerText.indexOf('手机') !== -1) {
-                                                phoneBtn.click();
-                                            }
-                                        }, 500);
-                                    })();
-                                """.trimIndent()
-                                view?.evaluateJavascript(script, null)
-                                
-                                // 4. 实时提取 Token (MUSIC_U)
-                                checkCookies(onLoginSuccess)
-                            }
+						webViewClient = object : WebViewClient() {
+							override fun onPageFinished(view: WebView?, url: String?) {
+								// 实时提取 Token (MUSIC_U)
+								checkCookies(onLoginSuccess)
+                                isLoading = false // 页面完全加载渲染完成后，关闭加载指示器
+							}
 
-                            override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
-                                checkCookies(onLoginSuccess)
-                            }
+							override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+								checkCookies(onLoginSuccess)
+							}
 
-                            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                return false
-                            }
-                        }
-                        
-                        loadUrl(loginUrl, extraHeaders)
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+							override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+								return false
+							}
+						}
+						
+						loadUrl(loginUrl, extraHeaders)
+					}
+				},
+				modifier = Modifier.fillMaxSize()
+			)
 
-            // 加载过渡
-            AnimatedVisibility(
-                visible = isLoading,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Box(modifier = Modifier.fillMaxSize().background(BackgroundBlack), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = NeteaseRed)
-                }
-            }
-        }
-    }
+			// 加载过渡
+			AnimatedVisibility(
+				visible = isLoading,
+				enter = fadeIn(),
+				exit = fadeOut(),
+				modifier = Modifier.fillMaxSize()
+			) {
+                // 加载页背景也改成网页同款浅灰，保持视觉过渡一致
+                Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F7)), contentAlignment = Alignment.Center) {
+					CircularProgressIndicator(color = NeteaseRed)
+				}
+			}
+		}
+	}
 }
 
 private fun checkCookies(onLoginSuccess: (String) -> Unit) {

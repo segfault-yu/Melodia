@@ -56,13 +56,19 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onPlaylistClick: (Long) -> Unit = {},
     onSearchClick: () -> Unit = {},
-    onOpenSidebar: () -> Unit = {}
+    onOpenSidebar: () -> Unit = {},
+    onLoginScreenVisibilityChanged: (Boolean) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
+
+    // 监听网页登录界面可见性变化，并通知上层以隐藏悬浮底栏
+    LaunchedEffect(showWebViewLogin) {
+        onLoginScreenVisibilityChanged(showWebViewLogin)
+    }
 
     val scope = rememberCoroutineScope()
 

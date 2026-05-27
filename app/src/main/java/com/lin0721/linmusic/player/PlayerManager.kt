@@ -81,7 +81,9 @@ class PlayerManager(
         }
         scope.launch {
             while (true) {
-                if (_isPlaying.value) {
+                // 只有当播放器处于就绪播放状态时，才去轮询更新当前进度，防止在切歌缓冲时读到残留或脏进度值
+                val isReady = controller?.playbackState == Player.STATE_READY
+                if (_isPlaying.value && isReady) {
                     _currentPosition.value = controller?.currentPosition ?: 0L
                 }
                 delay(1000)
@@ -366,6 +368,10 @@ class PlayerManager(
         _currentIndex.value = index
         saveQueueState()
 
+        // 立即重置当前进度与时长，避免上一首歌曲的数据在加载新歌期间残留导致进度条闪烁
+        _currentPosition.value = startPosition
+        _duration.value = 0L
+
         activePlayJob?.cancel()
         activePlayJob = scope.launch {
             repository.getSongUrl(item.songId).collect { result ->
@@ -416,6 +422,10 @@ class PlayerManager(
         _currentTrack.value = mediaItem
         _playContext.value = mediaItem?.mediaMetadata?.extras?.getString("playContext")
         if (mediaItem != null) {
+            // 切歌过渡时，应当立即将当前进度重置，防止读取上一首残留位置或缓冲位置
+            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
+                _currentPosition.value = 0L
+            }
             val dur = controller?.duration ?: 0L
             _duration.value = if (dur > 0L) dur else 0L
             saveState()

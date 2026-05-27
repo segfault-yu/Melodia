@@ -580,6 +580,8 @@ class MusicRepositoryImpl(
             var language = ""
             var bpm = ""
             var entertainment = ""
+            var background = ""
+            var awards = ""
 
             // 解析百科简要信息中的 Block 列表
             wikiResult?.data?.blocks?.forEach { block ->
@@ -604,18 +606,48 @@ class MusicRepositoryImpl(
                             }
                         }
                     }
+                } else if (block.code == "SONG_PLAY_ABOUT_WIKI") {
+                    // 解析歌曲百科模块，提取歌曲背景描述以及所获奖项/荣誉
+                    block.creatives.forEach { creative ->
+                        val creativeType = creative.creativeType
+                        val creativeTitle = creative.uiElement?.mainTitle?.title ?: ""
+                        
+                        val descriptions = mutableListOf<String>()
+                        creative.uiElement?.descriptions?.forEach { desc ->
+                            if (desc.description.isNotEmpty()) {
+                                descriptions.add(desc.description)
+                            }
+                        }
+                        creative.resources.forEach { res ->
+                            res.uiElement?.descriptions?.forEach { desc ->
+                                if (desc.description.isNotEmpty()) {
+                                    descriptions.add(desc.description)
+                                }
+                            }
+                        }
+                        val contentText = descriptions.joinToString("\n")
+                        
+                        if (creativeType == "background" || creativeTitle.contains("背景") || creativeTitle.contains("故事")) {
+                            if (contentText.isNotEmpty()) {
+                                background = contentText
+                            }
+                        } else if (creativeType == "awards" || creativeTitle.contains("奖项") || creativeTitle.contains("获奖") || creativeTitle.contains("荣誉") || creativeTitle.contains("排行")) {
+                            if (contentText.isNotEmpty()) {
+                                awards = contentText
+                            }
+                        }
+                    }
                 }
             }
 
-            // 解析制作人员信息：优先提取作词、作曲、编曲
+            // 解析制作人员信息：提取全部角色，拼接为详细制作名单
             val creatorRoles = creatorsResult?.data?.songCreatorsRoleVos
             val creatorsStr = if (!creatorRoles.isNullOrEmpty()) {
-                val rolesToExtract = listOf("作词", "作曲", "编曲")
                 val parts = mutableListOf<String>()
-                rolesToExtract.forEach { role ->
-                    val artists = creatorRoles.firstOrNull { it.roleName == role }?.creatorMetaVOS?.map { it.artistName }
-                    if (!artists.isNullOrEmpty()) {
-                        parts.add("$role ${artists.joinToString(" ")}")
+                creatorRoles.forEach { role ->
+                    val artists = role.creatorMetaVOS.map { it.artistName }.filter { it.isNotEmpty() }
+                    if (artists.isNotEmpty()) {
+                        parts.add("${role.roleName} ${artists.joinToString(" ")}")
                     }
                 }
                 parts.joinToString(" / ")
@@ -631,7 +663,9 @@ class MusicRepositoryImpl(
                     publishTime = publishDateStr,
                     bpm = bpm,
                     creators = creatorsStr,
-                    entertainment = entertainment
+                    entertainment = entertainment,
+                    background = background,
+                    awards = awards
                 )
             ))
         }

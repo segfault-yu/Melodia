@@ -1100,7 +1100,8 @@ data class SongWikiResource(
 @Serializable
 data class SongWikiUiElement(
     val mainTitle: SongWikiMainTitle? = null,
-    val textLinks: List<SongWikiTextLink> = emptyList()
+    val textLinks: List<SongWikiTextLink> = emptyList(),
+    val descriptions: List<SongWikiDescription> = emptyList() // 百科描述列表，用于提取歌曲背景、所获奖项等
 )
 
 @Serializable
@@ -1112,6 +1113,12 @@ data class SongWikiMainTitle(
 data class SongWikiTextLink(
     val text: String = ""
 )
+
+@Serializable
+data class SongWikiDescription(
+    val description: String = "" // 具体的描述内容文本
+)
+
 
 
 // ======================= 歌曲创作者 DTO =======================

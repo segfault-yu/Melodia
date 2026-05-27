@@ -171,5 +171,7 @@ data class SongWikiData(
     val publishTime: String = "",   // 发行日期，如 "2003-07-31"
     val bpm: String = "",           // BPM
     val creators: String = "",      // 制作人/主创列表，如 "作词 周杰伦 / 作曲 周杰伦"
-    val entertainment: String = ""  // 影综背景，如 "电影《不能说的秘密》插曲"
+    val entertainment: String = "", // 影综背景，如 "电影《不能说的秘密》插曲"
+    val background: String = "",    // 歌曲背景故事
+    val awards: String = ""         // 歌曲所获奖项/荣誉
 )

@@ -31,7 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.automirrored.rounded.Comment
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -131,7 +131,7 @@ fun FullPlayerScreen(
     val songWiki by viewModel.songWiki.collectAsStateWithLifecycle()
     var showQueueSheet by remember { mutableStateOf(false) }
 
-    // 当播放队列展开时，拦截系统返回键仅收起队列，避免直接关闭整个播放界面
+    // 返回键收起播放队列
     BackHandler(enabled = showQueueSheet) {
         showQueueSheet = false
     }
@@ -151,7 +151,7 @@ fun FullPlayerScreen(
     val tintedCardColor = animatedDominant.copy(alpha = 0.08f).compositeOver(SurfaceDark)
 
     val gradientStart = remember(animatedDominant) {
-        // 右下角偏白点 (gradientStart)：以主色饱和度 0.6 倍动态缩减，限最低 0.35f，亮度设为 0.92f，确保有饱和的色彩感
+        // 右下角偏白点样式计算
         val hsv = FloatArray(3)
         android.graphics.Color.RGBToHSV(
             (animatedDominant.red * 255).toInt(),
@@ -165,7 +165,7 @@ fun FullPlayerScreen(
     }
 
     val gradientEnd = remember(animatedDominant) {
-        // 左上角深色点 (gradientEnd)：在主色基础上增加饱和度 0.35f，限最低 0.75f，亮度设为 0.3f，使色彩丰富艳丽
+        // 左上角深色点样式计算
         val hsv = FloatArray(3)
         android.graphics.Color.RGBToHSV(
             (animatedDominant.red * 255).toInt(),
@@ -178,7 +178,7 @@ fun FullPlayerScreen(
         Color(android.graphics.Color.HSVToColor(hsv))
     }
     val accentColor = remember(animatedDominant) {
-        // 活力色光源 accentColor：将主色饱和度拉满 (1.0f)，并将亮度调整为 0.75f，代表封面最亮眼的点缀色彩
+        // 活力色光源样式计算
         val hsv = FloatArray(3)
         android.graphics.Color.RGBToHSV(
             (animatedDominant.red * 255).toInt(),
@@ -195,7 +195,7 @@ fun FullPlayerScreen(
 
     val infiniteTransition = rememberInfiniteTransition(label = "bg_breathe")
     val gradientEndY by infiniteTransition.animateFloat(
-        initialValue = 2400f, // 调大结束端点像素值，使渐变光效向下方大幅延伸
+        initialValue = 2400f, // 渐变光效结束端点动画
         targetValue = 3000f,
         animationSpec = infiniteRepeatable(
             animation = tween(8000, easing = FastOutSlowInEasing),
@@ -224,7 +224,7 @@ fun FullPlayerScreen(
             } else 0.85f
         }
     }
-    var coverHeight by remember { mutableStateOf(1000f) } // 缓存封面的高度像素值（提供默认备用值）
+    var coverHeight by remember { mutableStateOf(1000f) } // 缓存封面高度
     val backgroundTranslationY by remember {
         derivedStateOf {
             val visibleItems = listState.layoutInfo.visibleItemsInfo
@@ -233,8 +233,7 @@ fun FullPlayerScreen(
                 coverHeight = coverItem.size.toFloat()
                 coverItem.offset.toFloat()
             } else {
-                // 当封面滚动到屏幕外被回收后，依据列表首项索引及偏移量进行数学平滑估算，
-                // 确保光效背景跟随滚动继续向上平移，绝不产生突然跳变到 -2000f 的断层现象。
+                // 封面被回收后平滑估算光效偏移，防止跳变
                 val firstIndex = listState.firstVisibleItemIndex
                 val firstOffset = listState.firstVisibleItemScrollOffset
                 val estimatedSubsequentScroll = (firstIndex - 1) * 250f + firstOffset
@@ -247,7 +246,7 @@ fun FullPlayerScreen(
     var isScrollGestureActive by remember { mutableStateOf(false) }
     var isGestureStartedAtTop by remember { mutableStateOf(true) }
 
-    // 当播放页面重新打开时，重置滑动偏移量及手势状态，确保页面能正常显示且手势状态正确
+    // 重新打开页面时重置状态
     LaunchedEffect(isPlayerOpen) {
         if (isPlayerOpen) {
             offsetY = 0f
@@ -268,8 +267,7 @@ fun FullPlayerScreen(
     fun handleDragRelease(velocity: Float = 0f) {
         dragReleaseJob?.cancel()
         dragReleaseJob = coroutineScope.launch {
-            // 如果手势是在顶部封面区或顶栏开始的，允许使用滑动速度与偏移共同判断是否关闭
-            // 如果是从下方列表滑回顶部并拉起页面，则忽略惯性滑动速度以防误触，仅允许刻意下拉超过阈值时关闭
+            // 根据起拖位置和释放速度判断是否关闭页面
             val shouldClose = if (isGestureStartedAtTop) {
                 offsetY > screenHeightPx * 0.20f || velocity > 1000f
             } else {
@@ -299,7 +297,7 @@ fun FullPlayerScreen(
                         stiffness = Spring.StiffnessMediumLow
                     )
                 ) { value, _ ->
-                    offsetY = value.coerceAtLeast(0f) // 限制非负，防止弹簧动画回弹时产生负偏移导致页面上移
+                    offsetY = value.coerceAtLeast(0f) // 限制非负，防止回弹产生负偏移
                 }
             }
         }
@@ -308,17 +306,16 @@ fun FullPlayerScreen(
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                // 如果是用户手势输入且手势状态尚未激活，则在此处捕获手势起点是否在最顶部（主页）
+                // 捕获手势起点是否在最顶部
                 if (source == NestedScrollSource.UserInput) {
                     if (!isScrollGestureActive) {
                         isScrollGestureActive = true
-                        // 放宽判定条件：只要列表首个可见项为封面项（Index == 0），即认为手势始于顶部主页区，消除微小位移导致阻尼失效的异常感
                         isGestureStartedAtTop = listState.firstVisibleItemIndex == 0
                     }
                 }
 
                 return if (offsetY > 0f && available.y < 0f) {
-                    // 向上滑动回弹时：若从最顶部（主页）开始滑动则不加阻尼（1.0f），若从下方滑动则应用 0.3f 阻尼
+                    // 向上滑动回弹：顶部滑动不加阻尼，下方滑动应用阻尼
                     val damping = if (isGestureStartedAtTop) 1.0f else 0.3f
                     val delta = available.y * damping
                     val consumed = delta.coerceAtLeast(-offsetY)
@@ -334,7 +331,7 @@ fun FullPlayerScreen(
                 available: Offset,
                 source: NestedScrollSource
             ): Offset {
-                // 如果是用户手势输入且手势状态尚未激活，则在此处捕获手势起点是否在最顶部（主页）
+                // 捕获手势起点是否在最顶部
                 if (source == NestedScrollSource.UserInput) {
                     if (!isScrollGestureActive) {
                         isScrollGestureActive = true
@@ -342,10 +339,10 @@ fun FullPlayerScreen(
                     }
                 }
 
-                // 只有当列表滑动到最顶部且为用户直接拖动时，下滑操作才增加 offsetY 展开/关闭页面，防止在列表底部越界回弹或其他位置触发下滑关闭
+                // 列表到顶且直接拖动时，下滑增加 offsetY
                 val isAtTop = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
                 return if (available.y > 0f && isAtTop && source == NestedScrollSource.UserInput) {
-                    // 下滑操作：若从最顶部（主页）开始滑动则不加阻尼（1.0f），若从下方滑动到最顶部继续下滑则应用 0.3f 阻尼，防止快速滑动误触退出
+                    // 顶部下滑不加阻尼，下方到顶后继续下滑加阻尼
                     val damping = if (isGestureStartedAtTop) 1.0f else 0.3f
                     offsetY += available.y * damping
                     Offset(0f, available.y)
@@ -684,7 +681,7 @@ private fun CoverArt(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 51.dp),
+                .padding(bottom = 36.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -806,6 +803,81 @@ private fun SongInfo(title: String, artist: String, isLiked: Boolean, onToggleLi
 }
 
 @Composable
+private fun LoadingDotsAnimation(
+    color: Color,
+    dotSize: androidx.compose.ui.unit.Dp = 8.dp,
+    spacing: androidx.compose.ui.unit.Dp = 6.dp
+) {
+    val transition = rememberInfiniteTransition(label = "dots_loading")
+    
+    // 三个圆点的透明度与缩放动画，利用延时形成波浪流淌效果
+    val dot1Scale by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot1_scale"
+    )
+    val dot2Scale by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = 150, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot2_scale"
+    )
+    val dot3Scale by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = 300, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot3_scale"
+    )
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(spacing),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.height(20.dp) // 固定高度，与常规字体占位一致，防止抖动
+    ) {
+        Box(
+            modifier = Modifier
+                .size(dotSize)
+                .graphicsLayer {
+                    scaleX = dot1Scale
+                    scaleY = dot1Scale
+                    alpha = dot1Scale
+                }
+                .background(color, CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(dotSize)
+                .graphicsLayer {
+                    scaleX = dot2Scale
+                    scaleY = dot2Scale
+                    alpha = dot2Scale
+                }
+                .background(color, CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(dotSize)
+                .graphicsLayer {
+                    scaleX = dot3Scale
+                    scaleY = dot3Scale
+                    alpha = dot3Scale
+                }
+                .background(color, CircleShape)
+        )
+    }
+}
+
+@Composable
 private fun MiniLyricLine(
     lyrics: List<LyricLine>,
     currentLyricIndex: Int,
@@ -821,8 +893,8 @@ private fun MiniLyricLine(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
-            .padding(vertical = 6.dp), // 垂直 padding 缩减至 6.dp
+            .padding(horizontal = 32.dp) // 对齐边距
+            .padding(vertical = 6.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         AnimatedContent(
@@ -830,15 +902,21 @@ private fun MiniLyricLine(
             transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
             label = "mini_lyric"
         ) { text ->
-            // 歌词为空时不显示 "· · ·" 占位符，避免在未播放时出现三个点
-            Text(
-                text = text,
-                color = if (text.isEmpty()) TextGray.copy(alpha = 0.4f) else lyricsHighlight.copy(alpha = 0.7f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (text.isEmpty()) {
+                // 歌词为空时展示三点动效
+                LoadingDotsAnimation(
+                    color = Color.White.copy(alpha = 0.35f)
+                )
+            } else {
+                Text(
+                    text = text,
+                    color = lyricsHighlight.copy(alpha = 0.7f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -858,7 +936,7 @@ private fun ProgressSection(
     } else 0f
 
     val thumbSize by animateDpAsState(
-        targetValue = if (isSeeking) 16.dp else 8.dp, // 放大滑块大小
+        targetValue = if (isSeeking) 16.dp else 8.dp,
         animationSpec = tween(150),
         label = "thumb_size"
     )
@@ -866,8 +944,8 @@ private fun ProgressSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
-            .padding(top = 8.dp) // 顶部 padding 缩减至 8.dp
+            .padding(horizontal = 24.dp) // 调整边距以对齐封面
+            .padding(top = 8.dp)
     ) {
         Slider(
             value = progress.coerceIn(0f, 1f),
@@ -880,7 +958,7 @@ private fun ProgressSection(
                 onSeek((seekPosition * duration).toLong())
             },
             thumb = {
-                // 使用较大的 24.dp 作为容器进行内容居中，适应放大的滑块
+                // 滑块容器
                 Box(
                     modifier = Modifier.size(24.dp),
                     contentAlignment = Alignment.Center
@@ -897,7 +975,7 @@ private fun ProgressSection(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(4.dp) // 增加进度条粗细
+                        .height(4.dp) // 进度条轨道
                         .clip(RoundedCornerShape(2.dp))
                         .background(SurfaceLight)
                 ) {
@@ -916,11 +994,11 @@ private fun ProgressSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 6.dp),
+                .padding(horizontal = 8.dp), // 对齐时间文本
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             val displayPosition = if (isSeeking) (seekPosition * duration).toLong() else currentPosition
-            Text(formatTime(displayPosition), color = TextGray, fontSize = 13.sp) // 放大时间文本
+            Text(formatTime(displayPosition), color = TextGray, fontSize = 13.sp)
             Text(formatTime(duration), color = TextGray, fontSize = 13.sp)
         }
     }
@@ -945,20 +1023,20 @@ private fun PlaybackControls(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
-            .padding(top = 4.dp), // 顶部 padding 缩减至 4.dp
-        horizontalArrangement = Arrangement.SpaceBetween, // 采用 SpaceBetween 布局，使两侧按钮与边界完全贴合对齐
+            .padding(horizontal = 32.dp) // 对齐边距
+            .padding(top = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(
             onClick = onToggleShuffle,
-            modifier = Modifier.offset(x = (-10).dp) // 随机播放按钮向左偏移 10.dp
+            modifier = Modifier.offset(x = (-10).dp)
         ) {
             Icon(
                 Icons.Default.Shuffle,
                 contentDescription = null,
                 tint = if (playMode == PlayMode.SHUFFLE) Color.White else TextGray,
-                modifier = Modifier.size(28.dp) // 放大随机播放按钮
+                modifier = Modifier.size(28.dp)
             )
         }
         
@@ -967,14 +1045,14 @@ private fun PlaybackControls(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onPlayPrevious) {
-                Icon(Icons.Rounded.SkipPrevious, contentDescription = null, tint = Color.White, modifier = Modifier.size(46.dp)) // 放大上一首按钮
+                Icon(Icons.Rounded.SkipPrevious, contentDescription = null, tint = Color.White, modifier = Modifier.size(46.dp))
             }
             FloatingActionButton(
                 onClick = onTogglePlay,
                 containerColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(72.dp) // 白色圆圈外径 72.dp
+                    .size(72.dp)
                     .graphicsLayer {
                         scaleX = bounceScale.value
                         scaleY = bounceScale.value
@@ -984,23 +1062,23 @@ private fun PlaybackControls(
                     if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = null,
                     tint = Color.Black,
-                    modifier = Modifier.size(42.dp) // 内部图标从 36.dp 放大至 42.dp
+                    modifier = Modifier.size(42.dp)
                 )
             }
             IconButton(onClick = onPlayNext) {
-                Icon(Icons.Rounded.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(46.dp)) // 放大下一首按钮
+                Icon(Icons.Rounded.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(46.dp))
             }
         }
 
         IconButton(
             onClick = onToggleRepeat,
-            modifier = Modifier.offset(x = 10.dp) // 循环播放按钮向右偏移 10.dp
+            modifier = Modifier.offset(x = 10.dp)
         ) {
             Icon(
                 if (playMode == PlayMode.SINGLE_LOOP) Icons.Default.RepeatOne else Icons.Default.Repeat,
                 contentDescription = null,
                 tint = if (playMode == PlayMode.SINGLE_LOOP) Color.White else TextGray,
-                modifier = Modifier.size(28.dp) // 放大循环播放按钮
+                modifier = Modifier.size(28.dp)
             )
         }
     }
@@ -1011,28 +1089,28 @@ private fun ActionButtons(onQueueClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp) // 与卡片圆角和直线交汇处对齐 (32.dp)
-            .padding(top = 8.dp, bottom = 16.dp), // 顶部 8.dp，底部 16.dp
+            .padding(horizontal = 32.dp) // 对齐边距
+            .padding(top = 8.dp, bottom = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row {
             IconButton(
                 onClick = { },
-                modifier = Modifier.offset(x = (-12).dp) // 播控设备按钮向左偏移 12.dp
+                modifier = Modifier.offset(x = (-12).dp)
             ) {
-                Icon(Icons.Rounded.Devices, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp)) // 放大设备按钮
+                Icon(Icons.Rounded.Devices, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
             }
         }
         Row {
             IconButton(onClick = { }) {
-                Icon(Icons.Default.Share, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp)) // 放大分享按钮
+                Icon(Icons.Default.Share, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
             }
             IconButton(
                 onClick = onQueueClick,
-                modifier = Modifier.offset(x = 12.dp) // 队列列表按钮向右偏移 12.dp
+                modifier = Modifier.offset(x = 12.dp)
             ) {
-                Icon(Icons.AutoMirrored.Rounded.QueueMusic, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp)) // 放大播放列表按钮
+                Icon(Icons.AutoMirrored.Rounded.PlaylistPlay, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
             }
         }
     }
@@ -1050,7 +1128,7 @@ private fun LyricsCard(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "fluid_mesh")
 
-    // 左上角亮色光源的 X 坐标：0.05f ~ 0.35f
+    // 左上角光源动画
     val accentCenterX by infiniteTransition.animateFloat(
         initialValue = 0.05f,
         targetValue = 0.35f,
@@ -1060,7 +1138,6 @@ private fun LyricsCard(
         ),
         label = "accent_x"
     )
-    // 左上角亮色光源的 Y 坐标：0.1f ~ 0.35f
     val accentCenterY by infiniteTransition.animateFloat(
         initialValue = 0.1f,
         targetValue = 0.35f,
@@ -1070,7 +1147,6 @@ private fun LyricsCard(
         ),
         label = "accent_y"
     )
-    // 左上角亮色光源的半径比例：0.75f ~ 0.90f
     val accentRadiusScale by infiniteTransition.animateFloat(
         initialValue = 0.75f,
         targetValue = 0.90f,
@@ -1081,7 +1157,7 @@ private fun LyricsCard(
         label = "accent_radius"
     )
 
-    // 右下角白色光源的 X 坐标：1.20f ~ 1.35f
+    // 右下角光源动画
     val whiteCenterX by infiniteTransition.animateFloat(
         initialValue = 1.20f,
         targetValue = 1.35f,
@@ -1091,7 +1167,6 @@ private fun LyricsCard(
         ),
         label = "white_x"
     )
-    // 右下角白色光源的 Y 坐标：1.20f ~ 1.35f
     val whiteCenterY by infiniteTransition.animateFloat(
         initialValue = 1.20f,
         targetValue = 1.35f,
@@ -1101,7 +1176,6 @@ private fun LyricsCard(
         ),
         label = "white_y"
     )
-    // 右下角白色光源的半径比例：0.40f ~ 0.50f
     val whiteRadiusScale by infiniteTransition.animateFloat(
         initialValue = 0.40f,
         targetValue = 0.50f,
@@ -1123,10 +1197,10 @@ private fun LyricsCard(
             .clip(RoundedCornerShape(16.dp))
             .drawBehind {
                 val baseSize = size.minDimension
-                // 1. 填充深色基底
+                // 1. 填充基底
                 drawRect(color = gradientEnd)
                 
-                // 2. 绘制左上角亮彩色光雾
+                // 2. 左上角光雾
                 val accentRadius = baseSize * accentRadiusScale
                 val accentCenter = Offset(size.width * accentCenterX, size.height * accentCenterY)
                 drawCircle(
@@ -1139,7 +1213,7 @@ private fun LyricsCard(
                     radius = accentRadius
                 )
                 
-                // 3. 绘制右下角白色弥散光源
+                // 3. 右下角光雾
                 val whiteRadius = baseSize * whiteRadiusScale
                 val whiteCenter = Offset(size.width * whiteCenterX, size.height * whiteCenterY)
                 drawCircle(
@@ -1347,13 +1421,10 @@ private fun SongDetailCard(
     songDetail: Track?,
     cardColor: Color
 ) {
-    val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
-    val cardHeight = cardWidth * 0.88f // 使用和歌词卡片一样的大小比例，使卡片尺寸协调一致
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .height(cardHeight),
+            .padding(horizontal = 16.dp, vertical = 8.dp), // 去除了高度限制，使卡片高度自适应内容
         shape = RoundedCornerShape(16.dp),
         color = cardColor
     ) {
@@ -1424,12 +1495,31 @@ private fun SongDetailCard(
                         SongDetailRow(label = "影综", value = songWiki.entertainment)
                     }
 
+                    // 歌曲背景
+                    if (songWiki.background.isNotEmpty()) {
+                        SongDetailRow(
+                            label = "歌曲背景",
+                            value = songWiki.background,
+                            maxLines = 15
+                        )
+                    }
+
+                    // 所获奖项
+                    if (songWiki.awards.isNotEmpty()) {
+                        SongDetailRow(
+                            label = "所获奖项",
+                            value = songWiki.awards,
+                            maxLines = 15
+                        )
+                    }
+
                     // 制作
                     if (songWiki.creators.isNotEmpty()) {
                         SongDetailRow(
                             label = "制作",
                             value = songWiki.creators,
-                            showChevron = true
+                            showChevron = true,
+                            maxLines = 15
                         )
                     }
                 }
@@ -1442,7 +1532,8 @@ private fun SongDetailCard(
 private fun SongDetailRow(
     label: String,
     value: String,
-    showChevron: Boolean = false
+    showChevron: Boolean = false,
+    maxLines: Int = 3
 ) {
     Row(
         modifier = Modifier
@@ -1465,7 +1556,7 @@ private fun SongDetailRow(
             color = Color.White,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            maxLines = 3,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
@@ -1577,11 +1668,11 @@ private fun AboutArtistCard(
         color = cardColor
     ) {
         Column {
-            // 顶部艺人图片容器，高度调整为180dp以防过度拉伸
+            // 顶部艺人图片容器，高度调整为260dp以防过度拉伸并提升头像可见度
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(260.dp)
             ) {
                 AsyncImage(
                     model = coverUrl,
@@ -1877,7 +1968,7 @@ private fun CommentsPreviewCard(
                 is CommentsState.Success -> {
                     val allComments = (commentsState.hotComments + commentsState.comments)
                         .distinctBy { it.commentId }
-                        .take(3)
+                        .take(2)
 
                     if (allComments.isEmpty()) {
                         Text(

@@ -62,7 +62,8 @@ import com.lin0721.linmusic.data.local.UserProfile
 fun LibraryScreen(
     onPlaylistClick: (Long) -> Unit,
     onBack: () -> Unit,
-    onOpenSidebar: () -> Unit = {}
+    onOpenSidebar: () -> Unit = {},
+    onLoginScreenVisibilityChanged: (Boolean) -> Unit = {}
 ) {
     val viewModel: LibraryViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,6 +71,12 @@ fun LibraryScreen(
 
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
+
+    // 监听网页登录界面可见性
+    LaunchedEffect(showWebViewLogin) {
+        onLoginScreenVisibilityChanged(showWebViewLogin)
+    }
+
     var showCreateDialog by remember { mutableStateOf(false) }
     var playlistNameInput by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }

@@ -231,13 +231,68 @@ class NeteaseApiTest {
     }
 
     @Test
-    fun testWeapiCryptoComparison() {
-        val text = "{\"id\":954433,\"csrf_token\":\"\",\"e_r\":false}"
-        val secretKey = "abcdef1234567890"
-        val result = com.lin0721.linmusic.data.remote.crypto.NeteaseCrypto.testWeapi(text, secretKey)
-        println("Android p1: ${result["p1"]}")
-        println("Android params: ${result["params"]}")
-        println("Android encSecKey: ${result["encSecKey"]}")
+    fun testSongWiki() {
+        runBlocking {
+            val json = Json {
+                ignoreUnknownKeys = true
+                coerceInputValues = true
+                encodeDefaults = true
+                isLenient = true
+                explicitNulls = false
+            }
+
+            val loggingInterceptor = HttpLoggingInterceptor { message ->
+                println("[OkHttp] $message")
+            }.apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
+
+            val okHttpClient = OkHttpClient.Builder()
+                .addInterceptor { chain ->
+                    val request = chain.request().newBuilder()
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                        .header("Referer", "https://music.163.com")
+                        .header("Cookie", "os=pc; osver=Microsoft-Windows-10-Professional-build-10512-64bit; appver=3.0.1.201552")
+                        .build()
+                    chain.proceed(request)
+                }
+                .addInterceptor(CryptoInterceptor())
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .writeTimeout(15, TimeUnit.SECONDS)
+                .build()
+
+            val contentType = "application/json".toMediaType()
+            val retrofit = Retrofit.Builder()
+                .baseUrl("https://music.163.com")
+                .client(okHttpClient)
+                .addConverterFactory(json.asConverterFactory(contentType))
+                .build()
+
+            val apiService = retrofit.create(NeteaseApiService::class.java)
+
+            println("=== 开始发起请求：getSongWikiSummary ===")
+            try {
+                // 用一首热门非版权受限歌曲进行测试，比如《孤勇者》(1901371647)
+                val response = apiService.getSongWikiSummary(SongWikiSummaryRequest(songId = 1901371647L))
+                println("=== 业务层反序列化结果 ===")
+                println("Code: ${response.code}")
+                response.data?.blocks?.forEach { block ->
+                    println("Block Code: ${block.code}")
+                    block.creatives.forEach { creative ->
+                        println("  Creative Type: ${creative.creativeType}")
+                        println("  Creative Title: ${creative.uiElement?.mainTitle?.title}")
+                        creative.resources.forEach { res ->
+                            println("    Resource Title: ${res.uiElement?.mainTitle?.title}")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println("=== 请求发生异常 ===")
+                e.printStackTrace()
+            }
+        }
     }
 }
 

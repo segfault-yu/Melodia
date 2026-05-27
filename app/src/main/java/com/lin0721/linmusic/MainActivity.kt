@@ -103,6 +103,8 @@ fun LinMusicApp() {
     var activePlaylistId by remember { mutableStateOf<Long?>(null) }
     var searchAutoFocus by remember { mutableStateOf(false) }
     var showCreateSheet by remember { mutableStateOf(false) }
+    // 网页登录界面可见性状态
+    var isLoginScreenVisible by remember { mutableStateOf(false) }
 
     val hazeState = remember { HazeState() }
 
@@ -267,7 +269,8 @@ fun LinMusicApp() {
                                     searchAutoFocus = true
                                     navigateTo(Screen.Search)
                                 },
-                                onOpenSidebar = openSidebar
+                                onOpenSidebar = openSidebar,
+                                onLoginScreenVisibilityChanged = { isLoginScreenVisible = it }
                             )
                         }
                         Screen.Playlist -> {
@@ -292,7 +295,8 @@ fun LinMusicApp() {
                                     navigateTo(Screen.Playlist)
                                 },
                                 onBack = navigateBack,
-                                onOpenSidebar = openSidebar
+                                onOpenSidebar = openSidebar,
+                                onLoginScreenVisibilityChanged = { isLoginScreenVisible = it }
                             )
                         }
                     }
@@ -309,46 +313,52 @@ fun LinMusicApp() {
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 16.dp, vertical = 24.dp)
+            // 网页登录界面显示时，动态隐藏播放器悬浮底栏
+            AnimatedVisibility(
+                visible = !isLoginScreenVisible,
+                enter = fadeIn(animationSpec = tween(300)),
+                exit = fadeOut(animationSpec = tween(300)),
+                modifier = Modifier.align(Alignment.BottomCenter)
             ) {
-                Column {
-                    AnimatedVisibility(
-                        visible = showCreateSheet,
-                        enter = slideInVertically(
-                            initialOffsetY = { it / 2 },
-                            animationSpec = tween(250, easing = FastOutSlowInEasing)
-                        ) + fadeIn(tween(200)),
-                        exit = slideOutVertically(
-                            targetOffsetY = { it / 2 },
-                            animationSpec = tween(200, easing = FastOutSlowInEasing)
-                        ) + fadeOut(tween(150))
-                    ) {
-                        CreatePopupMenu(
-                            onDismiss = { showCreateSheet = false },
-                            onLoginRequest = {
-                                // TODO: 触发登录流程
-                            }
+                Box(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp)
+                ) {
+                    Column {
+                        AnimatedVisibility(
+                            visible = showCreateSheet,
+                            enter = slideInVertically(
+                                initialOffsetY = { it / 2 },
+                                animationSpec = tween(250, easing = FastOutSlowInEasing)
+                            ) + fadeIn(tween(200)),
+                            exit = slideOutVertically(
+                                targetOffsetY = { it / 2 },
+                                animationSpec = tween(200, easing = FastOutSlowInEasing)
+                            ) + fadeOut(tween(150))
+                        ) {
+                            CreatePopupMenu(
+                                onDismiss = { showCreateSheet = false },
+                                onLoginRequest = {
+                                    // TODO: 触发登录流程
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        BottomFloatingIsland(
+                            hazeState = hazeState,
+                            currentTrack = currentTrack,
+                            isPlaying = isPlaying,
+                            currentPosition = currentPosition,
+                            duration = duration,
+                            onTogglePlay = { viewModel.togglePlayPause() },
+                            onOpenPlayer = { isPlayerOpen = true },
+                            currentScreen = currentScreen,
+                            onNavigate = { searchAutoFocus = false; navigateTo(it) },
+                            onCreateClick = { showCreateSheet = !showCreateSheet },
+                            isCreateMenuOpen = showCreateSheet
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    BottomFloatingIsland(
-                        hazeState = hazeState,
-                        currentTrack = currentTrack,
-                        isPlaying = isPlaying,
-                        currentPosition = currentPosition,
-                        duration = duration,
-                        onTogglePlay = { viewModel.togglePlayPause() },
-                        onOpenPlayer = { isPlayerOpen = true },
-                        currentScreen = currentScreen,
-                        onNavigate = { searchAutoFocus = false; navigateTo(it) },
-                        onCreateClick = { showCreateSheet = !showCreateSheet },
-                        isCreateMenuOpen = showCreateSheet
-                    )
                 }
             }
 

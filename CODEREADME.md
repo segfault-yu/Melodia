@@ -327,6 +327,26 @@ app/src/main/java/com/lin0721/linmusic/
   - `NeteaseApiService.kt` 中为 `Track` DTO 增加 `val dt: Long = 0` 时长字段；`PlayerManager.kt` 对 `ExoPlayer` 返回的 duration 强限制非负。
   - 在全屏播放器初始化或切歌缓冲期间，如果播放器时长为 0，自动降级采用 `songDetail.dt` 歌曲详情时长进行兜底，彻底解决点开音乐长度显示 `0:00` 的问题。
 
+### 2026-05-24 — 歌曲百科、评论展示、详情卡片自适应与视觉对齐微调
+- **进度条切歌闪烁与跳动修复及视觉对齐**:
+  - 在 `PlayerManager.kt` 的 `fetchUrlAndPlay` 加载新歌时立即重置 `currentPosition` 为起始位置，`duration` 重置为 `0L`，避免上一首歌曲的数据残留导致进度条闪烁。
+  - 在 `onMediaItemTransition` 发生切歌过渡时强制设定当前进度为 `0L`，防范读取到正在过渡缓冲中不可信的脏位置值。
+  - 在轮询器中增加 `Player.STATE_READY` 就绪状态过滤，彻底解决切歌瞬间因轮询时延产生的进度条“从 3 开始”或“回弹上一首再归零”的闪烁跳跃。
+  - 将 `ProgressSection` 的水平外边距收窄为 `24.dp`，配合 M3 Slider 内部的默认缩进，使滑轨两端在视觉上与 `32.dp` 封面对齐；同时将时间文本 Row 的 padding 设为 `8.dp` 实现左右完美垂直对齐。
+- **播放队列图标宽高比修复**:
+  - 底部控制区右下角将原来的 `QueueMusic` 图标替换为 `PlaylistPlay` 图标，在保持原有尺寸的同时使其宽高比变为比例最协调 of 1:1，解决原有图标横向被压扁拉伸的视觉瑕疵。
+- **评论卡片限制**: 修改 `CommentsPreviewCard` 使其仅显示 2 条评论，使界面更为紧凑。
+- **详情卡片自适应高度**: 移除 `SongDetailCard` 原有的高度限制 `.height(cardHeight)`，使其在显示大量信息时能自动调整并包裹全部内容。
+- **关于艺人卡片调优**: 将 `AboutArtistCard` 顶部艺人图片的高度从 `180.dp` 调大至 `260.dp`，使艺人头像和脸部更加显眼、更容易看清。
+- **歌曲百科 (SONG_PLAY_ABOUT_WIKI) 接入**:
+  - `NeteaseApiService.kt` 中添加 `descriptions` 的 JSON 序列化解析。
+  - 在 `MusicRepositoryImpl.getSongWiki()` 逻辑中，自动从 `SONG_PLAY_ABOUT_WIKI` 百科模块内抽取 `background` (背景故事) 与 `awards` (所获奖项) 字段。
+- **制作团队名单扩展**:
+  - 弃用以前仅提取“作词、作曲、编曲”的过滤限制，而是抓取 API 返回的所有幕后角色（如制作人、混音师、吉他手等）并排版为详细的制作团队名单。
+- **详情展示行扩展**:
+  - 增加“歌曲背景”与“所获奖项”两项的展示。
+  - `SongDetailRow` 新增可配置的 `maxLines` 参数（对详细名单、背景和奖项限制放宽至最大 15 行），防范内容显示溢出或被腰斩。
+
 ---
 
 ## 待办事项
