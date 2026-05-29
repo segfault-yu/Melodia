@@ -154,6 +154,9 @@ interface MusicRepository {
 
     fun likeSong(songId: Long, like: Boolean): Flow<Result<Unit>>
 
+    // 歌单歌曲添加/删除操作
+    fun manipulatePlaylistTracks(op: String, playlistId: Long, trackId: Long): Flow<Result<Unit>>
+
     // ================== 评论 ==================
 
     fun getComments(songId: Long, limit: Int = 20, offset: Int = 0): Flow<Result<com.lin0721.linmusic.data.remote.api.CommentsResponse>>
@@ -161,6 +164,31 @@ interface MusicRepository {
     // ================== 百科与乐谱详情 ==================
     // 获取合并后的歌曲详情与百科信息
     fun getSongWiki(songId: Long): Flow<Result<SongWikiData>>
+
+    // ================== 设置和隐私扩展 ==================
+    // 获取用户等级信息
+    fun getUserLevel(): Flow<Result<com.lin0721.linmusic.data.remote.api.UserLevelData>>
+
+    // 获取 VIP 状态信息
+    fun getVipInfo(): Flow<Result<com.lin0721.linmusic.data.remote.api.VipInfoData>>
+
+    // 获取账号绑定信息
+    fun getUserBindings(uid: Long): Flow<Result<List<com.lin0721.linmusic.data.remote.api.UserBindingItem>>>
+
+    // 修改用户个人资料
+    fun updateUserProfile(nickname: String, gender: Int, birthday: Long, province: Int, city: Int, signature: String): Flow<Result<Unit>>
+
+    // 检查昵称可用性
+    fun checkNickname(nickname: String): Flow<Result<Boolean>>
+
+    // 每日签到
+    fun dailySignin(type: Int): Flow<Result<Int>> // 返回签到获得的积分数
+
+    // 退出登录并清理网络会话
+    fun logout(): Flow<Result<Unit>>
+
+    // 上传并更换头像
+    fun uploadAvatar(file: java.io.File): Flow<Result<String>>
 }
 
 // 歌曲详情/百科信息领域模型

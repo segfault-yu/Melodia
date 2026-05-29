@@ -76,6 +76,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import com.lin0721.linmusic.data.remote.api.ArtistAlbum
 import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
 import com.lin0721.linmusic.data.remote.api.Track
@@ -449,7 +450,8 @@ fun FullPlayerScreen(
                 MiniLyricLine(
                     lyrics = lyrics,
                     currentLyricIndex = currentLyricIndex,
-                    lyricsHighlight = lyricsHighlight
+                    lyricsHighlight = lyricsHighlight,
+                    isPlaying = isPlaying
                 )
             }
 
@@ -805,52 +807,67 @@ private fun SongInfo(title: String, artist: String, isLiked: Boolean, onToggleLi
 @Composable
 private fun LoadingDotsAnimation(
     color: Color,
+    isPlaying: Boolean,
     dotSize: androidx.compose.ui.unit.Dp = 8.dp,
     spacing: androidx.compose.ui.unit.Dp = 6.dp
 ) {
-    val transition = rememberInfiniteTransition(label = "dots_loading")
-    
-    // 三个圆点的透明度与缩放动画，利用延时形成波浪流淌效果
-    val dot1Scale by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dot1_scale"
-    )
-    val dot2Scale by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, delayMillis = 150, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dot2_scale"
-    )
-    val dot3Scale by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, delayMillis = 300, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dot3_scale"
-    )
+    // 使用 Animatable 管理三个圆点，以便在暂停时可以停止动画并平滑缩回
+    val dot1Scale = remember { Animatable(0.3f) }
+    val dot2Scale = remember { Animatable(0.3f) }
+    val dot3Scale = remember { Animatable(0.3f) }
+
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            // 当正在播放时，启动无限往返缩放动画，通过延迟实现波浪效果
+            launch {
+                dot1Scale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+            }
+            launch {
+                delay(150)
+                dot2Scale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+            }
+            launch {
+                delay(300)
+                dot3Scale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+            }
+        } else {
+            // 暂停播放时，平滑收缩回初始状态
+            launch { dot1Scale.animateTo(0.3f, tween(200)) }
+            launch { dot2Scale.animateTo(0.3f, tween(200)) }
+            launch { dot3Scale.animateTo(0.3f, tween(200)) }
+        }
+    }
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.height(20.dp) // 固定高度，与常规字体占位一致，防止抖动
+        modifier = Modifier.height(20.dp) // 固定高度，与常规字体占位一致
     ) {
         Box(
             modifier = Modifier
                 .size(dotSize)
                 .graphicsLayer {
-                    scaleX = dot1Scale
-                    scaleY = dot1Scale
-                    alpha = dot1Scale
+                    scaleX = dot1Scale.value
+                    scaleY = dot1Scale.value
+                    alpha = dot1Scale.value
                 }
                 .background(color, CircleShape)
         )
@@ -858,9 +875,9 @@ private fun LoadingDotsAnimation(
             modifier = Modifier
                 .size(dotSize)
                 .graphicsLayer {
-                    scaleX = dot2Scale
-                    scaleY = dot2Scale
-                    alpha = dot2Scale
+                    scaleX = dot2Scale.value
+                    scaleY = dot2Scale.value
+                    alpha = dot2Scale.value
                 }
                 .background(color, CircleShape)
         )
@@ -868,9 +885,9 @@ private fun LoadingDotsAnimation(
             modifier = Modifier
                 .size(dotSize)
                 .graphicsLayer {
-                    scaleX = dot3Scale
-                    scaleY = dot3Scale
-                    alpha = dot3Scale
+                    scaleX = dot3Scale.value
+                    scaleY = dot3Scale.value
+                    alpha = dot3Scale.value
                 }
                 .background(color, CircleShape)
         )
@@ -881,7 +898,8 @@ private fun LoadingDotsAnimation(
 private fun MiniLyricLine(
     lyrics: List<LyricLine>,
     currentLyricIndex: Int,
-    lyricsHighlight: Color
+    lyricsHighlight: Color,
+    isPlaying: Boolean
 ) {
     val isPureMusic = lyrics.size == 1 && lyrics[0].text == "纯音乐"
     val currentText = when {
@@ -903,9 +921,10 @@ private fun MiniLyricLine(
             label = "mini_lyric"
         ) { text ->
             if (text.isEmpty()) {
-                // 歌词为空时展示三点动效
+                // 歌词为空时展示三点动效，且根据播放状态控制是否动效
                 LoadingDotsAnimation(
-                    color = Color.White.copy(alpha = 0.35f)
+                    color = Color.White.copy(alpha = 0.35f),
+                    isPlaying = isPlaying
                 )
             } else {
                 Text(

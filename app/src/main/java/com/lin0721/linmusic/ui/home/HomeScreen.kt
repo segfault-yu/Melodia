@@ -1092,28 +1092,38 @@ fun HistoryRecommendSheet(
 
 @Composable
 fun DynamicAmbientLight() {
-    // 改为红色静态光效
-    Canvas(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.5f)) {
+    // 采用全屏画布
+    Canvas(modifier = Modifier.fillMaxSize()) {
         val width = size.width
         val height = size.height
 
         // 顶部中央偏左的红色光晕
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(NeteaseRed.copy(alpha = 0.25f), Color.Transparent),
-                center = Offset(width * 0.3f, height * 0.2f),
-                radius = width * 1.2f
+                colors = listOf(
+                    NeteaseRed.copy(alpha = 0.20f),
+                    NeteaseRed.copy(alpha = 0.08f),
+                    Color.Transparent
+                ),
+                center = Offset(width * 0.3f, height * 0.15f),
+                radius = width * 1.3f
             ),
-            center = Offset(width * 0.3f, height * 0.2f),
-            radius = width * 1.2f
+            center = Offset(width * 0.3f, height * 0.15f),
+            radius = width * 1.3f
         )
 
-        // 底部边缘柔化遮罩
+        // 底部漫长柔化遮罩
         drawRect(
             brush = Brush.verticalGradient(
-                colors = listOf(Color.Transparent, BackgroundDark),
-                startY = height * 0.5f,
-                endY = height
+                colors = listOf(
+                    Color.Transparent,
+                    BackgroundDark.copy(alpha = 0.2f),
+                    BackgroundDark.copy(alpha = 0.6f),
+                    BackgroundDark.copy(alpha = 0.9f),
+                    BackgroundDark
+                ),
+                startY = height * 0.15f,
+                endY = height * 0.8f
             )
         )
     }

@@ -47,7 +47,8 @@ data class LibraryUiState(
     val error: String? = null,
     val selectedFilter: LibraryFilter = LibraryFilter.ALL,
     val sortOrder: LibrarySortOrder = LibrarySortOrder.RECENTLY_PLAYED,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val isGridView: Boolean = false
 )
 
 class LibraryViewModel(
@@ -60,7 +61,7 @@ class LibraryViewModel(
     private val sharedPrefs = context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE)
     private val _pinnedIds = MutableStateFlow<Set<String>>(getPinnedIdsFromPrefs())
 
-    private val _uiState = MutableStateFlow(LibraryUiState())
+    private val _uiState = MutableStateFlow(LibraryUiState(isGridView = getGridViewFromPrefs()))
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     init {
@@ -90,6 +91,16 @@ class LibraryViewModel(
 
     private fun savePinnedIdsToPrefs(ids: Set<String>) {
         sharedPrefs.edit().putStringSet("pinned_ids", ids).apply()
+    }
+
+    private fun getGridViewFromPrefs(): Boolean {
+        // 读取视图切换记忆，默认列表视图 (false)
+        return sharedPrefs.getBoolean("is_grid_view", false)
+    }
+
+    fun updateGridView(isGrid: Boolean) {
+        _uiState.update { it.copy(isGridView = isGrid) }
+        sharedPrefs.edit().putBoolean("is_grid_view", isGrid).apply()
     }
 
     fun loadLibraryData() {

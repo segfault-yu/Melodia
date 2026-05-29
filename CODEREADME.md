@@ -347,6 +347,38 @@ app/src/main/java/com/lin0721/linmusic/
   - 增加“歌曲背景”与“所获奖项”两项的展示。
   - `SongDetailRow` 新增可配置的 `maxLines` 参数（对详细名单、背景和奖项限制放宽至最大 15 行），防范内容显示溢出或被腰斩。
 
+### 2026-05-27 — 悬浮舱显隐控制、WebView登录闪烁修复与歌词空状态动效
+- **WebViewLoginScreen.kt & MainActivity.kt & Screens**:
+  - 实现网页登录界面（`WebViewLoginScreen`）可见性回调机制（`onLoginScreenVisibilityChanged`），在 `MainActivity` 中通过 `AnimatedVisibility` 平滑淡入/淡出底部悬浮岛播放舱（`BottomFloatingIsland`），避免遮挡登录界面。
+  - 移除了花哨且不稳定的自定义 JS 注入和自动点击登录流，回归纯净原生网页登录。
+  - 将外层 Compose 容器和内置 WebView 的背景色同步设置为官方网易网页登录的背景色（`#F5F5F7`），彻底解决了软键盘弹出/收起导致布局 resize 时出现白屏或暗色背景闪烁交替的视觉问题。
+- **FullPlayerScreen.kt**:
+  - 精简了该文件内冗长、低效的手势和布局冗余单行/多行注释，使代码结构更清爽，符合项目注释规范。
+  - 在播放器界面的小歌词为空时，添加了三个大原点呼吸/波浪加载动效（`LoadingDotsAnimation`），且设置固定高度为 `20.dp` 从而杜绝因内容高度抖动引起的布局垂直跳变。
+
+### 2026-05-29 — 侧边栏设置与隐私功能开发与细化
+- **SettingsPreferences.kt & LocalModule.kt**: 新建本地设置持久化存储层，注册 Koin 依赖注入。将音质选择分拆为 Wi-Fi 默认音质 (`wifi_quality`) 与移动网络默认音质 (`mobile_quality`) 两个独立持久化项。
+- **NeteaseApiService.kt & MusicRepositoryImpl.kt**:
+  - 完善并对接音质、等级、VIP、账号绑定、资料修改、签到和注销的网络路由。
+  - `uploadAvatar` 对接 Multipart 头像上传，构建时使用 `"imgFile"` 字段名以精准匹配 `api-enhanced` 后端。
+  - `MusicRepositoryImpl` 注入 `Context` 并增加 `isWifiConnected` 动态监测：加载播放链接时根据当前联网形态（Wi-Fi / 流量）自适应拼装对应的音质规格。
+- **SettingsViewModel.kt & ViewModelModule.kt**:
+  - 实现了对“昵称可用性检查”的 500ms 协程防抖处理（`debounce(500)`），且过滤了在昵称未变动时向服务端发起的多余请求。
+  - 支持分别更新 Wi-Fi 音质和移动网络音质，去除了音质更新、新建歌单默认私密等全部设置项切换时的 Toast 弹窗提示，保持设置操作的纯净性。
+  - 在“清理缓存”中不仅清理 Coil 缓存，还通过递归删除应用的 `cacheDir` 与 `externalCacheDir` 实现对播放器 ExoPlayer/Media3 媒体缓存的深度清理。
+- **SettingsScreen.kt & ProfileSidebar.kt & MainActivity.kt**:
+  - 设计了沉浸式 Spotify-like 深色极简设置页，将全局音质调整拆分为独立配置 Wi-Fi 播放音质和移动网络播放音质两栏，复用多态音质选择 Dialog。
+  - 针对 VIP 状态提供高度视觉反馈，根据 `vipType` 渲染黑胶黑金 Obsidian 卡片、蓝色音乐包卡片以及灰色未激活卡片。
+  - 在侧边栏和主导航层中完成导航注册，实现平滑开启和手势返回。
+- **LibraryScreen.kt & LibraryViewModel.kt**:
+  - 接入本地持久化 `SharedPreferences` 实现对音乐库“列表/网格”视图切换的记忆保存，确保再次打开应用或重构视图时能够无缝恢复至用户先前的视图选项。
+  - 顺带将已废弃的 List 和 ArrowBack 图标迁移至新版 `AutoMirrored` 规范，修复了 Gradle 构建过程中的所有编译 warning。
+- **PlaylistScreen.kt & PlaylistViewModel.kt & NeteaseApiService.kt**:
+  - 完美对接网易云歌单歌曲批量操作路由 `/eapi/playlist/manipulate/tracks`，支持一键将某歌曲批量添加至或从多个自定义歌单（包括“我喜欢的音乐”）中剔除。
+  - 歌单单曲名后方引入高光 "VIP" 红色微标（根据计费状态 `fee == 1` 进行高保真自适应绘制）。
+  - 将歌单列表原先表示“免费”的红色对勾图标重构为喜欢爱心按钮（`Icons.Default.Favorite`），指示当前单曲是否已红心喜欢。
+  - 点击爱心按钮，未登录用户会无缝重定向拉出 WebView 登录底层面板，已登录用户则激活“收藏至歌单”弹窗，提供流畅的 Checkbox 批量添加/移除逻辑。
+
 ---
 
 ## 待办事项

@@ -18,10 +18,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.LibraryMusic
-import androidx.compose.material.icons.rounded.List
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material3.*
@@ -91,7 +91,7 @@ fun LibraryScreen(
             showLoginSheet = true
         }
     }
-    var viewIsGrid by remember { mutableStateOf(false) }
+    val isGridView = uiState.isGridView
 
     Box(
         modifier = Modifier
@@ -119,7 +119,7 @@ fun LibraryScreen(
                             isSearchActive = false
                             viewModel.updateSearchQuery("")
                         }) {
-                            Icon(Icons.Rounded.ArrowBack, contentDescription = "返回", tint = Color.White)
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "返回", tint = Color.White)
                         }
                         
                         Box(
@@ -292,11 +292,11 @@ fun LibraryScreen(
                     }
 
                     IconButton(
-                        onClick = { viewIsGrid = !viewIsGrid },
+                        onClick = { viewModel.updateGridView(!isGridView) },
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            imageVector = if (viewIsGrid) Icons.Rounded.List else Icons.Rounded.GridView,
+                            imageVector = if (isGridView) Icons.AutoMirrored.Rounded.List else Icons.Rounded.GridView,
                             contentDescription = "切换视图",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -321,7 +321,7 @@ fun LibraryScreen(
                             textAlign = TextAlign.Center
                         )
                     }
-                } else if (viewIsGrid) {
+                } else if (isGridView) {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentPadding = PaddingValues(bottom = 120.dp, top = 4.dp, start = 16.dp, end = 16.dp)

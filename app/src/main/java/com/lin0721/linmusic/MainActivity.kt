@@ -43,7 +43,7 @@ import androidx.compose.foundation.clickable
 import com.lin0721.linmusic.ui.create.CreatePopupMenu
 
 enum class Screen {
-    Home, Playlist, Search, Library
+    Home, Playlist, Search, Library, Settings
 }
 
 enum class AppSidebarState {
@@ -213,6 +213,9 @@ fun LinMusicApp() {
                     },
                     onDismiss = {
                         scope.launch { drawerState.animateTo(AppSidebarState.Closed) }
+                    },
+                    onNavigateToSettings = {
+                        navigateTo(Screen.Settings)
                     }
                 )
             }
@@ -297,6 +300,11 @@ fun LinMusicApp() {
                                 onBack = navigateBack,
                                 onOpenSidebar = openSidebar,
                                 onLoginScreenVisibilityChanged = { isLoginScreenVisible = it }
+                            )
+                        }
+                        Screen.Settings -> {
+                            com.lin0721.linmusic.ui.components.SettingsScreen(
+                                onBack = navigateBack
                             )
                         }
                     }

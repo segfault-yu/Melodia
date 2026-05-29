@@ -11,7 +11,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.window.Dialog
+import com.lin0721.linmusic.ui.components.LoginBottomSheet
+import com.lin0721.linmusic.ui.components.WebViewLoginScreen
+import com.lin0721.linmusic.ui.playlist.PlaylistCollectState
+import com.lin0721.linmusic.ui.playlist.PlaylistCollectItem
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,7 +68,13 @@ fun PlaylistScreen(
 ) {
     val uiState      by viewModel.uiState.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
+    val likedSongIds by viewModel.likedSongIds.collectAsStateWithLifecycle()
+    val collectState by viewModel.collectState.collectAsStateWithLifecycle()
+    val userProfile  by viewModel.userProfile.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    var showLoginSheet by remember { mutableStateOf(false) }
+    var showWebViewLogin by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
@@ -89,6 +105,9 @@ fun PlaylistScreen(
                 PlaylistContent(
                     playlist       = state.playlist,
                     currentTrackId = currentTrack?.mediaId,
+                    likedSongIds   = likedSongIds,
+                    collectState   = collectState,
+                    isLoggedIn     = userProfile != null,
                     onBack         = onBack,
                     onPlaySong     = { track ->
                         viewModel.playSongInList(track, state.playlist.tracks)
@@ -97,8 +116,38 @@ fun PlaylistScreen(
                         state.playlist.tracks.firstOrNull()?.let { first ->
                             viewModel.playSongInList(first, state.playlist.tracks)
                         }
+                    },
+                    onLikeClick = { songId ->
+                        viewModel.prepareCollectDialog(songId)
+                    },
+                    onSaveCollection = { songId, items ->
+                        viewModel.savePlaylistCollection(songId, items)
+                    },
+                    onRequireLogin = {
+                        showLoginSheet = true
                     }
                 )
+        }
+
+        if (showLoginSheet) {
+            LoginBottomSheet(
+                onDismiss = { showLoginSheet = false },
+                onWebLogin = {
+                    showLoginSheet = false
+                    showWebViewLogin = true
+                }
+            )
+        }
+
+        if (showWebViewLogin) {
+            WebViewLoginScreen(
+                onClose = { showWebViewLogin = false },
+                onLoginSuccess = { cookies ->
+                    showWebViewLogin = false
+                    viewModel.handleLoginSuccess(cookies)
+                    Toast.makeText(context, "登录成功，正在同步数据...", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
 }
@@ -106,13 +155,20 @@ fun PlaylistScreen(
 // ────────────────────────────────────────────────────────────────────────────
 // 主内容
 // ────────────────────────────────────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PlaylistContent(
     playlist: PlaylistDetail,
     currentTrackId: String?,
+    likedSongIds: Set<Long>,
+    collectState: PlaylistCollectState,
+    isLoggedIn: Boolean,
     onBack: () -> Unit,
     onPlaySong: (Track) -> Unit,
-    onPlayAll: () -> Unit
+    onPlayAll: () -> Unit,
+    onLikeClick: (Long) -> Unit,
+    onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
+    onRequireLogin: () -> Unit
 ) {
     val density = LocalDensity.current
 
@@ -147,6 +203,8 @@ private fun PlaylistContent(
     val coverAlpha        = 1f - ((progress - 0.4f) / 0.5f).coerceIn(0f, 1f)
     // 到达临界点后瞬间切换，不做渐隐
     val isCollapsed       = progress >= 0.8f
+
+    var collectSongId by remember { mutableStateOf<Long?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -188,9 +246,18 @@ private fun PlaylistContent(
                            }
             items(filtered, key = { it.id }) { track ->
                 SongRow(
-                    track    = track,
-                    isActive = currentTrackId == track.id.toString(),
-                    onClick  = { onPlaySong(track) }
+                    track        = track,
+                    isActive     = currentTrackId == track.id.toString(),
+                    likedSongIds = likedSongIds,
+                    onClick      = { onPlaySong(track) },
+                    onLikeClick  = {
+                        if (!isLoggedIn) {
+                            onRequireLogin()
+                        } else {
+                            collectSongId = track.id
+                            onLikeClick(track.id)
+                        }
+                    }
                 )
             }
         }
@@ -247,6 +314,135 @@ private fun PlaylistContent(
                     .shadow(8.dp, CircleShape)
             ) {
                 Icon(Icons.Default.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(32.dp))
+            }
+        }
+    }
+
+    if (collectSongId != null) {
+        val songId = collectSongId!!
+        ModalBottomSheet(
+            onDismissRequest = { collectSongId = null },
+            containerColor = SurfaceDark,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            dragHandle = {
+                Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                    Surface(
+                        modifier = Modifier.width(40.dp).height(4.dp),
+                        shape = RoundedCornerShape(2.dp),
+                        color = Color.White.copy(alpha = 0.3f)
+                    ) {}
+                }
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp)
+            ) {
+                Text(
+                    text = "收藏到歌单",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                if (collectState.isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = NeteaseRed)
+                    }
+                } else if (collectState.collectItems.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("暂无可用歌单", color = TextGray, fontSize = 14.sp)
+                    }
+                } else {
+                    val localItems = remember(collectState.collectItems) {
+                        collectState.collectItems.map { it.copy() }.toMutableStateList()
+                    }
+                    
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 300.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(localItems) { index, item ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        localItems[index] = item.copy(isContains = !item.isContains)
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    AsyncImage(
+                                        model = "${item.coverUrl}?param=100y100",
+                                        contentDescription = item.playlistName,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = item.playlistName,
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Checkbox(
+                                    checked = item.isContains,
+                                    onCheckedChange = { checked ->
+                                        localItems[index] = item.copy(isContains = checked)
+                                    },
+                                    colors = CheckboxDefaults.colors(checkedColor = NeteaseRed)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { collectSongId = null }) {
+                            Text("取消", color = TextGray)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                onSaveCollection(songId, localItems)
+                                collectSongId = null
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("确定", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         }
     }
@@ -404,7 +600,13 @@ private fun PlaylistHeaderItem(
 // 歌曲行
 // ────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun SongRow(track: Track, isActive: Boolean, onClick: () -> Unit) {
+private fun SongRow(
+    track: Track, 
+    isActive: Boolean, 
+    likedSongIds: Set<Long>,
+    onClick: () -> Unit,
+    onLikeClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -421,18 +623,46 @@ private fun SongRow(track: Track, isActive: Boolean, onClick: () -> Unit) {
         )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(track.name,
-                color      = if (isActive) NeteaseRed else Color.White,
-                fontWeight = FontWeight.Medium, fontSize = 15.sp,
-                maxLines   = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(track.name,
+                    color      = if (isActive) NeteaseRed else Color.White,
+                    fontWeight = FontWeight.Medium, fontSize = 15.sp,
+                    maxLines   = 1, overflow = TextOverflow.Ellipsis,
+                    modifier   = Modifier.weight(1f, fill = false))
+                if (track.fee == 1) {
+                    Spacer(Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(NeteaseRed.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
+                            .border(BorderStroke(0.5.dp, NeteaseRed), RoundedCornerShape(3.dp))
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "VIP",
+                            color = NeteaseRed,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 10.sp
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.height(2.dp))
             Text(track.ar.joinToString(" • ") { it.name },
                 color    = TextGray, fontSize = 13.sp,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (track.fee == 0) {
-            Icon(Icons.Default.CheckCircle, null, tint = NeteaseRed,
-                modifier = Modifier.size(18.dp).padding(end = 4.dp))
+        val isLiked = track.id in likedSongIds
+        IconButton(
+            onClick = onLikeClick,
+            modifier = Modifier.size(32.dp).padding(end = 4.dp)
+        ) {
+            Icon(
+                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = "收藏歌单操作",
+                tint = if (isLiked) NeteaseRed else TextGray,
+                modifier = Modifier.size(20.dp)
+            )
         }
         Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(20.dp))
     }

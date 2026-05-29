@@ -46,7 +46,8 @@ import com.lin0721.linmusic.ui.theme.TextGray
 fun ProfileSidebar(
     userProfile: UserProfile,
     onLogout: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -130,7 +131,10 @@ fun ProfileSidebar(
             SidebarMenuItem(
                 icon = Icons.Outlined.Settings,
                 title = "设置和隐私",
-                onClick = { }
+                onClick = {
+                    onDismiss()
+                    onNavigateToSettings()
+                }
             )
 
             Spacer(modifier = Modifier.height(32.dp))

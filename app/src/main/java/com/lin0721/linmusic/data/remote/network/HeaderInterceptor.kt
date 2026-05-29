@@ -6,7 +6,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 
-// 网易云反风控拦截器。补充 UA、Referer、海外 IP 伪装及用户 Cookie。
+// 网易云反风控拦截器。UA、Referer、海外 IP 伪装及用户 Cookie。
 class HeaderInterceptor(private val userPreferences: UserPreferences) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
