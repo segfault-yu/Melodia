@@ -22,7 +22,8 @@ import com.lin0721.linmusic.ui.home.HomeScreen
 import com.lin0721.linmusic.ui.home.HomeViewModel
 import com.lin0721.linmusic.ui.player.FullPlayerScreen
 import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.LinMusicTheme
+// 导入 Melodia 全局主题配置
+import com.lin0721.linmusic.ui.theme.MelodiaTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import org.koin.androidx.compose.koinViewModel
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDown
@@ -43,7 +45,7 @@ import androidx.compose.foundation.clickable
 import com.lin0721.linmusic.ui.create.CreatePopupMenu
 
 enum class Screen {
-    Home, Playlist, Search, Library, Settings
+    Home, Playlist, Search, Library, Settings, Artist
 }
 
 enum class AppSidebarState {
@@ -55,7 +57,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LinMusicTheme {
+            // 套用新改名的 MelodiaTheme 全局主题
+            MelodiaTheme {
                 LinMusicApp()
             }
         }
@@ -72,6 +75,24 @@ fun LinMusicApp() {
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
     var isPlayerOpen by remember { mutableStateOf(false) }
+
+    // 全局自定义 Toast 状态管理
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    var toastTrigger by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        com.lin0721.linmusic.ui.components.ToastManager.toastFlow.collect { msg ->
+            toastMessage = msg
+            toastTrigger++
+        }
+    }
+
+    LaunchedEffect(toastTrigger) {
+        if (toastMessage != null) {
+            kotlinx.coroutines.delay(2000)
+            toastMessage = null
+        }
+    }
 
     // 导航历史栈与当前屏幕状态
     val backStack = remember { mutableStateListOf<Screen>(Screen.Home) }
@@ -101,6 +122,8 @@ fun LinMusicApp() {
     }
 
     var activePlaylistId by remember { mutableStateOf<Long?>(null) }
+    var activePlaylistIsAlbum by remember { mutableStateOf(false) }
+    var activeArtistId by remember { mutableStateOf<Long?>(null) }
     var searchAutoFocus by remember { mutableStateOf(false) }
     var showCreateSheet by remember { mutableStateOf(false) }
     // 网页登录界面可见性状态
@@ -266,6 +289,7 @@ fun LinMusicApp() {
                                 viewModel = viewModel,
                                 onPlaylistClick = { id ->
                                     activePlaylistId = id
+                                    activePlaylistIsAlbum = false
                                     navigateTo(Screen.Playlist)
                                 },
                                 onSearchClick = {
@@ -280,7 +304,12 @@ fun LinMusicApp() {
                             activePlaylistId?.let { id ->
                                 com.lin0721.linmusic.ui.playlist.PlaylistScreen(
                                     playlistId = id,
-                                    onBack = navigateBack
+                                    isAlbum = activePlaylistIsAlbum,
+                                    onBack = navigateBack,
+                                    onArtistClick = { artistId ->
+                                        activeArtistId = artistId
+                                        navigateTo(Screen.Artist)
+                                    }
                                 )
                             }
                         }
@@ -295,7 +324,12 @@ fun LinMusicApp() {
                             com.lin0721.linmusic.ui.library.LibraryScreen(
                                 onPlaylistClick = { id ->
                                     activePlaylistId = id
+                                    activePlaylistIsAlbum = false
                                     navigateTo(Screen.Playlist)
+                                },
+                                onArtistClick = { id ->
+                                    activeArtistId = id
+                                    navigateTo(Screen.Artist)
                                 },
                                 onBack = navigateBack,
                                 onOpenSidebar = openSidebar,
@@ -306,6 +340,28 @@ fun LinMusicApp() {
                             com.lin0721.linmusic.ui.components.SettingsScreen(
                                 onBack = navigateBack
                             )
+                        }
+                        Screen.Artist -> {
+                            activeArtistId?.let { id ->
+                                com.lin0721.linmusic.ui.playlist.ArtistScreen(
+                                    artistId = id,
+                                    onBack = navigateBack,
+                                    onArtistClick = { nextId ->
+                                        activeArtistId = nextId
+                                        navigateTo(Screen.Artist)
+                                    },
+                                    onPlaylistClick = { playlistId ->
+                                        activePlaylistId = playlistId
+                                        activePlaylistIsAlbum = false
+                                        navigateTo(Screen.Playlist)
+                                    },
+                                    onAlbumClick = { albumId ->
+                                        activePlaylistId = albumId
+                                        activePlaylistIsAlbum = true
+                                        navigateTo(Screen.Playlist)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -401,8 +457,39 @@ fun LinMusicApp() {
                 onTogglePlay = { viewModel.togglePlayPause() },
                 onSeek = { viewModel.playerManager.seekTo(it) },
                 onClose = { isPlayerOpen = false },
-                isPlayerOpen = isPlayerOpen
+                isPlayerOpen = isPlayerOpen,
+                onArtistClick = { artistId ->
+                    isPlayerOpen = false
+                    activeArtistId = artistId
+                    navigateTo(Screen.Artist)
+                }
             )
+        }
+
+        // 4. 全局自定义 Toast 提示
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            AnimatedVisibility(
+                visible = toastMessage != null,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(tween(250)),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(250, easing = FastOutSlowInEasing)
+                ) + fadeOut(tween(200)),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 120.dp) // 位于底部浮岛上方
+                    .zIndex(999f)
+            ) {
+                toastMessage?.let { msg ->
+                    com.lin0721.linmusic.ui.components.CustomToast(message = msg)
+                }
+            }
         }
 
     }

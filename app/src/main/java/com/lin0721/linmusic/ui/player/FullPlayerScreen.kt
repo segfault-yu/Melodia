@@ -108,7 +108,8 @@ fun FullPlayerScreen(
     onTogglePlay: () -> Unit,
     onSeek: (Long) -> Unit,
     onClose: () -> Unit,
-    isPlayerOpen: Boolean
+    isPlayerOpen: Boolean,
+    onArtistClick: (Long) -> Unit
 ) {
     if (currentTrack == null) return
 
@@ -441,7 +442,13 @@ fun FullPlayerScreen(
                     title = title,
                     artist = artist,
                     isLiked = isLiked,
-                    onToggleLike = viewModel::toggleLike
+                    onToggleLike = viewModel::toggleLike,
+                    onArtistClick = {
+                        songDetail?.ar?.firstOrNull()?.id?.let { id ->
+                            onClose()
+                            onArtistClick(id)
+                        }
+                    }
                 )
             }
 
@@ -515,10 +522,19 @@ fun FullPlayerScreen(
 
             // 关于艺人卡片
             item(key = "about_artist") {
+                // 观察真实的关注状态流
+                val isArtistFollowed by viewModel.isArtistFollowed.collectAsStateWithLifecycle()
                 AboutArtistCard(
                     artistDetail = artistDetail,
                     fansCount = artistFansCount,
-                    cardColor = SurfaceDark
+                    isFollowed = isArtistFollowed,
+                    onFollowClick = { viewModel.toggleArtistFollow() },
+                    cardColor = SurfaceDark,
+                    onClick = {
+                        artistDetail?.id?.let { id ->
+                            onArtistClick(id)
+                        }
+                    }
                 )
             }
 
@@ -527,7 +543,8 @@ fun FullPlayerScreen(
                 SimilarArtistsCard(
                     artists = similarArtists,
                     isLoading = isSimilarArtistsLoading,
-                    cardColor = SurfaceDark
+                    cardColor = SurfaceDark,
+                    onArtistClick = onArtistClick
                 )
             }
 
@@ -552,6 +569,12 @@ fun FullPlayerScreen(
             isLiked = isLiked,
             onToggleLike = viewModel::toggleLike,
             backgroundColor = animatedDominant,
+            onArtistClick = {
+                songDetail?.ar?.firstOrNull()?.id?.let { id ->
+                    onClose()
+                    onArtistClick(id)
+                }
+            },
             modifier = Modifier.draggable(
                 orientation = Orientation.Vertical,
                 state = rememberDraggableState { delta ->
@@ -596,6 +619,7 @@ private fun TopBar(
     isLiked: Boolean = false,
     onToggleLike: () -> Unit = {},
     backgroundColor: Color = Color.Transparent,
+    onArtistClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     if (showTitle) {
@@ -634,7 +658,8 @@ private fun TopBar(
                     color = TextGray,
                     fontSize = 12.sp,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = if (onArtistClick != null) Modifier.clickable(onClick = onArtistClick) else Modifier
                 )
             }
             Row(
@@ -763,7 +788,13 @@ private fun CoverArt(
 }
 
 @Composable
-private fun SongInfo(title: String, artist: String, isLiked: Boolean, onToggleLike: () -> Unit) {
+private fun SongInfo(
+    title: String,
+    artist: String,
+    isLiked: Boolean,
+    onToggleLike: () -> Unit,
+    onArtistClick: (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -787,7 +818,8 @@ private fun SongInfo(title: String, artist: String, isLiked: Boolean, onToggleLi
                 color = TextGray.copy(alpha = 0.7f),
                 fontSize = 15.sp,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (onArtistClick != null) Modifier.clickable(onClick = onArtistClick) else Modifier
             )
         }
         IconButton(
@@ -1597,7 +1629,8 @@ private fun SongDetailRow(
 private fun SimilarArtistsCard(
     artists: List<ArtistInfo>,
     isLoading: Boolean,
-    cardColor: Color
+    cardColor: Color,
+    onArtistClick: (Long) -> Unit
 ) {
     if (artists.isEmpty() && !isLoading) return
 
@@ -1640,7 +1673,9 @@ private fun SimilarArtistsCard(
                     items(artists, key = { it.id }) { artist ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.width(72.dp)
+                            modifier = Modifier
+                                .width(72.dp)
+                                .clickable { onArtistClick(artist.id) }
                         ) {
                             AsyncImage(
                                 model = "${artist.avatarUrl}?param=150y150",
@@ -1672,7 +1707,10 @@ private fun SimilarArtistsCard(
 private fun AboutArtistCard(
     artistDetail: ArtistDetailInfo?,
     fansCount: Long?,
-    cardColor: Color
+    isFollowed: Boolean,
+    onFollowClick: () -> Unit,
+    cardColor: Color,
+    onClick: () -> Unit
 ) {
     if (artistDetail == null) return
 
@@ -1682,7 +1720,8 @@ private fun AboutArtistCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         color = cardColor
     ) {
@@ -1752,10 +1791,9 @@ private fun AboutArtistCard(
                             fontSize = 13.sp
                         )
                     }
-                    // 关注按钮，带白边半透明样式
-                    var isFollowed by remember { mutableStateOf(false) } // 模拟关注状态
+                    // 真实的关注按钮，带白边半透明样式
                     OutlinedButton(
-                        onClick = { isFollowed = !isFollowed },
+                        onClick = onFollowClick,
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color.White,

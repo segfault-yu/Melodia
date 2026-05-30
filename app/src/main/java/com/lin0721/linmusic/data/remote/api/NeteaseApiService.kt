@@ -212,6 +212,30 @@ interface NeteaseApiService {
         @Body body: ArtistAlbumRequest = ArtistAlbumRequest()
     ): ArtistAlbumResponse
 
+    // ================== 专辑详情 ==================
+
+    // 网易云 WEAPI 专辑详情接口，专辑 ID 需放入 URL 路径中
+    @POST("/weapi/v1/album/{id}")
+    suspend fun getAlbumDetail(
+        @Path("id") id: Long,
+        @Body body: EmptyBody = EmptyBody()
+    ): AlbumDetailResponse
+
+    // ================== 艺人热门歌曲 ==================
+
+    @POST("/weapi/artist/top/song")
+    suspend fun getArtistTopSongs(
+        @Body body: ArtistTopSongsRequest
+    ): ArtistTopSongsResponse
+
+    // ================== 收藏与取消收藏歌手 ==================
+
+    @POST("/weapi/artist/{op}")
+    suspend fun subscribeArtist(
+        @Path("op") op: String, // sub 表示关注, unsub 表示取消关注
+        @Body body: ArtistSubscriptionRequest
+    ): ArtistSubscriptionResponse
+
     // ================== 红心/喜欢 ==================
 
     @POST("/eapi/song/like")
@@ -1065,6 +1089,57 @@ data class ArtistAlbum(
     val picUrl: String = "",
     val publishTime: Long = 0,
     val size: Int = 0
+)
+
+// ======================= 艺人热门单曲 DTO =======================
+
+@Serializable
+data class ArtistTopSongsRequest(val id: Long)
+
+@Serializable
+data class ArtistTopSongsResponse(
+    val code: Int = 0,
+    val songs: List<Track> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= 收藏与取消收藏歌手 DTO =======================
+
+@Serializable
+data class ArtistSubscriptionRequest(
+    val artistId: Long,
+    val artistIds: String
+)
+
+@Serializable
+data class ArtistSubscriptionResponse(
+    val code: Int = 0,
+    val message: String? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= 专辑详情 DTO =======================
+
+@Serializable
+data class AlbumDetailRequest(val id: Long)
+
+@Serializable
+data class AlbumDetailResponse(
+    val code: Int = 0,
+    val album: AlbumInfo = AlbumInfo(),
+    val songs: List<Track> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class AlbumInfo(
+    val id: Long = 0,
+    val name: String = "",
+    val picUrl: String = "",
+    val description: String? = null
 )
 
 // ======================= 评论 DTO =======================

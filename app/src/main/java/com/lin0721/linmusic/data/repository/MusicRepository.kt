@@ -84,6 +84,9 @@ interface MusicRepository {
     // 获取歌单详情
     fun getPlaylistDetail(id: Long): Flow<Result<PlaylistDetail>>
 
+    // 获取专辑详情，映射至统一领域模型 PlaylistDetail
+    fun getAlbumDetail(id: Long): Flow<Result<PlaylistDetail>>
+
     // 获取歌曲播放链接
     fun getSongUrl(songId: Long): Flow<Result<String>>
 
@@ -147,6 +150,15 @@ interface MusicRepository {
 
     // 获取艺人粉丝数（每月听众数）
     fun getArtistFansCount(artistId: Long): Flow<Result<Long>>
+
+    // 获取艺人热门歌曲（50首）
+    fun getArtistTopSongs(artistId: Long): Flow<Result<List<Track>>>
+
+    // 收藏/关注歌手
+    fun subscribeArtist(artistId: Long, subscribe: Boolean): Flow<Result<Unit>>
+
+    // 检查是否已关注歌手
+    fun checkArtistFollowed(artistId: Long): Flow<Result<Boolean>>
 
     // ================== 红心/喜欢 ==================
 

@@ -379,6 +379,17 @@ app/src/main/java/com/lin0721/linmusic/
   - 将歌单列表原先表示“免费”的红色对勾图标重构为喜欢爱心按钮（`Icons.Default.Favorite`），指示当前单曲是否已红心喜欢。
   - 点击爱心按钮，未登录用户会无缝重定向拉出 WebView 登录底层面板，已登录用户则激活“收藏至歌单”弹窗，提供流畅的 Checkbox 批量添加/移除逻辑。
 
+### 2026-05-30 — 代码清理与功能文档更新
+- **废物代码与导入清理 (Unused Imports & Cleanup)**:
+  - 彻底移除了 `CreateBottomSheet.kt` 中遗留未使用的 `android.widget.Toast` 导入，消除了 API 迁移残留的死代码。
+  - 修复了 `HomeScreen.kt` 中使用废弃 `Icons.Rounded.List` 的编译警告，将其平滑迁移至新版 `Icons.AutoMirrored.Rounded.List`，确保 Gradle 构建环境纯净无 Warning。
+  - 移除了 `ArtistScreen.kt` 中根据 `songId` 生成虚拟播放量的伪随机机制（包括 `generatePlayCountText` 辅助方法及 `java.util.Random` 导入），使热门歌曲列表的单曲展示保持真实极简。
+- **界面防遮挡与跳转规范 (Edge-to-Edge Padding & Navigation)**:
+  - 全局审查所有核心滚动页面（`HomeScreen`、`SearchScreen`、`LibraryScreen`、`ArtistScreen`、`PlaylistScreen`），确保 `LazyColumn` 底边距均规范配置为 `180.dp`，彻底杜绝悬浮岛播放舱遮挡列表底部内容的问题。
+  - 完善了从音乐库头像、播放器艺人名等处点击跳转至歌手详情页（`ArtistScreen`）的交互链路。
+- **全部专辑展示 (ModalBottomSheet for Albums)**:
+  - 在歌手页增加“显示全部”按钮，首次拉取上限提升至 50 张，弹窗采用 `ModalBottomSheet` 辅以 `LazyColumn`，实现 Spotify 风格的歌手完整专辑网格，并完美兼容专辑详情的点击跳转及回退栈状态管理。
+
 ---
 
 ## 待办事项

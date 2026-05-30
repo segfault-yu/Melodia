@@ -51,7 +51,7 @@ class PlayerViewModel(
     private val _artistDetail = MutableStateFlow<ArtistDetailInfo?>(null)
     val artistDetail: StateFlow<ArtistDetailInfo?> = _artistDetail.asStateFlow()
 
-    // 歌手粉丝数量 (用于每月听众数)
+    // 歌手粉丝数量
     private val _artistFansCount = MutableStateFlow<Long?>(null)
     val artistFansCount: StateFlow<Long?> = _artistFansCount.asStateFlow()
 
@@ -60,6 +60,10 @@ class PlayerViewModel(
 
     private val _isLiked = MutableStateFlow(false)
     val isLiked: StateFlow<Boolean> = _isLiked.asStateFlow()
+
+    // 歌手是否已关注的 Flow
+    private val _isArtistFollowed = MutableStateFlow(false)
+    val isArtistFollowed: StateFlow<Boolean> = _isArtistFollowed.asStateFlow()
 
     private val _commentsState = MutableStateFlow<CommentsState>(CommentsState.Loading)
     val commentsState: StateFlow<CommentsState> = _commentsState.asStateFlow()
@@ -139,6 +143,7 @@ class PlayerViewModel(
         _artistFansCount.value = null
         _artistAlbums.value = emptyList()
         _isLiked.value = false
+        _isArtistFollowed.value = false
         _commentsState.value = CommentsState.Loading
     }
 
@@ -213,12 +218,28 @@ class PlayerViewModel(
         viewModelScope.launch {
             // 异步加载歌手粉丝数量作为每月听众数
             loadArtistFansCount(artistId, forSongId)
+            // 异步加载当前用户是否关注了该歌手
+            loadArtistFollowState(artistId, forSongId)
             repository.getArtistDetail(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { detail ->
                     _artistDetail.value = detail
                 }.onFailure {
                     _artistDetail.value = null
+                }
+            }
+        }
+    }
+
+    // 异步加载歌手关注状态
+    private fun loadArtistFollowState(artistId: Long, forSongId: Long) {
+        viewModelScope.launch {
+            repository.checkArtistFollowed(artistId).collect { result ->
+                if (currentSongId != forSongId) return@collect
+                result.onSuccess { followed ->
+                    _isArtistFollowed.value = followed
+                }.onFailure {
+                    _isArtistFollowed.value = false
                 }
             }
         }
@@ -289,6 +310,22 @@ class PlayerViewModel(
         val songId = currentSongId
         if (songId != -1L) {
             loadComments(songId)
+        }
+    }
+
+    // 切换歌手的关注状态
+    fun toggleArtistFollow() {
+        val songDetail = _songDetail.value ?: return
+        val artistId = songDetail.ar.firstOrNull()?.id ?: return
+        if (artistId <= 0) return
+
+        val targetFollow = !_isArtistFollowed.value
+        viewModelScope.launch {
+            repository.subscribeArtist(artistId, targetFollow).collect { result ->
+                result.onSuccess {
+                    _isArtistFollowed.value = targetFollow
+                }
+            }
         }
     }
 }

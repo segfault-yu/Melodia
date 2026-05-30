@@ -1,7 +1,6 @@
 package com.lin0721.linmusic.ui.components
 
 import android.content.Context
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -75,7 +74,7 @@ fun SettingsScreen(
     // 监听 Toast 事件
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collectLatest { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            com.lin0721.linmusic.ui.components.ToastManager.showToast(msg)
         }
     }
 
@@ -88,7 +87,7 @@ fun SettingsScreen(
             if (file != null) {
                 viewModel.uploadUserAvatar(file)
             } else {
-                Toast.makeText(context, "图片加载失败", Toast.LENGTH_SHORT).show()
+                com.lin0721.linmusic.ui.components.ToastManager.showToast("图片加载失败")
             }
         }
     }
@@ -130,7 +129,7 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 120.dp, top = 8.dp)
+                contentPadding = PaddingValues(bottom = 180.dp, top = 8.dp)
             ) {
                 // ─── 1. 账号与个人资料卡片组 ───
                 item {

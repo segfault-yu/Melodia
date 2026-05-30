@@ -3,42 +3,39 @@ package com.lin0721.linmusic.ui.playlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.UserPreferences
-import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
+import com.lin0721.linmusic.data.remote.api.ArtistAlbum
 import com.lin0721.linmusic.data.remote.api.Track
+import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-data class PlaylistCollectItem(
-    val playlistId: Long,
-    val playlistName: String,
-    val coverUrl: String,
-    val isInitiallyContains: Boolean,
-    var isContains: Boolean
-)
+sealed class ArtistUiState {
+    object Loading : ArtistUiState()
+    data class Success(
+        val artist: ArtistDetailInfo,
+        val isFollowed: Boolean,
+        val fansCount: Long,
+        val topSongs: List<Track>,
+        val albums: List<ArtistAlbum>,
+        val similarArtists: List<ArtistInfo>
+    ) : ArtistUiState()
+    data class Error(val message: String) : ArtistUiState()
+}
 
-data class PlaylistCollectState(
-    val songId: Long = -1L,
-    val collectItems: List<PlaylistCollectItem> = emptyList(),
-    val isLoading: Boolean = false
-)
-
-class PlaylistViewModel(
+class ArtistViewModel(
     private val repository: MusicRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
-    private var isAlbumMode = false
-    private var loadJob: Job? = null
-
-    private val _uiState = MutableStateFlow<PlaylistUiState>(PlaylistUiState.Loading)
-    val uiState: StateFlow<PlaylistUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<ArtistUiState>(ArtistUiState.Loading)
+    val uiState: StateFlow<ArtistUiState> = _uiState.asStateFlow()
 
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
@@ -70,32 +67,76 @@ class PlaylistViewModel(
         }
     }
 
-    fun loadPlaylist(id: Long, isAlbum: Boolean = false) {
-        isAlbumMode = isAlbum
-        _uiState.value = PlaylistUiState.Loading
-        loadJob?.cancel() // 取消之前的加载任务，防止并发竞态冲突导致状态错乱
-        loadJob = viewModelScope.launch {
-            val flow = if (isAlbum) repository.getAlbumDetail(id) else repository.getPlaylistDetail(id)
-            flow.collect { result ->
-                result.fold(
-                    onSuccess = { detail ->
-                        _uiState.value = PlaylistUiState.Success(detail)
-                    },
-                    onFailure = { error ->
-                        _uiState.value = PlaylistUiState.Error(error.message ?: "Unknown Error")
-                    }
-                )
+    fun loadArtistData(artistId: Long) {
+        _uiState.value = ArtistUiState.Loading
+        viewModelScope.launch {
+            try {
+                // 并行发起网络请求以提供极速的界面预加载
+                val detailDeferred = async { repository.getArtistDetail(artistId).first() }
+                val fansDeferred = async { repository.getArtistFansCount(artistId).first() }
+                val followDeferred = async { repository.checkArtistFollowed(artistId).first() }
+                val topSongsDeferred = async { repository.getArtistTopSongs(artistId).first() }
+                val albumsDeferred = async { repository.getArtistAlbums(artistId, limit = 50).first() }
+                val similarDeferred = async { repository.getSimilarArtists(artistId).first() }
+
+                val detailResult = detailDeferred.await()
+                val fansResult = fansDeferred.await()
+                val followResult = followDeferred.await()
+                val topSongsResult = topSongsDeferred.await()
+                val albumsResult = albumsDeferred.await()
+                val similarResult = similarDeferred.await()
+
+                if (detailResult.isSuccess && topSongsResult.isSuccess) {
+                    val detail = detailResult.getOrThrow()
+                    val fans = fansResult.getOrDefault(0L)
+                    val isFollowed = followResult.getOrDefault(false)
+                    val topSongs = topSongsResult.getOrThrow()
+                    val albums = albumsResult.getOrDefault(emptyList())
+                    val similar = similarResult.getOrDefault(emptyList())
+
+                    _uiState.value = ArtistUiState.Success(
+                        artist = detail,
+                        isFollowed = isFollowed,
+                        fansCount = fans,
+                        topSongs = topSongs,
+                        albums = albums,
+                        similarArtists = similar
+                    )
+                } else {
+                    val err = detailResult.exceptionOrNull()?.message
+                        ?: topSongsResult.exceptionOrNull()?.message
+                        ?: "加载歌手数据失败"
+                    _uiState.value = ArtistUiState.Error(err)
+                }
+            } catch (e: Exception) {
+                _uiState.value = ArtistUiState.Error(e.message ?: "加载数据异常")
+            }
+        }
+    }
+
+    fun toggleFollow(artistId: Long) {
+        val currentState = _uiState.value as? ArtistUiState.Success ?: return
+        val targetSubscribe = !currentState.isFollowed
+        viewModelScope.launch {
+            repository.subscribeArtist(artistId, targetSubscribe).collect { result ->
+                result.onSuccess {
+                    _uiState.value = currentState.copy(isFollowed = targetSubscribe)
+                    val msg = if (targetSubscribe) "已关注歌手" else "已取消关注歌手"
+                    _toastEvent.emit(msg)
+                }.onFailure { e ->
+                    _toastEvent.emit("操作失败: ${e.message}")
+                }
             }
         }
     }
 
     fun playSongInList(track: Track, allTracks: List<Track>) {
-        val playlistName = (_uiState.value as? PlaylistUiState.Success)?.playlist?.name
+        val artistName = (_uiState.value as? ArtistUiState.Success)?.artist?.name ?: "歌手热门歌曲"
         val queueItems = allTracks.map { t ->
             QueueItem(t.id, t.name, t.ar.joinToString { it.name }, t.al.picUrl)
         }
         val startIndex = allTracks.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
-        playerManager.playQueue(queueItems, startIndex, playlistName)
+        playerManager.playQueue(queueItems, startIndex, artistName)
     }
 
     fun prepareCollectDialog(songId: Long) {
@@ -109,7 +150,6 @@ class PlaylistViewModel(
 
                     val items = myPlaylists.map { playlist ->
                         async {
-                            // 喜欢歌单不需要额外请求详情，直接使用 _likedSongIds 判断
                             val isInitiallyContains = if (playlist.name.contains("喜欢的音乐") || playlist.id == profile.uid) {
                                 _likedSongIds.value.contains(songId)
                             } else {
@@ -166,10 +206,6 @@ class PlaylistViewModel(
             }
             _toastEvent.emit("歌单收藏更新成功")
             loadLikedSongIds()
-            val successState = _uiState.value as? PlaylistUiState.Success
-            if (successState != null) {
-                loadPlaylist(successState.playlist.id, isAlbumMode)
-            }
         }
     }
 
@@ -183,7 +219,6 @@ class PlaylistViewModel(
                                 onSuccess = {
                                     _toastEvent.emit("创建并加入歌单成功")
                                     prepareCollectDialog(songId)
-                                    // 同时刷新喜欢状态和当前歌单（以防新建的是当前歌单，或者新建歌单影响了当前UI状态）
                                     loadLikedSongIds()
                                 },
                                 onFailure = { e ->
@@ -209,13 +244,18 @@ class PlaylistViewModel(
                     val remoteProfile = response.profile
                     if (remoteProfile != null) {
                         userPreferences.saveUserProfile(
-                            UserProfile(
+                            com.lin0721.linmusic.data.local.UserProfile(
                                 uid = remoteProfile.userId,
                                 nickname = remoteProfile.nickname,
                                 avatarUrl = remoteProfile.avatarUrl
                             )
                         )
+                        _toastEvent.emit("登录成功，正在同步数据...")
+                        // 保存用户登录状态并同步加载喜欢的歌曲 ID，更新歌手界面状态
                         loadLikedSongIds()
+                        (uiState.value as? ArtistUiState.Success)?.let { successState ->
+                            loadArtistData(successState.artist.id)
+                        }
                     }
                 }
             }

@@ -1,9 +1,9 @@
 package com.lin0721.linmusic.ui.home
 
-import android.widget.Toast
 import java.util.Calendar
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -74,7 +74,7 @@ fun HomeScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            com.lin0721.linmusic.ui.components.ToastManager.showToast(message)
         }
     }
 
@@ -100,7 +100,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding(),
-                contentPadding = PaddingValues(bottom = 160.dp)
+                contentPadding = PaddingValues(bottom = 180.dp)
             ) {
                 item { 
                     TopGreetingBar(
@@ -125,15 +125,6 @@ fun HomeScreen(
                         item {
                             RecommendationCarousel(
                                 playlists = state.data.recommendPlaylists,
-                                onClick = { onPlaylistClick(it.id) }
-                            )
-                        }
-
-                        // 3. 私人雷达 (推荐歌单的反转展示作为示例)
-                        item { SectionHeader(title = "你的私人雷达", showAction = false) }
-                        item {
-                            RecommendationCarousel(
-                                playlists = state.data.recommendPlaylists.reversed(),
                                 onClick = { onPlaylistClick(it.id) }
                             )
                         }
@@ -166,7 +157,7 @@ fun HomeScreen(
                                         )
                                         IconButton(onClick = { recentViewIsGrid = !recentViewIsGrid }) {
                                             Icon(
-                                                if (recentViewIsGrid) Icons.Rounded.List else Icons.Rounded.GridView,
+                                                imageVector = if (recentViewIsGrid) Icons.AutoMirrored.Rounded.List else Icons.Rounded.GridView,
                                                 contentDescription = "切换视图",
                                                 tint = Color.White
                                             )

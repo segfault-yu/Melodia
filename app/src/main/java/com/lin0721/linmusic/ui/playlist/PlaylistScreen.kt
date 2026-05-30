@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import android.widget.Toast
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -53,6 +52,8 @@ import com.lin0721.linmusic.ui.theme.SurfaceDark
 import com.lin0721.linmusic.ui.theme.SurfaceLight
 import com.lin0721.linmusic.ui.theme.TextGray
 import org.koin.androidx.compose.koinViewModel
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.SolidColor
 
 // TopBar 操作区高度（不含状态栏）
 private val TOP_BAR_HEIGHT = 56.dp
@@ -63,8 +64,10 @@ private val COVER_MIN_SIZE = 36.dp
 @Composable
 fun PlaylistScreen(
     playlistId: Long,
+    isAlbum: Boolean = false,
     viewModel: PlaylistViewModel = koinViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onArtistClick: (Long) -> Unit
 ) {
     val uiState      by viewModel.uiState.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
@@ -72,14 +75,18 @@ fun PlaylistScreen(
     val collectState by viewModel.collectState.collectAsStateWithLifecycle()
     val userProfile  by viewModel.userProfile.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    android.util.Log.d("PlaylistScreen", "PlaylistScreen Composition: playlistId = $playlistId, isAlbum = $isAlbum")
 
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
-        viewModel.toastEvent.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        viewModel.toastEvent.collect { com.lin0721.linmusic.ui.components.ToastManager.showToast(it) }
     }
-    LaunchedEffect(playlistId) { viewModel.loadPlaylist(playlistId) }
+    LaunchedEffect(playlistId, isAlbum) {
+        android.util.Log.d("PlaylistScreen", "LaunchedEffect Triggered: loading playlistId = $playlistId, isAlbum = $isAlbum")
+        viewModel.loadPlaylist(playlistId, isAlbum)
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(BackgroundDark)) {
         when (val state = uiState) {
@@ -94,7 +101,7 @@ fun PlaylistScreen(
                         Spacer(Modifier.height(8.dp))
                         Text(state.message, color = TextGray, fontSize = 13.sp)
                         Spacer(Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadPlaylist(playlistId) },
+                        Button(onClick = { viewModel.loadPlaylist(playlistId, isAlbum) },
                             colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed)) {
                             Text("重试", color = Color.White)
                         }
@@ -109,6 +116,7 @@ fun PlaylistScreen(
                     collectState   = collectState,
                     isLoggedIn     = userProfile != null,
                     onBack         = onBack,
+                    onArtistClick  = onArtistClick,
                     onPlaySong     = { track ->
                         viewModel.playSongInList(track, state.playlist.tracks)
                     },
@@ -122,6 +130,9 @@ fun PlaylistScreen(
                     },
                     onSaveCollection = { songId, items ->
                         viewModel.savePlaylistCollection(songId, items)
+                    },
+                    onSaveNewCollection = { name, songId ->
+                        viewModel.createPlaylistAndAddSong(name, songId)
                     },
                     onRequireLogin = {
                         showLoginSheet = true
@@ -140,14 +151,14 @@ fun PlaylistScreen(
         }
 
         if (showWebViewLogin) {
-            WebViewLoginScreen(
-                onClose = { showWebViewLogin = false },
-                onLoginSuccess = { cookies ->
-                    showWebViewLogin = false
-                    viewModel.handleLoginSuccess(cookies)
-                    Toast.makeText(context, "登录成功，正在同步数据...", Toast.LENGTH_SHORT).show()
-                }
-            )
+                    WebViewLoginScreen(
+                        onClose = { showWebViewLogin = false },
+                        onLoginSuccess = { cookies ->
+                            showWebViewLogin = false
+                            viewModel.handleLoginSuccess(cookies)
+                            com.lin0721.linmusic.ui.components.ToastManager.showToast("登录成功，正在同步数据...")
+                        }
+                    )
         }
     }
 }
@@ -164,10 +175,12 @@ private fun PlaylistContent(
     collectState: PlaylistCollectState,
     isLoggedIn: Boolean,
     onBack: () -> Unit,
+    onArtistClick: (Long) -> Unit,
     onPlaySong: (Track) -> Unit,
     onPlayAll: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
+    onSaveNewCollection: (String, Long) -> Unit,
     onRequireLogin: () -> Unit
 ) {
     val density = LocalDensity.current
@@ -211,7 +224,7 @@ private fun PlaylistContent(
         // ── 1. 滚动内容 ───────────────────────────────────────────────────
         LazyColumn(
             state          = listState,
-            contentPadding = PaddingValues(bottom = 160.dp)
+            contentPadding = PaddingValues(bottom = 180.dp)
         ) {
             // Item 0：搜索栏（下拉可见）
             item(key = "search") {
@@ -257,7 +270,8 @@ private fun PlaylistContent(
                             collectSongId = track.id
                             onLikeClick(track.id)
                         }
-                    }
+                    },
+                    onArtistClick = onArtistClick
                 )
             }
         }
@@ -358,65 +372,107 @@ private fun PlaylistContent(
                     ) {
                         CircularProgressIndicator(color = NeteaseRed)
                     }
-                } else if (collectState.collectItems.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(150.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("暂无可用歌单", color = TextGray, fontSize = 14.sp)
-                    }
                 } else {
                     val localItems = remember(collectState.collectItems) {
                         collectState.collectItems.map { it.copy() }.toMutableStateList()
                     }
-                    
+                    var showCreatePlaylistDialog by remember { mutableStateOf(false) }
+                    var newPlaylistNameInput by remember { mutableStateOf("") }
+                    val context = LocalContext.current
+
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 300.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        itemsIndexed(localItems) { index, item ->
+                        item(key = "create_new_playlist_item") {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        localItems[index] = item.copy(isContains = !item.isContains)
+                                        newPlaylistNameInput = ""
+                                        showCreatePlaylistDialog = true
                                     }
                                     .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(NeteaseRed.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    AsyncImage(
-                                        model = "${item.coverUrl}?param=100y100",
-                                        contentDescription = item.playlistName,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(RoundedCornerShape(6.dp))
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = item.playlistName,
-                                        color = Color.White,
-                                        fontSize = 14.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "新建歌单",
+                                        tint = NeteaseRed,
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
-                                Checkbox(
-                                    checked = item.isContains,
-                                    onCheckedChange = { checked ->
-                                        localItems[index] = item.copy(isContains = checked)
-                                    },
-                                    colors = CheckboxDefaults.colors(checkedColor = NeteaseRed)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "新建歌单",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
+                            }
+                        }
+
+                        if (localItems.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("暂无其他可用歌单", color = TextGray, fontSize = 13.sp)
+                                }
+                            }
+                        } else {
+                            itemsIndexed(localItems) { index, item ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            localItems[index] = item.copy(isContains = !item.isContains)
+                                        }
+                                        .padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        AsyncImage(
+                                            model = "${item.coverUrl}?param=100y100",
+                                            contentDescription = item.playlistName,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(RoundedCornerShape(6.dp))
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = item.playlistName,
+                                            color = Color.White,
+                                            fontSize = 14.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    Checkbox(
+                                        checked = item.isContains,
+                                        onCheckedChange = { checked ->
+                                            localItems[index] = item.copy(isContains = checked)
+                                        },
+                                        colors = CheckboxDefaults.colors(checkedColor = NeteaseRed)
+                                    )
+                                }
                             }
                         }
                     }
@@ -441,6 +497,62 @@ private fun PlaylistContent(
                         ) {
                             Text("确定", color = Color.White, fontWeight = FontWeight.Bold)
                         }
+                    }
+
+                    if (showCreatePlaylistDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showCreatePlaylistDialog = false },
+                            title = { Text("新建歌单并收藏", color = Color.White, fontWeight = FontWeight.Bold) },
+                            text = {
+                                Column {
+                                    Text("请输入新歌单的名称：", color = TextGray, fontSize = 14.sp)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(44.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(BackgroundDark)
+                                            .padding(horizontal = 12.dp),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        if (newPlaylistNameInput.isEmpty()) {
+                                            Text("歌单名称", color = TextGray, fontSize = 14.sp)
+                                        }
+                                        androidx.compose.foundation.text.BasicTextField(
+                                            value = newPlaylistNameInput,
+                                            onValueChange = { newPlaylistNameInput = it },
+                                            textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+                                            cursorBrush = SolidColor(NeteaseRed),
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true
+                                        )
+                                    }
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        if (newPlaylistNameInput.isNotBlank()) {
+                                            onSaveNewCollection(newPlaylistNameInput, songId)
+                                            showCreatePlaylistDialog = false
+                                        } else {
+                                            com.lin0721.linmusic.ui.components.ToastManager.showToast("名字不能为空哦！")
+                                        }
+                                    },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = NeteaseRed)
+                                ) {
+                                    Text("创建并收藏", fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showCreatePlaylistDialog = false }) {
+                                    Text("取消", color = Color.White)
+                                }
+                            },
+                            containerColor = SurfaceDark,
+                            shape = RoundedCornerShape(16.dp)
+                        )
                     }
                 }
             }
@@ -605,7 +717,8 @@ private fun SongRow(
     isActive: Boolean, 
     likedSongIds: Set<Long>,
     onClick: () -> Unit,
-    onLikeClick: () -> Unit
+    onLikeClick: () -> Unit,
+    onArtistClick: (Long) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -648,9 +761,18 @@ private fun SongRow(
                 }
             }
             Spacer(Modifier.height(2.dp))
-            Text(track.ar.joinToString(" • ") { it.name },
-                color    = TextGray, fontSize = 13.sp,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = track.ar.joinToString(" • ") { it.name },
+                color = TextGray,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable {
+                    track.ar.firstOrNull()?.id?.let { artistId ->
+                        onArtistClick(artistId)
+                    }
+                }
+            )
         }
         val isLiked = track.id in likedSongIds
         IconButton(

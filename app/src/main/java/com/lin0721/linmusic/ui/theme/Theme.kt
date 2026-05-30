@@ -13,8 +13,9 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = TextGray
 )
 
+// Melodia 应用的全局 Material3 主题配置
 @Composable
-fun LinMusicTheme(
+fun MelodiaTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(

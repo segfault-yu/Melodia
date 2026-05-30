@@ -183,6 +183,27 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
+    override fun getAlbumDetail(id: Long): Flow<Result<PlaylistDetail>> = flow {
+        // 专辑 ID 需作为 URL 路径参数传入，不使用 AlbumDetailRequest 请求体
+        val response = apiService.getAlbumDetail(id = id)
+        if (response.isSuccess) {
+            val album = response.album
+            val detail = PlaylistDetail(
+                id = album.id,
+                name = album.name,
+                coverImgUrl = album.picUrl,
+                description = album.description,
+                playCount = 0L,
+                tracks = response.songs
+            )
+            emit(Result.success(detail))
+        } else {
+            emit(Result.failure(Exception("Failed to load album detail: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
     private fun isWifiConnected(): Boolean {
         val connectivityManager = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
         val activeNetwork = connectivityManager.activeNetwork ?: return false
@@ -522,6 +543,46 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
+    override fun getArtistTopSongs(artistId: Long): Flow<Result<List<Track>>> = flow {
+        val response = apiService.getArtistTopSongs(ArtistTopSongsRequest(id = artistId))
+        if (response.isSuccess) {
+            emit(Result.success(response.songs))
+        } else {
+            emit(Result.failure(Exception("Failed to load artist top songs: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun subscribeArtist(artistId: Long, subscribe: Boolean): Flow<Result<Unit>> = flow {
+        val op = if (subscribe) "sub" else "unsub"
+        val response = apiService.subscribeArtist(
+            op = op,
+            body = ArtistSubscriptionRequest(
+                artistId = artistId,
+                artistIds = "[$artistId]"
+            )
+        )
+        if (response.isSuccess) {
+            emit(Result.success(Unit))
+        } else {
+            emit(Result.failure(Exception("操作失败: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
+    override fun checkArtistFollowed(artistId: Long): Flow<Result<Boolean>> = flow {
+        val response = apiService.getArtistDetailDynamic(ArtistFollowCountRequest(id = artistId))
+        if (response.isSuccess) {
+            emit(Result.success(response.isFollow))
+        } else {
+            emit(Result.failure(Exception("Failed to check artist follow state: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
     override fun getLikedSongIds(uid: Long): Flow<Result<List<Long>>> = flow {
         val response = apiService.getLikedSongIds(LikeSongListRequest(uid = uid))
         if (response.isSuccess) {
@@ -549,7 +610,7 @@ class MusicRepositoryImpl(
             PlaylistTracksManipulateRequest(
                 op = op,
                 pid = playlistId,
-                trackIds = "[$trackId]"
+                trackIds = "[\"$trackId\"]"
             )
         )
         if (response.isSuccess) {

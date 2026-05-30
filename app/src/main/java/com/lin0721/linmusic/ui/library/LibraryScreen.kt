@@ -1,6 +1,5 @@
 package com.lin0721.linmusic.ui.library
 
-import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -61,6 +60,7 @@ import com.lin0721.linmusic.data.local.UserProfile
 @Composable
 fun LibraryScreen(
     onPlaylistClick: (Long) -> Unit,
+    onArtistClick: (Long) -> Unit,
     onBack: () -> Unit,
     onOpenSidebar: () -> Unit = {},
     onLoginScreenVisibilityChanged: (Boolean) -> Unit = {}
@@ -207,7 +207,7 @@ fun LibraryScreen(
                                 playlistNameInput = ""
                                 showCreateDialog = true
                             } else {
-                                Toast.makeText(context, "请先登录以创建歌单！", Toast.LENGTH_SHORT).show()
+                                com.lin0721.linmusic.ui.components.ToastManager.showToast("请先登录以创建歌单！")
                                 showLoginSheet = true
                             }
                         }) {
@@ -324,7 +324,7 @@ fun LibraryScreen(
                 } else if (isGridView) {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 120.dp, top = 4.dp, start = 16.dp, end = 16.dp)
+                        contentPadding = PaddingValues(bottom = 180.dp, top = 4.dp, start = 16.dp, end = 16.dp)
                     ) {
                         val rows = uiState.filteredItems.chunked(3)
                         items(rows.size, key = { "grid_row_$it" }) { rowIndex ->
@@ -340,8 +340,10 @@ fun LibraryScreen(
                                         onClick = {
                                             if (item.type == LibraryItemType.PLAYLIST) {
                                                 onPlaylistClick(item.id.toLong())
+                                            } else if (item.type == LibraryItemType.ARTIST) {
+                                                onArtistClick(item.id.toLong())
                                             } else {
-                                                Toast.makeText(context, "已收藏的${if (item.type == LibraryItemType.ARTIST) "歌手" else "专辑"}: ${item.title}", Toast.LENGTH_SHORT).show()
+                                                com.lin0721.linmusic.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
                                             }
                                         }
                                     )
@@ -356,7 +358,7 @@ fun LibraryScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 120.dp, top = 4.dp)
+                        contentPadding = PaddingValues(bottom = 180.dp, top = 4.dp)
                     ) {
                         items(uiState.filteredItems, key = { "${it.type}_${it.id}" }) { item ->
                             LibraryItemRow(
@@ -364,14 +366,16 @@ fun LibraryScreen(
                                 onClick = {
                                     if (item.type == LibraryItemType.PLAYLIST) {
                                         onPlaylistClick(item.id.toLong())
+                                    } else if (item.type == LibraryItemType.ARTIST) {
+                                        onArtistClick(item.id.toLong())
                                     } else {
-                                        Toast.makeText(context, "已收藏的${if (item.type == LibraryItemType.ARTIST) "歌手" else "专辑"}: ${item.title}", Toast.LENGTH_SHORT).show()
+                                        com.lin0721.linmusic.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
                                     }
                                 },
                                 onLongClick = {
                                     viewModel.togglePin(item.id)
                                     val action = if (item.isPinned) "取消置顶" else "置顶"
-                                    Toast.makeText(context, "已$action: ${item.title}", Toast.LENGTH_SHORT).show()
+                                    com.lin0721.linmusic.ui.components.ToastManager.showToast("已$action: ${item.title}")
                                 }
                             )
                         }
@@ -416,11 +420,11 @@ fun LibraryScreen(
                         onClick = {
                             if (playlistNameInput.isNotBlank()) {
                                 viewModel.createPlaylist(playlistNameInput) {
-                                    Toast.makeText(context, "歌单创建成功！", Toast.LENGTH_SHORT).show()
+                                    com.lin0721.linmusic.ui.components.ToastManager.showToast("歌单创建成功！")
                                 }
                                 showCreateDialog = false
                             } else {
-                                Toast.makeText(context, "名字不能为空哦！", Toast.LENGTH_SHORT).show()
+                                com.lin0721.linmusic.ui.components.ToastManager.showToast("名字不能为空哦！")
                             }
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = NeteaseRed)
@@ -455,7 +459,7 @@ fun LibraryScreen(
                 onLoginSuccess = { cookies ->
                     showWebViewLogin = false
                     viewModel.handleLoginSuccess(cookies)
-                    Toast.makeText(context, "登录成功，正在同步乐库...", Toast.LENGTH_SHORT).show()
+                    com.lin0721.linmusic.ui.components.ToastManager.showToast("登录成功，正在同步乐库...")
                 }
             )
         }

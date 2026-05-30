@@ -1,6 +1,5 @@
 package com.lin0721.linmusic.ui.search
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -76,7 +75,7 @@ fun SearchScreen(
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(viewModel) {
-        viewModel.toastEvent.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        viewModel.toastEvent.collect { com.lin0721.linmusic.ui.components.ToastManager.showToast(it) }
     }
 
     val focusRequester = remember { FocusRequester() }
@@ -127,7 +126,7 @@ fun SearchScreen(
                     modifier = Modifier
                         .size(36.dp)
                         .clickable {
-                            Toast.makeText(context, "请先在主页登录以显示侧边栏哦！", Toast.LENGTH_SHORT).show()
+                            com.lin0721.linmusic.ui.components.ToastManager.showToast("请先在主页登录以显示侧边栏哦！")
                         }
                 )
             }
@@ -262,7 +261,7 @@ private fun SearchResultsList(
 
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(bottom = 160.dp)
+        contentPadding = PaddingValues(bottom = 180.dp)
     ) {
         item(key = "header") {
             Text(
@@ -352,7 +351,7 @@ private fun DiscoveryContent(
     }
 
     LazyColumn(
-        contentPadding = PaddingValues(bottom = 160.dp),
+        contentPadding = PaddingValues(bottom = 180.dp),
         modifier = Modifier.fillMaxSize()
     ) {
         if (uiState.hotSearches.isNotEmpty()) {

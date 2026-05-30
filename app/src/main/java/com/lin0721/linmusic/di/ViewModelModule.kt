@@ -6,6 +6,7 @@ import com.lin0721.linmusic.ui.home.HomeViewModel
 import com.lin0721.linmusic.ui.library.LibraryViewModel
 import com.lin0721.linmusic.ui.player.PlayerViewModel
 import com.lin0721.linmusic.ui.playlist.PlaylistViewModel
+import com.lin0721.linmusic.ui.playlist.ArtistViewModel
 import com.lin0721.linmusic.ui.search.SearchViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -19,6 +20,7 @@ val viewModelModule = module {
 
     viewModelOf(::HomeViewModel)
     viewModelOf(::PlaylistViewModel)
+    viewModelOf(::ArtistViewModel)
     viewModelOf(::SearchViewModel)
     viewModelOf(::LibraryViewModel)
     viewModelOf(::CreateViewModel)

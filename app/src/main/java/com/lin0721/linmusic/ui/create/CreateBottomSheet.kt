@@ -1,6 +1,5 @@
 package com.lin0721.linmusic.ui.create
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -45,7 +44,7 @@ fun CreatePopupMenu(
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            com.lin0721.linmusic.ui.components.ToastManager.showToast(message)
         }
     }
 
@@ -64,7 +63,7 @@ fun CreatePopupMenu(
                 if (userProfile != null) {
                     showCreateDialog = true
                 } else {
-                    Toast.makeText(context, "请先登录以创建歌单", Toast.LENGTH_SHORT).show()
+                    com.lin0721.linmusic.ui.components.ToastManager.showToast("请先登录以创建歌单")
                     onDismiss()
                     onLoginRequest()
                 }
@@ -76,7 +75,7 @@ fun CreatePopupMenu(
             title = "共建歌单",
             subtitle = "与好友一起创建歌单",
             onClick = {
-                Toast.makeText(context, "功能开发中，敬请期待", Toast.LENGTH_SHORT).show()
+                com.lin0721.linmusic.ui.components.ToastManager.showToast("功能开发中，敬请期待")
             }
         )
 
@@ -85,7 +84,7 @@ fun CreatePopupMenu(
             title = "共享合辑",
             subtitle = "将好友的音乐喜好合并为一个歌单",
             onClick = {
-                Toast.makeText(context, "功能开发中，敬请期待", Toast.LENGTH_SHORT).show()
+                com.lin0721.linmusic.ui.components.ToastManager.showToast("功能开发中，敬请期待")
             }
         )
     }
