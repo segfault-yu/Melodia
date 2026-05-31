@@ -6,7 +6,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import org.koin.android.ext.android.inject
 
-class LinMusicPlaybackService : MediaSessionService() {
+class MelodiaPlaybackService : MediaSessionService() {
 
     private val playerManager: PlayerManager by inject()
     private var player: Player? = null

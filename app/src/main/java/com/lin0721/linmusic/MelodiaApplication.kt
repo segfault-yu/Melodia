@@ -17,7 +17,7 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 
-class LinMusicApplication : Application() {
+class MelodiaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
@@ -44,7 +44,7 @@ class LinMusicApplication : Application() {
 
         startKoin {
             androidLogger(if (BuildConfig.DEBUG) Level.DEBUG else Level.ERROR)
-            androidContext(this@LinMusicApplication)
+            androidContext(this@MelodiaApplication)
             modules(networkModule, repositoryModule, viewModelModule, playerModule, localModule)
         }
     }
