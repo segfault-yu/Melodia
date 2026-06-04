@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.components
+package com.lin0721.linmusic.ui.settings
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

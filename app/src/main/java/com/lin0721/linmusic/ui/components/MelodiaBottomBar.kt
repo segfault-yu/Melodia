@@ -43,10 +43,12 @@ import com.lin0721.linmusic.ui.theme.extractColorPalette
 import dev.chrisbanes.haze.HazeState
 import androidx.compose.ui.platform.LocalContext
 import coil.request.ImageRequest
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 
-/**
- * 悬浮播放控制卡片
- */
+//悬浮播放控制卡片
+
 @Composable
 fun MiniPlayerCard(
     currentTrack: MediaItem?,
@@ -57,7 +59,9 @@ fun MiniPlayerCard(
     onNext: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    hazeState: HazeState? = null
+    hazeState: HazeState? = null,
+    onDrag: ((Float) -> Unit)? = null,
+    onDragEnd: ((Float) -> Unit)? = null
 ) {
     if (currentTrack == null) return
 
@@ -70,7 +74,7 @@ fun MiniPlayerCard(
             ?: ""
         ImageRequest.Builder(context)
             .data(cleanUrl.ifEmpty { null })
-            .allowHardware(false) // 禁用硬件位图解码
+            .allowHardware(false)
             .crossfade(true)
             .build()
     }
@@ -87,8 +91,8 @@ fun MiniPlayerCard(
         label = "mini_player_dominant"
     )
     
-    // 采用与播放界面歌词卡片一致的纯色算法：
-    // 将主色调转为 HSV，提升饱和度（S）并硬编码亮度（V）为 0.3f 从而获取深色背景
+    // 采用与播放界面歌词卡片一致的算法
+
     val cardBackgroundColor = remember(animatedDominant) {
         val hsv = FloatArray(3)
         android.graphics.Color.RGBToHSV(
@@ -108,6 +112,15 @@ fun MiniPlayerCard(
             .clip(RoundedCornerShape(16.dp))
             .background(cardBackgroundColor)
             .border(0.5.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+            .draggable(
+                orientation = Orientation.Vertical,
+                state = rememberDraggableState { delta ->
+                    onDrag?.invoke(delta)
+                },
+                onDragStopped = { velocity ->
+                    onDragEnd?.invoke(velocity)
+                }
+            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -176,7 +189,7 @@ fun MiniPlayerCard(
                 }
             }
             
-            // 底部细进度条
+            // 底部进度条
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -195,9 +208,7 @@ fun MiniPlayerCard(
     }
 }
 
-/**
- * 符合 Android MD 风格的底部导航栏
- */
+//底部导航栏  
 @Composable
 fun MelodiaNavigationBar(
     currentScreen: Screen,
@@ -214,7 +225,7 @@ fun MelodiaNavigationBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .height(62.dp), // 缩减高度至 62.dp，使其更紧凑
+                .height(62.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val navItems = listOf(
@@ -243,7 +254,7 @@ fun MelodiaNavigationBar(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // 药丸形状背景（选中时显示，设计得更为紧凑）
+                    // 药丸形状背景
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))

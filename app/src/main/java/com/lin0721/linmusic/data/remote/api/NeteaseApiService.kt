@@ -1026,7 +1026,9 @@ data class ArtistDetailInfo(
     val briefDesc: String = "",
     val albumSize: Int = 0,
     val musicSize: Int = 0,
-    val identifyTag: List<String>? = null
+    val identifyTag: List<String>? = null,
+    val trans: String? = null, // 翻译名称
+    val alias: List<String>? = null // 别名列表
 )
 
 // ======================= 艺人粉丝数量 DTO =======================

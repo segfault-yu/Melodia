@@ -109,7 +109,8 @@ fun FullPlayerScreen(
     onSeek: (Long) -> Unit,
     onClose: () -> Unit,
     isPlayerOpen: Boolean,
-    onArtistClick: (Long) -> Unit
+    onArtistClick: (Long) -> Unit,
+    onDragClose: (Float, Float) -> Unit = { _, _ -> }
 ) {
     if (currentTrack == null) return
 
@@ -121,7 +122,7 @@ fun FullPlayerScreen(
     val similarArtists by viewModel.similarArtists.collectAsStateWithLifecycle()
     val isSimilarArtistsLoading by viewModel.isSimilarArtistsLoading.collectAsStateWithLifecycle()
     val artistDetail by viewModel.artistDetail.collectAsStateWithLifecycle()
-    // 歌手粉丝数量 (用于每月听众数)
+    // 歌手粉丝数量
     val artistFansCount by viewModel.artistFansCount.collectAsStateWithLifecycle()
     val artistAlbums by viewModel.artistAlbums.collectAsStateWithLifecycle()
     val playContext by viewModel.playerManager.playContext.collectAsStateWithLifecycle()
@@ -277,18 +278,9 @@ fun FullPlayerScreen(
             }
 
             if (offsetY > 0f && shouldClose) {
-                animate(
-                    initialValue = offsetY,
-                    targetValue = screenHeightPx,
-                    initialVelocity = velocity,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                ) { value, _ ->
-                    offsetY = value.coerceAtLeast(0f)
-                }
-                onClose()
+                val finalOffset = offsetY
+                offsetY = 0f
+                onDragClose(finalOffset, velocity)
             } else {
                 animate(
                     initialValue = offsetY,

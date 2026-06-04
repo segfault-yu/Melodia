@@ -44,6 +44,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import com.lin0721.linmusic.ui.create.CreatePopupMenu
+import androidx.compose.ui.layout.onSizeChanged
+// offset 同时移动视觉位置和布局边界(hit-test)，避免 graphicsLayer 只移动渲染层导致的手势拦截
+import androidx.compose.ui.unit.IntOffset
 
 enum class Screen {
     Home, Playlist, Search, Library, Settings, Artist
@@ -58,7 +61,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // 套用新改名的 MelodiaTheme 全局主题
             MelodiaTheme {
                 MelodiaApp()
             }
@@ -76,6 +78,56 @@ fun MelodiaApp() {
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
     var isPlayerOpen by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    // 初始化为极大值，屏幕尺寸测量前 FullPlayerScreen 始终在屏幕外不可见
+    var playerOffsetY by remember { mutableStateOf(10000f) }
+    var screenHeightPx by remember { mutableStateOf(0f) }
+    // springJob 不用 mutableStateOf，避免写入时触发不必要的 recomposition
+    val springJobRef = remember { arrayOfNulls<kotlinx.coroutines.Job>(1) }
+
+    // 统一控制播放界面展开和收起的弹簧动画
+    fun animatePlayerTo(open: Boolean, velocity: Float, initialOffset: Float = Float.NaN) {
+        springJobRef[0]?.cancel()
+        if (open) {
+            isPlayerOpen = true
+            springJobRef[0] = scope.launch {
+                animate(
+                    initialValue = playerOffsetY,
+                    targetValue = 0f,
+                    initialVelocity = velocity,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) { value, _ -> playerOffsetY = value.coerceIn(0f, screenHeightPx) }
+            }
+        } else {
+            if (!initialOffset.isNaN()) {
+                playerOffsetY = initialOffset
+            }
+            springJobRef[0] = scope.launch {
+                animate(
+                    initialValue = playerOffsetY,
+                    targetValue = screenHeightPx,
+                    initialVelocity = velocity,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) { value, _ -> playerOffsetY = value.coerceIn(0f, screenHeightPx) }
+                playerOffsetY = screenHeightPx
+                isPlayerOpen = false
+            }
+        }
+    }
+
+    // 屏幕高度首次测量完成后将播放器初始化到屏幕底部
+    LaunchedEffect(screenHeightPx) {
+        if (screenHeightPx > 0f && !isPlayerOpen) {
+            playerOffsetY = screenHeightPx
+        }
+    }
+
 
     // 全局自定义 Toast 状态管理
     var toastMessage by remember { mutableStateOf<String?>(null) }
@@ -158,7 +210,6 @@ fun MelodiaApp() {
         )
     }
 
-    val scope = rememberCoroutineScope()
     val openSidebar: () -> Unit = {
         scope.launch { drawerState.animateTo(AppSidebarState.Open) }
     }
@@ -172,7 +223,7 @@ fun MelodiaApp() {
     BackHandler(enabled = isAnyOverlayOpen) {
         when {
             isPlayerOpen -> {
-                isPlayerOpen = false
+                animatePlayerTo(false, 0f)
             }
             drawerState.currentValue == AppSidebarState.Open -> {
                 scope.launch { drawerState.animateTo(AppSidebarState.Closed) }
@@ -191,6 +242,7 @@ fun MelodiaApp() {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onSizeChanged { screenHeightPx = it.height.toFloat() }
             .pointerInput(drawerState.currentValue) {
                 val edgeWidthPx = with(density) { 32.dp.toPx() }
                 awaitPointerEventScope {
@@ -338,13 +390,13 @@ fun MelodiaApp() {
                             )
                         }
                         Screen.Settings -> {
-                            com.lin0721.linmusic.ui.components.SettingsScreen(
+                            com.lin0721.linmusic.ui.settings.SettingsScreen(
                                 onBack = navigateBack
                             )
                         }
                         Screen.Artist -> {
                             activeArtistId?.let { id ->
-                                com.lin0721.linmusic.ui.playlist.ArtistScreen(
+                                com.lin0721.linmusic.ui.artist.ArtistScreen(
                                     artistId = id,
                                     onBack = navigateBack,
                                     onArtistClick = { nextId ->
@@ -424,9 +476,17 @@ fun MelodiaApp() {
                         duration = duration,
                         onTogglePlay = { viewModel.togglePlayPause() },
                         onNext = { viewModel.playerManager.playNext() },
-                        onClick = { isPlayerOpen = true },
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp) // 缩减左右间距以更贴合边缘，与底栏对齐
+                        onClick = { animatePlayerTo(true, 0f) },
+                        onDrag = { delta ->
+                            springJobRef[0]?.cancel()
+                            if (!isPlayerOpen) isPlayerOpen = true
+                            playerOffsetY = (playerOffsetY + delta).coerceIn(0f, screenHeightPx)
+                        },
+                        onDragEnd = { velocity ->
+                            val shouldOpen = playerOffsetY < screenHeightPx * 0.80f || velocity < -1000f
+                            animatePlayerTo(shouldOpen, velocity)
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }
 
@@ -461,28 +521,39 @@ fun MelodiaApp() {
             }
         }
 
-        // 3. 全屏播放器层 (置于最顶层)
-        AnimatedVisibility(
-            visible = isPlayerOpen,
-            enter = slideInVertically(initialOffsetY = { it }, animationSpec = tween(350, easing = FastOutSlowInEasing)) + fadeIn(tween(250)),
-            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300, easing = FastOutSlowInEasing)) + fadeOut(tween(200)),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            FullPlayerScreen(
-                currentTrack = currentTrack,
-                isPlaying = isPlaying,
-                currentPosition = currentPosition,
-                duration = duration,
-                onTogglePlay = { viewModel.togglePlayPause() },
-                onSeek = { viewModel.playerManager.seekTo(it) },
-                onClose = { isPlayerOpen = false },
-                isPlayerOpen = isPlayerOpen,
-                onArtistClick = { artistId ->
-                    isPlayerOpen = false
-                    activeArtistId = artistId
-                    navigateTo(Screen.Artist)
-                }
-            )
+        if (currentTrack != null && screenHeightPx > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .offset { IntOffset(0, playerOffsetY.toInt()) }
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = if (playerOffsetY > 0f) 24.dp else 0.dp,
+                            topEnd = if (playerOffsetY > 0f) 24.dp else 0.dp
+                        )
+                    )
+            ) {
+                FullPlayerScreen(
+                    currentTrack = currentTrack,
+                    isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onTogglePlay = { viewModel.togglePlayPause() },
+                    onSeek = { viewModel.playerManager.seekTo(it) },
+                    onClose = {
+                        animatePlayerTo(false, 0f)
+                    },
+                    onDragClose = { offset, velocity ->
+                        animatePlayerTo(false, velocity, offset)
+                    },
+                    isPlayerOpen = isPlayerOpen,
+                    onArtistClick = { artistId ->
+                        animatePlayerTo(false, 0f)
+                        activeArtistId = artistId
+                        navigateTo(Screen.Artist)
+                    }
+                )
+            }
         }
 
         // 4. 全局自定义 Toast 提示

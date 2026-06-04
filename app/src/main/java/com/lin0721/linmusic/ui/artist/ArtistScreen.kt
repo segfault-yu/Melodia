@@ -1,9 +1,11 @@
-package com.lin0721.linmusic.ui.playlist
+package com.lin0721.linmusic.ui.artist
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,6 +56,8 @@ import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.ui.components.WebViewLoginScreen
 import com.lin0721.linmusic.ui.theme.*
+import com.lin0721.linmusic.ui.playlist.PlaylistCollectState
+import com.lin0721.linmusic.ui.playlist.PlaylistCollectItem
 import org.koin.androidx.compose.koinViewModel
 import java.text.NumberFormat
 import java.util.Locale
@@ -232,7 +236,7 @@ private fun ArtistContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // 1. 全出血大图背景 (固定在顶部，随滚动折叠淡出)
+        // 1. 大图背景 (固定在顶部)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -271,7 +275,7 @@ private fun ArtistContent(
                     alpha = 1f - progress * 0.7f // 与大图同步渐隐
                 }
         ) {
-            // 纯色底色向下延伸，高由 70.dp 改为 80.dp，底边缘正好与 action_bar 底部的 tab_bar 接在一起
+            // 纯色底色向下延伸,底边缘与底部的 tab_bar 接在一起
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -283,11 +287,13 @@ private fun ArtistContent(
 
 
         // 2. 滚动视口列表
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 180.dp)
-        ) {
+        @OptIn(ExperimentalFoundationApi::class)
+        CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 180.dp)
+            ) {
             // Item 0: 顶占位透明高，用于显示出大图 Header
             item(key = "header_placeholder") {
                 Box(
@@ -296,7 +302,7 @@ private fun ArtistContent(
                         .height(310.dp),
                     contentAlignment = Alignment.BottomStart
                 ) {
-                    // 对歌手名称和粉丝数区域加渐变蒙层
+                    // 歌手名称和粉丝数区域的渐变蒙层
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -308,7 +314,7 @@ private fun ArtistContent(
                                     )
                                 )
                             )
-                            .padding(horizontal = 24.dp)
+                            .padding(horizontal = 16.dp)
                             .padding(bottom = 16.dp, top = 24.dp)
                     ) {
                         // Artist Name
@@ -324,91 +330,125 @@ private fun ArtistContent(
 
                         Spacer(Modifier.height(6.dp))
 
-                        // Fans/Monthly Listeners
-                        Text(
-                            text = "共有 ${formatFansCount(fansCount)} 位听众",
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        // 显示歌手的译名
+                        val chineseName = (artist.trans?.takeIf { it.isNotBlank() }
+                            ?: artist.alias?.firstOrNull { it.isNotBlank() })?.takeIf { it != artist.name }
+
+                        if (!chineseName.isNullOrBlank()) {
+                            Text(
+                                text = chineseName,
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Spacer(Modifier.height(18.dp))
+                        }
                     }
                 }
             }
 
             // Item 1: 操作控制行 (关注, 随机播放等)
             item(key = "action_bar") {
-                // 操作栏背景：从顶部 80% 不透明到底部 60% 不透明的线性渐变
+                // 操作栏背景线性渐变
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .height(80.dp) // 固定高度为 80.dp
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    BackgroundDark.copy(alpha = 0.80f), // 顶部：80% 不透明
-                                    BackgroundDark.copy(alpha = 0.90f)  // 底部：90% 不透明
+                                    BackgroundDark.copy(alpha = 0.60f), // 顶部：80% 不透明
+                                    BackgroundDark.copy(alpha = 1.00f)  // 底部：90% 不透明
                                 )
                             )
                         )
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp), 
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    // 圆角头像小缩略图
-                    AsyncImage(
-                        model = "${artist.avatar}?param=100y100",
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                    )
-
-                    Spacer(Modifier.width(12.dp))
-
-                    // 关注状态卡片
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .border(
-                                border = if (isFollowed) BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
-                                else BorderStroke(0.dp, Color.Transparent),
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                            .background(if (isFollowed) Color.Transparent else NeteaseRed)
-                            .clickable(onClick = onFollowClick)
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    // 左侧控制列 (包含粉丝数与头像控制项)
+                    Column(
+                        modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = if (isFollowed) "已关注" else "关注",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                            text = "共有 ${formatFansCount(fansCount)} 位听众",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
                         )
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // 圆角头像小缩略图
+                            AsyncImage(
+                                model = "${artist.avatar}?param=100y100",
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                            )
+
+                            Spacer(Modifier.width(12.dp))
+
+                            // 关注状态卡片
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .border(
+                                        border = if (isFollowed) BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
+                                        else BorderStroke(0.dp, Color.Transparent),
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .background(if (isFollowed) Color.Transparent else NeteaseRed)
+                                    .clickable(onClick = onFollowClick)
+                                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = if (isFollowed) "已关注" else "关注",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(Modifier.width(16.dp))
+
+                            IconButton(
+                                onClick = {},
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(24.dp))
+                            }
+                        }
                     }
 
-                    Spacer(Modifier.width(16.dp))
-
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(24.dp))
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // 随机播放
-                    IconButton(onClick = onPlayAll) {
-                        Icon(Icons.Default.Shuffle, "Shuffle", tint = NeteaseRed, modifier = Modifier.size(22.dp))
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // 红色圆圈大播放键
-                    FloatingActionButton(
-                        onClick = onPlayAll,
-                        containerColor = NeteaseRed,
-                        shape = CircleShape,
-                        modifier = Modifier.size(48.dp)
+                    // 右侧播放控制项
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.align(Alignment.Bottom)
                     ) {
-                        Icon(Icons.Default.PlayArrow, "Play All", tint = Color.White, modifier = Modifier.size(28.dp))
+                        // 随机播放
+                        IconButton(
+                            onClick = onPlayAll,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.Default.Shuffle, "Shuffle", tint = NeteaseRed, modifier = Modifier.size(26.dp))
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        // 红色圆圈大播放键
+                        FloatingActionButton(
+                            onClick = onPlayAll,
+                            containerColor = NeteaseRed,
+                            shape = CircleShape,
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, "Play All", tint = Color.White, modifier = Modifier.size(32.dp))
+                        }
                     }
                 }
             }
@@ -419,7 +459,7 @@ private fun ArtistContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(BackgroundDark)
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(28.dp)
                 ) {
                     tabs.forEachIndexed { index, title ->
@@ -437,7 +477,7 @@ private fun ArtistContent(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(6.dp))
-                            // 指示器：选中时显示应用主色 NeteaseRed 横线，未选中时透明
+                            // 指示器：选中时显示横线，未选中时透明
                             Box(
                                 modifier = Modifier
                                     .height(2.dp)
@@ -488,7 +528,7 @@ private fun ArtistContent(
                         }
                     }
                 }
-                1 -> { // 专辑 Tab: 垂直平铺专辑列表，采用精致的行模式展示
+                1 -> { // 专辑 Tab: 采用精致的行模式展示
                     if (albums.isEmpty()) {
                         item(key = "empty_albums") {
                             Box(
@@ -549,7 +589,7 @@ private fun ArtistContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(BackgroundDark)
-                                .padding(horizontal = 24.dp, vertical = 20.dp)
+                                .padding(horizontal = 16.dp, vertical = 20.dp)
                         ) {
                             Text(
                                 text = "艺人简介",
@@ -601,10 +641,10 @@ private fun ArtistContent(
                                     color = Color.White,
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
+                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
                                 )
                                 LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 24.dp),
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
                                     items(similarArtists, key = { it.id }) { artistInfo ->
@@ -616,6 +656,7 @@ private fun ArtistContent(
                     }
                 }
             }
+        }
         }
 
         // 3. 悬浮的 TopBar
@@ -1012,9 +1053,6 @@ private fun ArtistContent(
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// 歌手歌曲 Row 单曲排版
-// ────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun ArtistSongRow(
     index: Int,
@@ -1032,17 +1070,15 @@ private fun ArtistSongRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 歌曲序号 (将图片和歌曲名向右推)
         Text(
             text = index.toString(),
             color = if (isActive) NeteaseRed else TextGray,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.width(36.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            modifier = Modifier.width(28.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Start
         )
 
-        // 封面图 (套用歌单 48.dp 大小与圆角)
         AsyncImage(
             model = "${track.al.picUrl}?param=100y100",
             contentDescription = track.name,
@@ -1054,7 +1090,6 @@ private fun ArtistSongRow(
 
         Spacer(Modifier.width(12.dp))
 
-        // 标题和歌手信息 (套用歌单 15.sp 字体及副标题排版)
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -1067,7 +1102,6 @@ private fun ArtistSongRow(
                     modifier = Modifier.weight(1f, fill = false)
                 )
 
-                // VIP 歌曲高显微标
                 if (track.fee == 1) {
                     Spacer(Modifier.width(6.dp))
                     Box(
@@ -1109,18 +1143,10 @@ private fun ArtistSongRow(
             )
         }
 
-        IconButton(
-            onClick = {},
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(20.dp))
-        }
+        Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(20.dp))
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// 歌手专辑 Card
-// ────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun AlbumCard(
     album: ArtistAlbum,
@@ -1154,7 +1180,6 @@ private fun AlbumCard(
 
         Spacer(Modifier.height(2.dp))
 
-        // 提取发布年份
         val year = remember(album.publishTime) {
             try {
                 val sdf = java.text.SimpleDateFormat("yyyy", Locale.getDefault())
@@ -1171,9 +1196,6 @@ private fun AlbumCard(
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// 相似艺人 Card (圆形头像 Row 浮动)
-// ────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun SimilarArtistCard(
     artist: ArtistInfo,
@@ -1209,9 +1231,6 @@ private fun SimilarArtistCard(
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// 歌手专辑 Row 列表项 (Tab 布局专用)
-// ────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun ArtistAlbumRow(
     album: ArtistAlbum,
@@ -1222,7 +1241,7 @@ private fun ArtistAlbumRow(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .background(BackgroundDark)
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
@@ -1272,13 +1291,6 @@ private fun ArtistAlbumRow(
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// 辅助与本地数据转换工具
-// ────────────────────────────────────────────────────────────────────────────
-
-/**
- * 听众数量格式化转换 (千分位/万字)
- */
 private fun formatFansCount(count: Long): String {
     return if (count >= 10000) {
         val num = count / 10000.0
@@ -1287,5 +1299,3 @@ private fun formatFansCount(count: Long): String {
         NumberFormat.getNumberInstance(Locale.US).format(count)
     }
 }
-
-// 移除未使用的虚拟播放量生成工具

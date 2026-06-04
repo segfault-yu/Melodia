@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.playlist
+package com.lin0721.linmusic.ui.artist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,6 +10,8 @@ import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
+import com.lin0721.linmusic.ui.playlist.PlaylistCollectState
+import com.lin0721.linmusic.ui.playlist.PlaylistCollectItem
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
@@ -162,7 +164,7 @@ class ArtistViewModel(
                                 coverUrl = playlist.coverImgUrl,
                                 isInitiallyContains = isInitiallyContains,
                                 isContains = isInitiallyContains
-                            )
+                             )
                         }
                     }.awaitAll()
 

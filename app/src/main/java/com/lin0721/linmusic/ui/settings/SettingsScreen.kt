@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.components
+package com.lin0721.linmusic.ui.settings
 
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -44,6 +44,7 @@ import com.lin0721.linmusic.data.local.UserProfile
 import com.lin0721.linmusic.data.remote.api.UserBindingItem
 import com.lin0721.linmusic.data.remote.api.UserLevelData
 import com.lin0721.linmusic.data.remote.api.VipInfoData
+import com.lin0721.linmusic.ui.components.ToastManager
 import com.lin0721.linmusic.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
@@ -74,7 +75,7 @@ fun SettingsScreen(
     // 监听 Toast 事件
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collectLatest { msg ->
-            com.lin0721.linmusic.ui.components.ToastManager.showToast(msg)
+            ToastManager.showToast(msg)
         }
     }
 
@@ -87,7 +88,7 @@ fun SettingsScreen(
             if (file != null) {
                 viewModel.uploadUserAvatar(file)
             } else {
-                com.lin0721.linmusic.ui.components.ToastManager.showToast("图片加载失败")
+                ToastManager.showToast("图片加载失败")
             }
         }
     }
@@ -1004,7 +1005,6 @@ private fun getBindingIcon(type: Int): androidx.compose.ui.graphics.vector.Image
     }
 }
 
-// 辅助方法：URI 复制
 private fun copyUriToFile(context: Context, uri: android.net.Uri): java.io.File? {
     return runCatching {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
@@ -1016,7 +1016,6 @@ private fun copyUriToFile(context: Context, uri: android.net.Uri): java.io.File?
     }.getOrNull()
 }
 
-// 获取音质可读展示名
 private fun getQualityDisplayName(quality: String): String {
     return when (quality) {
         "standard" -> "标准"
