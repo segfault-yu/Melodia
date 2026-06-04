@@ -62,7 +62,9 @@ fun PlayQueueSheet(
 
     LaunchedEffect(currentIndex) {
         if (currentIndex in queue.indices) {
-            listState.scrollToItem(0)
+            // 已播放占用的项数 = 1 (已播放头部) + currentIndex (已播放的歌曲数量)
+            val scrollIndex = if (currentIndex > 0) currentIndex + 1 else 0
+            listState.scrollToItem(scrollIndex)
         }
     }
 
@@ -112,7 +114,45 @@ fun PlayQueueSheet(
                     .fillMaxWidth(),
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
-                // "正在播放" 标签
+                // 1. "已播放" 
+                if (currentIndex > 0) {
+                    item(key = "header_played") {
+                        SectionLabel("已播放")
+                    }
+                    itemsIndexed(
+                        items = queue.subList(0, currentIndex),
+                        key = { idx, item -> "played_${item.songId}_$idx" }
+                    ) { idx, item ->
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { value ->
+                                if (value == SwipeToDismissBoxValue.EndToStart) {
+                                    onRemoveAtIndex(idx)
+                                    true
+                                } else false
+                            }
+                        )
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = { SwipeDeleteBackground() },
+                            enableDismissFromStartToEnd = false
+                        ) {
+                            QueueSongRow(
+                                item = item,
+                                isCurrent = false,
+                                isPlaying = false,
+                                isPlayed = true,
+                                isDragging = false,
+                                dragOffsetY = 0f,
+                                onClick = { onPlayAtIndex(idx) },
+                                onDragStart = {},
+                                onDrag = { _ -> },
+                                onDragEnd = {}
+                            )
+                        }
+                    }
+                }
+
+                // 2. "正在播放"
                 if (currentIndex in queue.indices) {
                     item(key = "header_current") {
                         SectionLabel("正在播放")
@@ -147,7 +187,7 @@ fun PlayQueueSheet(
                     }
                 }
 
-                // "接下来播放"
+                // 3. "接下来播放"
                 val upcomingStart = currentIndex + 1
                 if (upcomingStart < queue.size) {
                     item(key = "header_upcoming") {
@@ -206,44 +246,6 @@ fun PlayQueueSheet(
                                     draggedIndex = -1
                                     dragOffset = 0f
                                 }
-                            )
-                        }
-                    }
-                }
-
-                // "已播放"
-                if (currentIndex > 0) {
-                    item(key = "header_played") {
-                        SectionLabel("已播放")
-                    }
-                    itemsIndexed(
-                        items = queue.subList(0, currentIndex),
-                        key = { idx, item -> "played_${item.songId}_$idx" }
-                    ) { idx, item ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.EndToStart) {
-                                    onRemoveAtIndex(idx)
-                                    true
-                                } else false
-                            }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = { SwipeDeleteBackground() },
-                            enableDismissFromStartToEnd = false
-                        ) {
-                            QueueSongRow(
-                                item = item,
-                                isCurrent = false,
-                                isPlaying = false,
-                                isPlayed = true,
-                                isDragging = false,
-                                dragOffsetY = 0f,
-                                onClick = { onPlayAtIndex(idx) },
-                                onDragStart = {},
-                                onDrag = { _ -> },
-                                onDragEnd = {}
                             )
                         }
                     }

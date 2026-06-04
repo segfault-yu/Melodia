@@ -17,7 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lin0721.linmusic.ui.home.BottomFloatingIsland
+import com.lin0721.linmusic.ui.components.MiniPlayerCard
+import com.lin0721.linmusic.ui.components.MelodiaNavigationBar
 import com.lin0721.linmusic.ui.home.HomeScreen
 import com.lin0721.linmusic.ui.home.HomeViewModel
 import com.lin0721.linmusic.ui.player.FullPlayerScreen
@@ -59,14 +60,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             // 套用新改名的 MelodiaTheme 全局主题
             MelodiaTheme {
-                LinMusicApp()
+                MelodiaApp()
             }
         }
     }
 }
 
 @Composable
-fun LinMusicApp() {
+fun MelodiaApp() {
     val viewModel: HomeViewModel = koinViewModel()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
     val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
@@ -377,52 +378,70 @@ fun LinMusicApp() {
                 )
             }
 
-            // 网页登录界面显示时，动态隐藏播放器悬浮底栏
-            AnimatedVisibility(
-                visible = !isLoginScreenVisible,
-                enter = fadeIn(animationSpec = tween(300)),
-                exit = fadeOut(animationSpec = tween(300)),
-                modifier = Modifier.align(Alignment.BottomCenter)
+            // 放置在应用了平移 graphicsLayer 的主 Box 内部的底部
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
             ) {
-                Box(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp)
+                // 0. 创建菜单弹出层 (当需要显示时展示，置于播放器卡片上方)
+                AnimatedVisibility(
+                    visible = showCreateSheet && !isLoginScreenVisible,
+                    enter = slideInVertically(
+                        initialOffsetY = { it / 2 },
+                        animationSpec = tween(250, easing = FastOutSlowInEasing)
+                    ) + fadeIn(tween(200)),
+                    exit = slideOutVertically(
+                        targetOffsetY = { it / 2 },
+                        animationSpec = tween(200, easing = FastOutSlowInEasing)
+                    ) + fadeOut(tween(150))
                 ) {
-                    Column {
-                        AnimatedVisibility(
-                            visible = showCreateSheet,
-                            enter = slideInVertically(
-                                initialOffsetY = { it / 2 },
-                                animationSpec = tween(250, easing = FastOutSlowInEasing)
-                            ) + fadeIn(tween(200)),
-                            exit = slideOutVertically(
-                                targetOffsetY = { it / 2 },
-                                animationSpec = tween(200, easing = FastOutSlowInEasing)
-                            ) + fadeOut(tween(150))
-                        ) {
-                            CreatePopupMenu(
-                                onDismiss = { showCreateSheet = false },
-                                onLoginRequest = {
-                                    // TODO: 触发登录流程
-                                }
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        BottomFloatingIsland(
-                            hazeState = hazeState,
-                            currentTrack = currentTrack,
-                            isPlaying = isPlaying,
-                            currentPosition = currentPosition,
-                            duration = duration,
-                            onTogglePlay = { viewModel.togglePlayPause() },
-                            onOpenPlayer = { isPlayerOpen = true },
-                            currentScreen = currentScreen,
-                            onNavigate = { searchAutoFocus = false; navigateTo(it) },
-                            onCreateClick = { showCreateSheet = !showCreateSheet },
-                            isCreateMenuOpen = showCreateSheet
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 12.dp)
+                    ) {
+                        CreatePopupMenu(
+                            onDismiss = { showCreateSheet = false },
+                            onLoginRequest = {
+                                // TODO: 触发登录流程
+                            }
                         )
                     }
+                }
+
+                // 1. 浮动播放卡片 (只有在有曲目且非登录状态下显示)
+                AnimatedVisibility(
+                    visible = currentTrack != null && !isLoginScreenVisible,
+                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                ) {
+                    MiniPlayerCard(
+                        hazeState = hazeState,
+                        currentTrack = currentTrack,
+                        isPlaying = isPlaying,
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        onTogglePlay = { viewModel.togglePlayPause() },
+                        onNext = { viewModel.playerManager.playNext() },
+                        onClick = { isPlayerOpen = true },
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp) // 缩减左右间距以更贴合边缘，与底栏对齐
+                    )
+                }
+
+                // 2. M3 导航栏 (在非登录状态下显示)
+                AnimatedVisibility(
+                    visible = !isLoginScreenVisible,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    MelodiaNavigationBar(
+                        currentScreen = currentScreen,
+                        onNavigate = { searchAutoFocus = false; navigateTo(it) },
+                        onCreateClick = { showCreateSheet = !showCreateSheet },
+                        isCreateMenuOpen = showCreateSheet
+                    )
                 }
             }
 

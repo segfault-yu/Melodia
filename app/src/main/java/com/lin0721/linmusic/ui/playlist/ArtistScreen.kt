@@ -1,6 +1,7 @@
 package com.lin0721.linmusic.ui.playlist
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -74,6 +75,7 @@ fun ArtistScreen(
     val likedSongIds by viewModel.likedSongIds.collectAsStateWithLifecycle()
     val collectState by viewModel.collectState.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var showLoginSheet by remember { mutableStateOf(false) }
@@ -119,6 +121,7 @@ fun ArtistScreen(
                     albums = state.albums,
                     similarArtists = state.similarArtists,
                     likedSongIds = likedSongIds,
+                    currentTrackId = currentTrack?.mediaId,
                     collectState = collectState,
                     isLoggedIn = userProfile != null,
                     onBack = onBack,
@@ -183,6 +186,7 @@ private fun ArtistContent(
     albums: List<ArtistAlbum>,
     similarArtists: List<ArtistInfo>,
     likedSongIds: Set<Long>,
+    currentTrackId: String?,
     collectState: PlaylistCollectState,
     isLoggedIn: Boolean,
     onBack: () -> Unit,
@@ -210,7 +214,7 @@ private fun ArtistContent(
     // 背景折叠临界点
     val collapseThresholdPx = with(density) { 320.dp.toPx() }
     val progress by remember {
-        derivedStateOf {
+        derivedStateOf {    
             if (listState.firstVisibleItemIndex > 0) 1f
             else (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
         }
@@ -223,6 +227,8 @@ private fun ArtistContent(
     var collectSongId by remember { mutableStateOf<Long?>(null) }
     var showBioDialog by remember { mutableStateOf(false) }
     var showAllAlbumsSheet by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabs = listOf("音乐", "专辑", "MV", "关于艺人")
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -250,24 +256,31 @@ private fun ArtistContent(
                 onSuccess = { state ->
                     dominantColor = extractDominantColor(state.result.drawable)
                 },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            // 底部蒙层渐变到 BackgroundDark
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.2f),
-                                Color.Black.copy(alpha = 0.5f),
-                                BackgroundDark
-                            )
-                        )
-                    )
+                modifier = Modifier.fillMaxSize() 
             )
         }
+
+        // 1b. dominantColor 独立底色层：压在封面图上方，高度延伸到操作栏底部，与 Tab 栏接在一起
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(390.dp)
+                .align(Alignment.TopCenter)
+                .graphicsLayer {
+                    translationY = -progress * collapseThresholdPx * 0.5f // 与大图同步视差平移
+                    alpha = 1f - progress * 0.7f // 与大图同步渐隐
+                }
+        ) {
+            // 纯色底色向下延伸，高由 70.dp 改为 80.dp，底边缘正好与 action_bar 底部的 tab_bar 接在一起
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(dominantColor)
+            )
+        }
+
 
         // 2. 滚动视口列表
         LazyColumn(
@@ -280,12 +293,24 @@ private fun ArtistContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(310.dp)
-                        .padding(horizontal = 24.dp)
-                        .padding(bottom = 16.dp),
+                        .height(310.dp),
                     contentAlignment = Alignment.BottomStart
                 ) {
-                    Column {
+                    // 对歌手名称和粉丝数区域加渐变蒙层
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.6f)
+                                    )
+                                )
+                            )
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 16.dp, top = 24.dp)
+                    ) {
                         // Artist Name
                         Text(
                             text = artist.name,
@@ -301,7 +326,7 @@ private fun ArtistContent(
 
                         // Fans/Monthly Listeners
                         Text(
-                            text = "每月有 ${formatFansCount(fansCount)} 名听众",
+                            text = "共有 ${formatFansCount(fansCount)} 位听众",
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
@@ -312,10 +337,18 @@ private fun ArtistContent(
 
             // Item 1: 操作控制行 (关注, 随机播放等)
             item(key = "action_bar") {
+                // 操作栏背景：从顶部 80% 不透明到底部 60% 不透明的线性渐变
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(BackgroundDark)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    BackgroundDark.copy(alpha = 0.80f), // 顶部：80% 不透明
+                                    BackgroundDark.copy(alpha = 0.90f)  // 底部：90% 不透明
+                                )
+                            )
+                        )
                         .padding(horizontal = 24.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -380,209 +413,204 @@ private fun ArtistContent(
                 }
             }
 
-            // Item 2: “热门”标题
-            item(key = "hot_tracks_title") {
-                Text(
-                    text = "热门歌曲",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.ExtraBold,
+            // Item 2: 分页 Tab 栏
+            item(key = "tab_bar") {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(BackgroundDark)
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
-                )
-            }
-
-            // 热门歌曲列表
-            if (topSongs.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp)
-                            .background(BackgroundDark),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("暂无歌曲", color = TextGray, fontSize = 13.sp)
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(28.dp)
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        val isSelected = selectedTab == index
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clickable { selectedTab = index }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = title,
+                                color = if (isSelected) Color.White else TextGray,
+                                fontSize = 15.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            // 指示器：选中时显示应用主色 NeteaseRed 横线，未选中时透明
+                            Box(
+                                modifier = Modifier
+                                    .height(2.dp)
+                                    .width(28.dp)
+                                    .background(
+                                        if (isSelected) NeteaseRed else Color.Transparent,
+                                        shape = RoundedCornerShape(1.dp)
+                                    )
+                            )
+                        }
                     }
                 }
-            } else {
-                val displaySongs = if (isExpanded) topSongs else topSongs.take(5)
-                itemsIndexed(displaySongs, key = { _, track -> track.id }) { index, track ->
-                    ArtistSongRow(
-                        index = index + 1,
-                        track = track,
-                        likedSongIds = likedSongIds,
-                        onClick = { onPlaySong(track) },
-                        onLikeClick = {
-                            if (!isLoggedIn) {
-                                onRequireLogin()
-                            } else {
-                                collectSongId = track.id
-                                onLikeClick(track.id)
+            }
+
+            // 根据选中的 Tab 呈现对应内容
+            when (selectedTab) {
+                0 -> { // 音乐 Tab: 显示当前歌手的全部热门歌曲
+                    if (topSongs.isEmpty()) {
+                        item(key = "empty_songs") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp)
+                                    .background(BackgroundDark),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("暂无歌曲", color = TextGray, fontSize = 13.sp)
                             }
                         }
-                    )
+                    } else {
+                        itemsIndexed(topSongs, key = { _, track -> track.id }) { index, track ->
+                            val isActive = track.id.toString() == currentTrackId
+                            ArtistSongRow(
+                                index = index + 1,
+                                track = track,
+                                isActive = isActive,
+                                likedSongIds = likedSongIds,
+                                onClick = { onPlaySong(track) },
+                                onLikeClick = {
+                                    if (!isLoggedIn) {
+                                        onRequireLogin()
+                                    } else {
+                                        collectSongId = track.id
+                                        onLikeClick(track.id)
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
-                if (topSongs.size > 5) {
-                    item(key = "toggle_expand_songs") {
-                        Box(
+                1 -> { // 专辑 Tab: 垂直平铺专辑列表，采用精致的行模式展示
+                    if (albums.isEmpty()) {
+                        item(key = "empty_albums") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp)
+                                    .background(BackgroundDark),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("暂无专辑", color = TextGray, fontSize = 13.sp)
+                            }
+                        }
+                    } else {
+                        items(albums, key = { it.id }) { album ->
+                            ArtistAlbumRow(album = album, onClick = { onAlbumClick(album.id) })
+                        }
+                    }
+                }
+                2 -> { // MV Tab: 占位设计
+                    item(key = "empty_mv") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(280.dp)
+                                .background(BackgroundDark)
+                                .padding(vertical = 48.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "暂无MV",
+                                tint = NeteaseRed.copy(alpha = 0.4f),
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .background(NeteaseRed.copy(alpha = 0.08f), CircleShape)
+                                    .padding(12.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "暂无相关的 MV 视频",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "艺人尚未上传或暂无播放授权",
+                                color = TextGray,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+                3 -> { // 关于艺人 Tab: 艺人简介 + 相似艺人推荐
+                    item(key = "bio_content") {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(BackgroundDark)
-                                .padding(horizontal = 24.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .clickable { isExpanded = !isExpanded }
-                                    .padding(vertical = 8.dp, horizontal = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = if (isExpanded) "收起" else "查看更多",
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.8f),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 专辑横向轮播区域
-            if (albums.isNotEmpty()) {
-                item(key = "albums_section") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(BackgroundDark)
-                            .padding(vertical = 16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp)
-                                .padding(bottom = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(horizontal = 24.dp, vertical = 20.dp)
                         ) {
                             Text(
-                                text = "全部专辑",
+                                text = "艺人简介",
                                 color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.ExtraBold
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(bottom = 12.dp)
                             )
-                            Row(
+                            Box(
                                 modifier = Modifier
-                                    .clickable { showAllAlbumsSheet = true }
-                                    .padding(vertical = 4.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(SurfaceDark)
+                                    .clickable { showBioDialog = true }
+                                    .padding(20.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        text = artist.briefDesc.ifBlank { "暂无艺人简介信息" }.trim(),
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        fontSize = 14.sp,
+                                        lineHeight = 22.sp,
+                                        maxLines = 8,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    if (artist.briefDesc.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Text(
+                                            text = "点击查看完整介绍",
+                                            color = NeteaseRed,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (similarArtists.isNotEmpty()) {
+                        item(key = "similar_artists_section") {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(BackgroundDark)
+                                    .padding(vertical = 16.dp)
                             ) {
                                 Text(
-                                    text = "显示全部",
-                                    color = NeteaseRed,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.width(2.dp))
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                                    contentDescription = "查看全部",
-                                    tint = NeteaseRed,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(albums.take(10), key = { it.id }) { album ->
-                                AlbumCard(album = album, onClick = { onAlbumClick(album.id) })
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 歌手简介卡片
-            if (artist.briefDesc.isNotBlank()) {
-                item(key = "bio_section") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(BackgroundDark)
-                            .padding(horizontal = 24.dp, vertical = 16.dp)
-                    ) {
-                        Text(
-                            text = "关于歌手",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SurfaceDark)
-                                .clickable { showBioDialog = true }
-                                .padding(16.dp)
-                        ) {
-                            Column {
-                                Text(
-                                    text = artist.briefDesc.trim(),
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontSize = 13.sp,
-                                    lineHeight = 18.sp,
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "查看全部介绍",
+                                    text = "相似艺人推荐",
                                     color = Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
                                 )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 相似歌手推荐
-            if (similarArtists.isNotEmpty()) {
-                item(key = "similar_artists_section") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(BackgroundDark)
-                            .padding(vertical = 16.dp)
-                    ) {
-                        Text(
-                            text = "粉丝也喜欢",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
-                        )
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(similarArtists, key = { it.id }) { artistInfo ->
-                                SimilarArtistCard(artist = artistInfo, onClick = { onArtistClick(artistInfo.id) })
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 24.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(similarArtists, key = { it.id }) { artistInfo ->
+                                        SimilarArtistCard(artist = artistInfo, onClick = { onArtistClick(artistInfo.id) })
+                                    }
+                                }
                             }
                         }
                     }
@@ -625,24 +653,6 @@ private fun ArtistContent(
                         .align(Alignment.Center)
                         .padding(horizontal = 60.dp)
                 )
-            }
-        }
-
-        // 折叠吸附播放按钮
-        if (isCollapsed) {
-            FloatingActionButton(
-                onClick = onPlayAll,
-                containerColor = NeteaseRed,
-                shape = CircleShape,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 16.dp)
-                    .offset(y = overlayHeight - 24.dp)
-                    .size(48.dp)
-                    .zIndex(10f)
-                    .shadow(8.dp, CircleShape)
-            ) {
-                Icon(Icons.Default.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(24.dp))
             }
         }
 
@@ -1009,6 +1019,7 @@ private fun ArtistContent(
 private fun ArtistSongRow(
     index: Int,
     track: Track,
+    isActive: Boolean,
     likedSongIds: Set<Long>,
     onClick: () -> Unit,
     onLikeClick: () -> Unit
@@ -1017,39 +1028,40 @@ private fun ArtistSongRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .background(BackgroundDark)
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            .background(if (isActive) SurfaceLight else BackgroundDark)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 歌曲序号
+        // 歌曲序号 (将图片和歌曲名向右推)
         Text(
             text = index.toString(),
-            color = TextGray,
+            color = if (isActive) NeteaseRed else TextGray,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.width(28.dp)
+            modifier = Modifier.width(36.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
 
-        // 封面图
+        // 封面图 (套用歌单 48.dp 大小与圆角)
         AsyncImage(
             model = "${track.al.picUrl}?param=100y100",
             contentDescription = track.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(42.dp)
+                .size(48.dp)
                 .clip(RoundedCornerShape(4.dp))
         )
 
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(12.dp))
 
-        // 标题
+        // 标题和歌手信息 (套用歌单 15.sp 字体及副标题排版)
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = track.name,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
+                    color = if (isActive) NeteaseRed else Color.White,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 15.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
@@ -1074,14 +1086,20 @@ private fun ArtistSongRow(
                     }
                 }
             }
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = track.ar.joinToString(" • ") { it.name },
+                color = TextGray,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
-
-        Spacer(Modifier.width(8.dp))
 
         val isLiked = track.id in likedSongIds
         IconButton(
             onClick = onLikeClick,
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier.size(32.dp).padding(end = 4.dp)
         ) {
             Icon(
                 imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -1091,7 +1109,10 @@ private fun ArtistSongRow(
             )
         }
 
-        IconButton(onClick = {}) {
+        IconButton(
+            onClick = {},
+            modifier = Modifier.size(32.dp)
+        ) {
             Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(20.dp))
         }
     }
@@ -1184,6 +1205,69 @@ private fun SimilarArtistCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)
+        )
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 歌手专辑 Row 列表项 (Tab 布局专用)
+// ────────────────────────────────────────────────────────────────────────────
+@Composable
+private fun ArtistAlbumRow(
+    album: ArtistAlbum,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(BackgroundDark)
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = "${album.picUrl}?param=150y150",
+            contentDescription = album.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(8.dp))
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = album.name,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            val publishTimeStr = remember(album.publishTime) {
+                if (album.publishTime > 0) {
+                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                    sdf.format(java.util.Date(album.publishTime))
+                } else ""
+            }
+            val desc = buildString {
+                if (publishTimeStr.isNotEmpty()) append(publishTimeStr)
+                if (album.size > 0) {
+                    if (isNotEmpty()) append(" • ")
+                    append("${album.size}首歌曲")
+                }
+            }
+            Text(
+                text = desc,
+                color = TextGray,
+                fontSize = 13.sp
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            contentDescription = "详情",
+            tint = TextGray,
+            modifier = Modifier.size(20.dp)
         )
     }
 }

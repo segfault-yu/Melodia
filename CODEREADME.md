@@ -389,6 +389,17 @@ app/src/main/java/com/lin0721/linmusic/
   - 完善了从音乐库头像、播放器艺人名等处点击跳转至歌手详情页（`ArtistScreen`）的交互链路。
 - **全部专辑展示 (ModalBottomSheet for Albums)**:
   - 在歌手页增加“显示全部”按钮，首次拉取上限提升至 50 张，弹窗采用 `ModalBottomSheet` 辅以 `LazyColumn`，实现 Spotify 风格的歌手完整专辑网格，并完美兼容专辑详情的点击跳转及回退栈状态管理。
+- **Android MD3 风格底栏与组件重构 (Material Design 3 Bottom Bar & Cleanups)**:
+  - **新建 `MelodiaBottomBar.kt`**:
+    - `MelodiaNavigationBar`: 基于自定义 Row 实现紧凑型底部导航栏（高度缩减至 `62.dp`，内置系统导航栏避让），内置 `383A4A` 药丸状选中指示器，“创建”按钮强制为未选中，仅用于唤醒 Sheet。
+    - `MiniPlayerCard`: 悬浮播放卡片。不使用毛玻璃效果，采用符合 MD3 暗色调的 `Color(0xFF23232C)` 纯色背景与半透明白边框。支持当前轨道、播放暂停、切歌与底部细进度条。
+  - **实时色彩提取及缓存修复**:
+    - 针对 `MiniPlayerCard` 传入 `LocalContext` 并构建 `ImageRequest` 显式关闭硬件位图（`allowHardware(false)`），解决了 Android 8.0+ 无法从 GPU 显存提取像素导致 `ColorExtraction` 失败的缺陷。
+    - 清洗封面 `artworkUri` 移除了 `?param=*` 等尺寸参数，加载高清缓存大图，确保卡片的 HSV 自适应取色算法与全屏播放器背景色彩完全同步。
+  - **主容器整合与页面排版调优**:
+    - 在 `MainActivity.kt` 底部 Column 顺序集成 `CreatePopupMenu`、`MiniPlayerCard` 和 `MelodiaNavigationBar`。缩小卡片横向间距至 `8.dp` 并去除底部边距，实现无缝贴合 of Spotify 风格双层底栏，完美联动 3D 平移 graphicsLayer。
+    - 清理了 `HomeScreen.kt` 中废弃的浮岛与导航项代码，彻底移除 `WelcomeBanner` 迎宾大字。
+    - 缩减 `TopGreetingBar` 底部间距与 `FilterPills` 顶部间距至共 `8.dp`。移除 `ToplistCard` (排行榜卡片) 下方的“前三首”列表以实现高密度紧凑卡片排版。
 
 ---
 

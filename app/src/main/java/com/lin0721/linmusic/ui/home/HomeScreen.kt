@@ -109,7 +109,7 @@ fun HomeScreen(
                         onSearchClick = onSearchClick
                     ) 
                 }
-                item { WelcomeBanner() }
+
                 item { FilterPills() }
 
                 when (val state = uiState) {
@@ -274,7 +274,7 @@ fun TopGreetingBar(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (userProfile == null) Modifier.clickable { onLoginClick() } else Modifier)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 0.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (userProfile != null) {
@@ -296,7 +296,7 @@ fun TopGreetingBar(
                 Text(text = userProfile.nickname, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             } else {
                 Text(text = "未登录", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(text = "点击登录获取专属推荐", fontSize = 12.sp, color = Color.LightGray)
+                Text(text = "点击登录", fontSize = 12.sp, color = Color.LightGray)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -314,22 +314,13 @@ fun TopGreetingBar(
     }
 }
 
-@Composable
-fun WelcomeBanner() {
-    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-        Text("欢迎来到", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-        Row {
-            Text("云村 ", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = NeteaseRed)
-            Text("的音乐世界", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-        }
-    }
-}
+
 
 @Composable
 fun FilterPills() {
     val filters = listOf("全部", "音乐", "播客")
     var selectedIndex by remember { mutableStateOf(0) }
-    LazyRow(modifier = Modifier.padding(top = 24.dp), contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyRow(modifier = Modifier.padding(top = 8.dp), contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(filters.size) { index ->
             val isSelected = index == selectedIndex
             Box(modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f)).clickable { selectedIndex = index }.padding(horizontal = 20.dp, vertical = 8.dp)) {
@@ -352,7 +343,6 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         items(playlists, key = { it.id }) { playlist ->
             Column(modifier = Modifier.width(160.dp).clickable { onClick(playlist) }) {
-                // 卡片 160dp，200px 在 2x 屏幕上已足够，避免解码超大原图
                 AsyncImage(model = "${playlist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(160.dp).clip(RoundedCornerShape(24.dp)), contentScale = ContentScale.Crop)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -500,7 +490,7 @@ private fun ToplistCard(item: ToplistInfo) {
                 )
             }
         }
-        // 榜单名 + 前三首
+        // 榜单名
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 text = item.name,
@@ -510,28 +500,6 @@ private fun ToplistCard(item: ToplistInfo) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (item.topSongs.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                item.topSongs.take(3).forEachIndexed { index, song ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "${index + 1}",
-                            color = if (index == 0) NeteaseRed else Color.Gray,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.width(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = song,
-                            color = Color.Gray,
-                            fontSize = 11.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
         }
     }
 }
@@ -778,11 +746,11 @@ fun ArtistCircleCard(artist: com.lin0721.linmusic.data.repository.ArtistInfo) {
     ) {
         // 圆形头像
         AsyncImage(
-            model = "${artist.avatarUrl}?param=200y200", // 记得裁剪，头像不需要大图
+            model = "${artist.avatarUrl}?param=200y200", 
             contentDescription = artist.name,
             modifier = Modifier
                 .size(100.dp)
-                .clip(CircleShape), // 关键：裁剪为圆形
+                .clip(CircleShape), // 裁剪为圆形
             contentScale = ContentScale.Crop
         )
 
@@ -796,57 +764,6 @@ fun ArtistCircleCard(artist: com.lin0721.linmusic.data.repository.ArtistInfo) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-    }
-}
-
-@Composable
-fun BottomFloatingIsland(
-    hazeState: HazeState,
-    currentTrack: androidx.media3.common.MediaItem?,
-    isPlaying: Boolean,
-    currentPosition: Long,
-    duration: Long,
-    onTogglePlay: () -> Unit,
-    onOpenPlayer: () -> Unit,
-    currentScreen: com.lin0721.linmusic.Screen = com.lin0721.linmusic.Screen.Home,
-    onNavigate: (com.lin0721.linmusic.Screen) -> Unit = {},
-    onCreateClick: () -> Unit = {},
-    isCreateMenuOpen: Boolean = false
-) {
-    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp)).hazeChild(state = hazeState, shape = RoundedCornerShape(32.dp), style = HazeStyle(tint = Color.Black.copy(alpha = 0.4f), blurRadius = 24.dp)).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { }) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            AnimatedVisibility(visible = currentTrack != null) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onOpenPlayer() }.padding(horizontal = 4.dp)) {
-                        AsyncImage(model = currentTrack?.mediaMetadata?.artworkUri, contentDescription = null, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)), contentScale = ContentScale.Crop)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = currentTrack?.mediaMetadata?.title?.toString() ?: "", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(text = currentTrack?.mediaMetadata?.artist?.toString() ?: "未知艺术家", color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                        IconButton(onClick = onTogglePlay) { Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, tint = Color.White, modifier = Modifier.size(32.dp)) }
-                    }
-                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).height(2.dp).clip(RoundedCornerShape(1.dp)).background(Color.White.copy(alpha = 0.1f))) {
-                        val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
-                        Box(modifier = Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).fillMaxHeight().background(NeteaseRed))
-                    }
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
-                StaticNavItem("主页", Icons.Default.Home, currentScreen == com.lin0721.linmusic.Screen.Home) { onNavigate(com.lin0721.linmusic.Screen.Home) }
-                StaticNavItem("搜索", Icons.Default.Search, currentScreen == com.lin0721.linmusic.Screen.Search) { onNavigate(com.lin0721.linmusic.Screen.Search) }
-                StaticNavItem("音乐库", Icons.Default.LibraryMusic, currentScreen == com.lin0721.linmusic.Screen.Library) { onNavigate(com.lin0721.linmusic.Screen.Library) }
-                StaticNavItem("创建", if (isCreateMenuOpen) Icons.Rounded.Close else Icons.Default.AddBox, false) { onCreateClick() }
-            }
-        }
-    }
-}
-
-@Composable
-fun StaticNavItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, isSelected: Boolean, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable(onClick = onClick).padding(4.dp)) {
-        Icon(imageVector = icon, contentDescription = label, tint = if (isSelected) Color.White else Color.Gray, modifier = Modifier.size(24.dp))
-        Text(text = label, color = if (isSelected) Color.White else Color.Gray, fontSize = 10.sp)
     }
 }
 

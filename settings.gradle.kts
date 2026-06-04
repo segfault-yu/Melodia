@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LinMusic"
+rootProject.name = "Melodia"
 include(":app")
  

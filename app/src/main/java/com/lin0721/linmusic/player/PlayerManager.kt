@@ -115,7 +115,7 @@ class PlayerManager(
 
         val sessionToken = SessionToken(
             context,
-            ComponentName(context, LinMusicPlaybackService::class.java)
+            ComponentName(context, MelodiaPlaybackService::class.java)
         )
 
         controller = suspendCancellableCoroutine { continuation ->
