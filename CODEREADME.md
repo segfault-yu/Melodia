@@ -3,6 +3,7 @@
 > 记录项目架构决策与技术细节。
 
 ---
+
 # 注释规范
 1. 保持代码精简，禁止 KDoc 风格多行注释。
 2. 仅使用单行注释 (//)，仅在复杂逻辑处添加简短说明。
@@ -43,6 +44,34 @@ app/src/main/java/com/lin0721/linmusic/
     ├── components/                 # 通用组件 (登录、侧边栏等)
     └── theme/                      # 主题配置
 ```
+
+---
+
+## 网络路由速查
+
+| 端点 | 加密路由 | 说明 |
+|------|----------|------|
+| `/eapi/*` | EApi (MD5+AES-ECB) → `interface.music.163.com` | iOS UA，绕过 PC 风控 |
+| `/weapi/*` | WeApi (AES-CBC+RSA) → `music.163.com` | PC UA，部分私有接口会被拦截返回 0 字节 |
+| `/eapi/toplist/detail` | EApi | 排行榜，weapi 版本被风控 |
+| `/eapi/artist/sublist` | EApi | 已关注歌手，weapi 版本返回 0 字节 |
+| `/eapi/search/defaultkeyword/get` | EApi | 搜索框默认占位文字 |
+| `/eapi/hotsearchlist/get` | EApi | 热搜榜详情（关键词+热度+徽标） |
+| `/eapi/cloudsearch/pc` | EApi | 云搜索（综合搜索歌曲） |
+| `/eapi/playlist/highquality/tags` | EApi | 精品歌单标签列表 |
+| `/eapi/playlist/highquality/list` | EApi | 精品歌单列表（含封面图） |
+| `/eapi/homepage/block/page` | EApi | 发现/首页动态区块布局 |
+| `/weapi/discovery/recommend/songs/history/*` | WeApi | 历史日推，仅 weapi 有此路径 |
+| `/eapi/user/playlist` | EApi | 获取当前登录用户的歌单列表 |
+| `/eapi/album/sublist` | EApi | 获取收藏的专辑列表 |
+| `/eapi/user/subcount` | EApi | 获取用户收藏/关注数量统计（用于初始化计数） |
+| `/eapi/playlist/create` | EApi | 新建歌单（支持公开/私密模式） |
+| `/weapi/song/play/about/block/page` | WeApi | 音乐百科简要信息（获取曲风、语种、BPM、影综） |
+| `/weapi/song/creators` | WeApi | 获取制作团队（作词、作曲、编曲等）成员 |
+| `/weapi/artist/follow/count/get` | WeApi | 获取歌手粉丝数量/关注数（避开 EApi 0 字节风控） |
+| `/eapi/song/like` | EApi | 喜欢/红心歌曲操作 |
+| `/eapi/song/like/get` | EApi | 获取当前用户已红心的歌曲 ID 列表 |
+| `/eapi/v1/resource/comments/{threadId}` | EApi | 获取歌曲的评论列表（含热门评论与普通评论） |
 
 ---
 
@@ -144,7 +173,7 @@ app/src/main/java/com/lin0721/linmusic/
 
 ### 2026-05-17 — 发现/搜索模块 与 氛围化 UI
 - **发现页路由**: 集成 `/eapi/homepage/block/page` 获取动态网格布局，`/eapi/search/defaultkeyword/get` 获取动态搜索占位符。
-- **SearchScreen.kt**: 
+- **SearchScreen.kt**:
   - **沉浸式适配**: 使用 `statusBarsPadding()` 避开状态栏，设置 `160.dp` 底部内边距避让全局播放器。
   - **高对比度蒙版**: 为发现卡片封面增加 `Black 40% -> Transparent -> Black 60%` 的垂直渐变，确保标题文字在任何背景下清晰可见。
   - **分类导航**: 横向滚动分类入口（排行榜、歌手、曲风等），图标统一使用 `NeteaseRed` 透明底色方案。
@@ -244,36 +273,8 @@ app/src/main/java/com/lin0721/linmusic/
   - 实现 `Color.toOpaqueHsv` 进行 HSV 色度修正（增强饱和度与亮度调节），重新构建歌词渐变蒙版背景。
   - 调整卡片展示顺序为：歌曲信息 → 播放控制 → 歌词 → 关于艺人 → 相似艺人 → 艺人专辑 → 制作人（底栏置底）。
 
----
-
-## 网络路由速查
-
-| 端点 | 加密路由 | 说明 |
-|------|----------|------|
-| `/eapi/*` | EApi (MD5+AES-ECB) → `interface.music.163.com` | iOS UA，绕过 PC 风控 |
-| `/weapi/*` | WeApi (AES-CBC+RSA) → `music.163.com` | PC UA，部分私有接口会被拦截返回 0 字节 |
-| `/eapi/toplist/detail` | EApi | 排行榜，weapi 版本被风控 |
-| `/eapi/artist/sublist` | EApi | 已关注歌手，weapi 版本返回 0 字节 |
-| `/eapi/search/defaultkeyword/get` | EApi | 搜索框默认占位文字 |
-| `/eapi/hotsearchlist/get` | EApi | 热搜榜详情（关键词+热度+徽标） |
-| `/eapi/cloudsearch/pc` | EApi | 云搜索（综合搜索歌曲） |
-| `/eapi/playlist/highquality/tags` | EApi | 精品歌单标签列表 |
-| `/eapi/playlist/highquality/list` | EApi | 精品歌单列表（含封面图） |
-| `/eapi/homepage/block/page` | EApi | 发现/首页动态区块布局 |
-| `/weapi/discovery/recommend/songs/history/*` | WeApi | 历史日推，仅 weapi 有此路径 |
-| `/eapi/user/playlist` | EApi | 获取当前登录用户的歌单列表 |
-| `/eapi/album/sublist` | EApi | 获取收藏的专辑列表 |
-| `/eapi/user/subcount` | EApi | 获取用户收藏/关注数量统计（用于初始化计数） |
-| `/eapi/playlist/create` | EApi | 新建歌单（支持公开/私密模式） |
-| `/weapi/song/play/about/block/page` | WeApi | 音乐百科简要信息（获取曲风、语种、BPM、影综） |
-| `/weapi/song/creators` | WeApi | 获取制作团队（作词、作曲、编曲等）成员 |
-| `/weapi/artist/follow/count/get` | WeApi | 获取歌手粉丝数量/关注数（避开 EApi 0 字节风控） |
-| `/eapi/song/like` | EApi | 喜欢/红心歌曲操作 |
-| `/eapi/song/like/get` | EApi | 获取当前用户已红心的歌曲 ID 列表 |
-| `/eapi/v1/resource/comments/{threadId}` | EApi | 获取歌曲的评论列表（含热门评论与普通评论） |
-
 ### 2026-05-20 — 全屏播放器视觉精修 Phase 5 (Glassmorphism + Lyrics + Micro-interactions)
-- **毛玻璃 TopBar (Haze Glassmorphism)**: 滚动吸附顶栏从扁平半透明升级为 Haze 实时模糊效果。`HazeState` 挂载于 LazyColumn，`hazeChild` 在 TopBar 滚动展开时激活（`blurRadius = 24.dp`，`tint = BackgroundDark 50% alpha`）。
+- **毛玻璃 TopBar (Haze Glassmorphism)**: 滚动吸附顶栏从静态半透明升级为 Haze 实时模糊效果。`HazeState` 挂载于 LazyColumn，`hazeChild` 在 TopBar 滚动展开时激活（`blurRadius = 24.dp`，`tint = BackgroundDark 50% alpha`）。
 - **歌词动画高亮 (Animated Lyrics Highlight)**:
   - 当前行: 22sp `ExtraBold`，使用 `lerp(dominant, White, 0.85f)` 得到的高光色。
   - 非当前行: 16sp `Medium`，`TextGray` alpha 按与当前行距离递减。
@@ -351,9 +352,9 @@ app/src/main/java/com/lin0721/linmusic/
 - **WebViewLoginScreen.kt & MainActivity.kt & Screens**:
   - 实现网页登录界面（`WebViewLoginScreen`）可见性回调机制（`onLoginScreenVisibilityChanged`），在 `MainActivity` 中通过 `AnimatedVisibility` 平滑淡入/淡出底部悬浮岛播放舱（`BottomFloatingIsland`），避免遮挡登录界面。
   - 移除了花哨且不稳定的自定义 JS 注入和自动点击登录流，回归纯净原生网页登录。
-  - 将外层 Compose 容器和内置 WebView 的背景色同步设置为官方网易网页登录的背景色（`#F5F5F7`），彻底解决了软键盘弹出/收起导致布局 resize 时出现白屏或暗色背景闪烁交替的视觉问题。
+  - 将外层 Compose 容器 and 内置 WebView 的背景色同步设置为官方网易网页登录的背景色（`#F5F5F7`），彻底解决了软键盘弹出/收起导致布局 resize 时出现白屏或暗色背景闪烁交替的视觉问题。
 - **FullPlayerScreen.kt**:
-  - 精简了该文件内冗长、低效的手势和布局冗余单行/多行注释，使代码结构更清爽，符合项目注释规范。
+  - 精简了该文件内冗长、低效的手势和布局冗余注释，使代码结构更清爽，符合项目注释规范。
   - 在播放器界面的小歌词为空时，添加了三个大原点呼吸/波浪加载动效（`LoadingDotsAnimation`），且设置固定高度为 `20.dp` 从而杜绝因内容高度抖动引起的布局垂直跳变。
 
 ### 2026-05-29 — 侧边栏设置与隐私功能开发与细化
@@ -398,8 +399,13 @@ app/src/main/java/com/lin0721/linmusic/
     - 清洗封面 `artworkUri` 移除了 `?param=*` 等尺寸参数，加载高清缓存大图，确保卡片的 HSV 自适应取色算法与全屏播放器背景色彩完全同步。
   - **主容器整合与页面排版调优**:
     - 在 `MainActivity.kt` 底部 Column 顺序集成 `CreatePopupMenu`、`MiniPlayerCard` 和 `MelodiaNavigationBar`。缩小卡片横向间距至 `8.dp` 并去除底部边距，实现无缝贴合 of Spotify 风格双层底栏，完美联动 3D 平移 graphicsLayer。
-    - 清理了 `HomeScreen.kt` 中废弃的浮岛与导航项代码，彻底移除 `WelcomeBanner` 迎宾大字。
+    - 清理了 `HomeScreen.kt` 中废弃 of 浮岛与导航项代码，彻底移除 `WelcomeBanner` 迎宾大字。
     - 缩减 `TopGreetingBar` 底部间距与 `FilterPills` 顶部间距至共 `8.dp`。移除 `ToplistCard` (排行榜卡片) 下方的“前三首”列表以实现高密度紧凑卡片排版。
+
+### 2026-06-04 — Git 隐私清理与测试目录排除
+- **`.gitignore` 全局规范化**: 编写了标准的 Android Gradle 项目忽略规则，规范了对编译缓存、IDE 配置及本地属性文件的排除定义。
+- **解追踪垃圾及隐私文件**: 将已错误提交的 `.gradle/`、`.idea/`、`.kotlin/`、`local.properties`、`build/` 和 `.vscode/` 移出 Git 缓存，防止个人本地 SDK 绝对路径及 IDE 临时数据泄露。
+- **排除测试代码文件夹**: 将单元测试（`**/src/test/`）和仪器化测试（`**/src/androidTest/`）目录加入忽略配置并从 Git 缓存中移出，确保云端只保留纯净的核心构建代码，不影响其他开发者的拉取构建。
 
 ---
 
@@ -428,6 +434,6 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 全屏播放器精修 (毛玻璃TopBar + 歌词动画 + 封面缩放 + 弹性按钮)
 - [x] 鲜艳度色彩提取 (S×V评分算法 + 纯HSV渐变)
 - [x] 歌曲详情接口 (曲风/专辑/语种/发行时间/BPM/制作/影综/红心/评论/粉丝数聚合)
+- [x] 规范化配置排除与测试代码解追踪 (.gitignore, .gradle, local.properties)
 - [ ] 歌词解析与同步显示
 - [ ] 统一错误处理分发
-
