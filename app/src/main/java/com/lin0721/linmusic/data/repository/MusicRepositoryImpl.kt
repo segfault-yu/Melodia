@@ -205,10 +205,14 @@ class MusicRepositoryImpl(
     }
 
     private fun isWifiConnected(): Boolean {
-        val connectivityManager = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-        val activeNetwork = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-        return capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
+        return try {
+            val connectivityManager = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val activeNetwork = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+            capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override fun getSongUrl(songId: Long): Flow<Result<String>> = flow {
@@ -418,7 +422,17 @@ class MusicRepositoryImpl(
     }
 
     override fun getLyrics(songId: Long): Flow<Result<List<LyricLine>>> = flow {
-        val response = apiService.getLyrics(com.lin0721.linmusic.data.remote.api.LyricRequest(id = songId))
+        val response = apiService.getLyrics(
+            com.lin0721.linmusic.data.remote.api.LyricRequest(
+                id = songId,
+                tv = -1,
+                lv = -1,
+                rv = -1,
+                kv = -1,
+                ytv = -1,
+                yrv = -1
+            )
+        )
         if (!response.isSuccess) {
             emit(Result.failure(Exception("Failed to load lyrics: code ${response.code}")))
             return@flow
@@ -426,7 +440,7 @@ class MusicRepositoryImpl(
 
         // 如果是纯音乐，返回带有“纯音乐”标识的单个歌词行；若是未收录，则返回空列表以隐藏卡片
         if (response.nolyric) {
-            emit(Result.success(listOf(LyricLine(0, "纯音乐"))))
+            emit(Result.success(listOf(LyricLine(timeMs = 0, text = "纯音乐"))))
             return@flow
         }
         if (response.uncollected) {
@@ -434,25 +448,79 @@ class MusicRepositoryImpl(
             return@flow
         }
 
+        val yrcText = response.yrc?.lyric
         val lrcText = response.lrc?.lyric
-        if (lrcText.isNullOrBlank()) {
+
+        // 检测歌词文本内容中是否包含“纯音乐”或“Instrumental”标识，若包含则视为纯音乐并返回对应标识以隐藏卡片
+        val isInstrumental = (!yrcText.isNullOrBlank() && (yrcText.contains("纯音乐") || yrcText.contains("Instrumental", ignoreCase = true))) ||
+                (!lrcText.isNullOrBlank() && (lrcText.contains("纯音乐") || lrcText.contains("Instrumental", ignoreCase = true)))
+        if (isInstrumental) {
+            emit(Result.success(listOf(LyricLine(timeMs = 0, text = "纯音乐"))))
+            return@flow
+        }
+
+        val lines = if (!yrcText.isNullOrBlank()) {
+            val parsedYrc = parseYrc(yrcText)
+            if (parsedYrc.isNotEmpty()) parsedYrc else parseLrc(lrcText ?: "")
+        } else {
+            parseLrc(lrcText ?: "")
+        }
+
+        if (lines.isEmpty()) {
             emit(Result.success(emptyList()))
             return@flow
         }
 
-        // 检测歌词文本内容中是否包含“纯音乐”或“Instrumental”标识，若包含则视为纯音乐并返回对应标识以隐藏卡片
-        if (lrcText.contains("纯音乐") || lrcText.contains("Instrumental", ignoreCase = true)) {
-            emit(Result.success(listOf(LyricLine(0, "纯音乐"))))
-            return@flow
+        // 解析翻译歌词列表（优先使用 ytlrc，其次使用 tlyric）
+        val translationLines = parseLrc(response.ytlrc?.lyric ?: response.tlyric?.lyric ?: "")
+        val finalLines = lines.map { line ->
+            // 寻找在 150ms 内与原词时间戳最接近的翻译行
+            val matchedTranslation = translationLines
+                .filter { kotlin.math.abs(it.timeMs - line.timeMs) < 150 }
+                .minByOrNull { kotlin.math.abs(it.timeMs - line.timeMs) }
+                ?.text
+                
+            line.copy(translation = matchedTranslation)
         }
-
-        val translationMap = parseLrcToMap(response.tlyric?.lyric)
-        val lines = parseLrc(lrcText).map { line ->
-            line.copy(translation = translationMap[line.timeMs])
-        }
-        emit(Result.success(lines))
+        emit(Result.success(finalLines))
     }.catch { e ->
         emit(Result.failure(e))
+    }
+
+    private val yrcLineRegex = Regex("""^\[(\d+),(\d+)](.*)$""")
+    private val yrcWordRegex = Regex("""\((\d+),(\d+),\d+\)([^(\n]+)""")
+
+    private fun parseYrc(yrcText: String): List<LyricLine> {
+        return yrcText.lines().mapNotNull { line ->
+            val trimmed = line.trim()
+            if (trimmed.isEmpty()) return@mapNotNull null
+            
+            yrcLineRegex.find(trimmed)?.let { match ->
+                val lineStartTime = match.groupValues[1].toLongOrNull() ?: return@let null
+                val lineDuration = match.groupValues[2].toLongOrNull() ?: return@let null
+                val wordsContent = match.groupValues[3]
+                
+                val wordsList = mutableListOf<WordInfo>()
+                val fullTextBuilder = StringBuilder()
+                
+                yrcWordRegex.findAll(wordsContent).forEach { wordMatch ->
+                    val absoluteTime = wordMatch.groupValues[1].toLongOrNull() ?: 0L
+                    val startOffset = absoluteTime - lineStartTime // 计算相对于行开始时间的偏移量
+                    val duration = wordMatch.groupValues[2].toLongOrNull() ?: 0L
+                    val wordText = wordMatch.groupValues[3]
+                    
+                    wordsList.add(WordInfo(wordText, startOffset, duration))
+                    fullTextBuilder.append(wordText)
+                }
+                
+                LyricLine(
+                    timeMs = lineStartTime,
+                    durationMs = lineDuration,
+                    text = fullTextBuilder.toString(),
+                    words = wordsList
+                )
+            }
+        }.sortedBy { it.timeMs }
     }
 
     private val lrcPattern = Regex("""\[(\d{2}):(\d{2})[.:](\d{2,3})](.*)""")

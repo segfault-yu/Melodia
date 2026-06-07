@@ -70,3 +70,13 @@ private fun adjustColor(r: Int, g: Int, b: Int, minSat: Float, valRange: ClosedF
     hsv[2] = hsv[2].coerceIn(valRange.start, valRange.endInclusive)
     return Color(android.graphics.Color.HSVToColor(hsv))
 }
+
+object PaletteMemoryCache {
+    private val cache = java.util.concurrent.ConcurrentHashMap<String, ColorPalette>()
+
+    fun get(mediaId: String): ColorPalette? = cache[mediaId]
+
+    fun put(mediaId: String, palette: ColorPalette) {
+        cache[mediaId] = palette
+    }
+}

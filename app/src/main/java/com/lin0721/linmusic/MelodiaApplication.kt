@@ -5,13 +5,12 @@ import coil.Coil
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
-import kotlinx.coroutines.Dispatchers
+import com.lin0721.linmusic.di.localModule
 import com.lin0721.linmusic.di.networkModule
+import com.lin0721.linmusic.di.playerModule
 import com.lin0721.linmusic.di.repositoryModule
 import com.lin0721.linmusic.di.viewModelModule
-import com.lin0721.linmusic.di.playerModule
-import com.lin0721.linmusic.di.localModule
-
+import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin

@@ -47,6 +47,41 @@ class PlayerManager(
     private val _duration = MutableStateFlow(0L)
     val duration: StateFlow<Long> = _duration.asStateFlow()
 
+    private val _positionUpdateInterval = MutableStateFlow(1000L)
+    val positionUpdateInterval: StateFlow<Long> = _positionUpdateInterval.asStateFlow()
+
+    fun setPositionUpdateInterval(intervalMs: Long) {
+        _positionUpdateInterval.value = intervalMs
+    }
+
+    private val _sleepTimerRemaining = MutableStateFlow(0L)
+    val sleepTimerRemaining: StateFlow<Long> = _sleepTimerRemaining.asStateFlow()
+
+    private var sleepTimerJob: Job? = null
+
+    fun setSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        if (minutes <= 0) {
+            _sleepTimerRemaining.value = 0L
+            return
+        }
+        _sleepTimerRemaining.value = minutes * 60 * 1000L
+        sleepTimerJob = scope.launch {
+            while (_sleepTimerRemaining.value > 0L) {
+                delay(1000L)
+                val currentVal = _sleepTimerRemaining.value
+                val nextVal = currentVal - 1000L
+                if (nextVal <= 0L) {
+                    _sleepTimerRemaining.value = 0L
+                    pause()
+                    break
+                } else {
+                    _sleepTimerRemaining.value = nextVal
+                }
+            }
+        }
+    }
+
     private val _playContext = MutableStateFlow<String?>(null)
     val playContext: StateFlow<String?> = _playContext.asStateFlow()
 
@@ -86,7 +121,7 @@ class PlayerManager(
                 if (_isPlaying.value && isReady) {
                     _currentPosition.value = controller?.currentPosition ?: 0L
                 }
-                delay(1000)
+                delay(_positionUpdateInterval.value)
             }
         }
     }
@@ -320,7 +355,7 @@ class PlayerManager(
         if (!_isPlaying.value && item.localConfiguration == null) {
             // 重启后队列为空，从恢复的 track 元数据重建 1 项队列
             if (playQueue.isEmpty()) {
-                val songId = item.mediaMetadata.extras?.getLong("songId") ?: return
+                val songId = item.mediaId.toLongOrNull() ?: return
                 val qi = QueueItem(
                     songId = songId,
                     title = item.mediaMetadata.title?.toString() ?: "",
@@ -340,7 +375,7 @@ class PlayerManager(
 
     fun saveState() {
         val item = _currentTrack.value ?: return
-        val songId = item.mediaMetadata.extras?.getLong("songId") ?: -1L
+        val songId = item.mediaId.toLongOrNull() ?: -1L
         if (songId == -1L) return
 
         scope.launch {
@@ -394,7 +429,12 @@ class PlayerManager(
 
     private fun skipToNextOnError(failedIndex: Int) {
         consecutiveErrors++
-        if (consecutiveErrors >= 3 || playQueue.size <= 1) return
+        if (consecutiveErrors >= 3 || playQueue.size <= 1) {
+            scope.launch {
+                android.widget.Toast.makeText(context, "无法获取该歌曲的播放链接", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
         val nextIndex = (failedIndex + 1) % playQueue.size
         fetchUrlAndPlay(nextIndex)
     }
@@ -410,6 +450,15 @@ class PlayerManager(
         }
         mutable.add(0, current)
         return mutable
+    }
+
+    // 重新加载当前歌曲（用于切换音质时立即生效）
+    fun reloadCurrentTrack() {
+        val index = _currentIndex.value
+        if (index >= 0 && index < playQueue.size) {
+            val currentPos = controller?.currentPosition ?: 0L
+            fetchUrlAndPlay(index, currentPos)
+        }
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -441,5 +490,13 @@ class PlayerManager(
         if (playbackState == Player.STATE_ENDED && _playMode.value != PlayMode.SINGLE_LOOP) {
             playNext()
         }
+    }
+
+    override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+        super.onPlayerError(error)
+        scope.launch {
+            android.widget.Toast.makeText(context, "当前歌曲无法播放，已自动跳过", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        skipToNextOnError(_currentIndex.value)
     }
 }

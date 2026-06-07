@@ -1,0 +1,243 @@
+package com.lin0721.linmusic.ui.player
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Comment
+import androidx.compose.material.icons.rounded.ThumbUp
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.lin0721.linmusic.data.remote.api.CommentItem
+import com.lin0721.linmusic.ui.theme.NeteaseRed
+import com.lin0721.linmusic.ui.theme.TextGray
+
+@Composable
+fun CommentsPreviewCard(
+    commentsState: CommentsState,
+    cardColor: Color,
+    onRetry: () -> Unit
+) {
+    val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
+    val cardHeight = cardWidth * 0.88f
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .height(cardHeight),
+        shape = RoundedCornerShape(16.dp),
+        color = cardColor
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.Comment,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "评论",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (commentsState is CommentsState.Success) {
+                        Text(
+                            text = "(${commentsState.total})",
+                            color = TextGray.copy(alpha = 0.8f),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when (commentsState) {
+                is CommentsState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = NeteaseRed,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                }
+                is CommentsState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "加载评论失败: ${commentsState.message}",
+                            color = TextGray,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        TextButton(
+                            onClick = onRetry,
+                            colors = ButtonDefaults.textButtonColors(contentColor = NeteaseRed)
+                        ) {
+                            Text("重试", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                is CommentsState.Success -> {
+                    val allComments = (commentsState.hotComments + commentsState.comments)
+                        .distinctBy { it.commentId }
+                        .take(2)
+
+                    if (allComments.isEmpty()) {
+                        Text(
+                            text = "暂无评论，分享你的第一条感受吧~",
+                            color = TextGray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    } else {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                allComments.forEachIndexed { index, comment ->
+                                    CommentRowItem(comment = comment)
+                                    if (index < allComments.size - 1) {
+                                        HorizontalDivider(
+                                            color = Color.White.copy(alpha = 0.08f),
+                                            thickness = 0.5.dp
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = "查看全部 ${commentsState.total} 条评论",
+                                color = NeteaseRed,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CommentRowItem(comment: CommentItem) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        AsyncImage(
+            model = "${comment.user.avatarUrl}?param=80y80",
+            contentDescription = comment.user.nickname,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        text = comment.user.nickname,
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = comment.timeStr ?: "",
+                        color = TextGray.copy(alpha = 0.6f),
+                        fontSize = 10.sp
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = formatLikedCount(comment.likedCount),
+                        color = TextGray.copy(alpha = 0.8f),
+                        fontSize = 11.sp
+                    )
+                    Icon(
+                        imageVector = Icons.Rounded.ThumbUp,
+                        contentDescription = null,
+                        tint = TextGray.copy(alpha = 0.6f),
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = comment.content,
+                color = Color.White.copy(alpha = 0.95f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+        }
+    }
+}
+
+fun formatLikedCount(count: Int): String {
+    return when {
+        count >= 100_000 -> "${count / 10_000}w+"
+        count >= 10_000 -> String.format(java.util.Locale.getDefault(), "%.1fw", count / 10000f)
+        count >= 1000 -> "${count / 1000}k+"
+        else -> count.toString()
+    }
+}

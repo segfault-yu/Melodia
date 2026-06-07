@@ -273,6 +273,26 @@ app/src/main/java/com/lin0721/linmusic/
 - **MiniPlayerCard 固定**: 移除了悬浮播放卡片自身的位移变换，使其在手势拖拽触发全屏播放器展开的过程中，始终固定在底部导航栏上方不动。
 - **移除透明度渐变**: 移除了拖拽全屏播放器时背景的 `alpha` 透明度渐变效果，确保拖动过程始终保持不透明。
 
+### 2026-06-06 — 逐字歌词解析、IPC 恢复、对比度重构与更多选项弹窗
+
+- **IPC 状态恢复修复**: 解决应用进程重启/恢复时，Media3 接口 Binder 通信导致 `MediaItem.mediaMetadata.extras` 被清空进而使 `PlayerViewModel` 在 `observeTrackChanges()` 中读到 `-1L` 无法触发歌词与歌曲详情请求的问题。改为使用 IPC 稳定传输的 `mediaId.toLongOrNull()` 解析 ID。
+- **YRC 绝对时间戳对齐**: 修正 `parseYrc()` 中单字偏移量计算。原格式中 `(absoluteTime, duration, 0)` 第一个参数是绝对时间戳，现改为减去行首时间 `lineStartTime` 换算为相对偏移量，从而使 UI 层 `calculateProgressFraction()` 能够正确计算出扫色进度。
+- **逐字染色视觉重构**: 在 `FullScreenLyricsView` 中将当前歌词行的未唱字颜色 `inactiveColor` 从极高亮度的 85% 亮白（`highlightColor`）重构为 Spotify-like 的 `Color.White.copy(alpha = 0.35f)` 半透明白色。极大地增强了未唱部分（35% 透明白）与已唱部分（100% 纯白）的视觉对比度，使卡拉 OK 逐字扫色效果格外醒目清晰。
+- **逐字歌词性能与几何对齐优化**: 重构了 `KaraokeLyricRow`，使用底层未激活 `Text` 与顶层高亮 `Text` + `Modifier.graphicsLayer` 在 Draw 阶段执行动态矩形裁剪，彻底消除了每帧刷新导致的 Recomposition、Measure 与 Layout 耗时；通过 `TextLayoutResult` 的 `getBoundingBox` 获取字的物理像素边界进行进度计算，解决了中英文混排时字数比例与物理几何宽度不匹配导致的扫色跳跃问题。
+- **播放器更多选项底部弹窗**: 新增 `SongMoreOptionsSheet.kt`。顶部展示封面、歌名与歌手名，中部网格包含收藏（联动真实红心状态）、下载、分享（Android 原生分享通道）与一起听；底部列表项支持专辑名展示、歌手信息及关注/已关注同步控制、查看歌曲百科（自动收起并平滑滚动到百科卡片位置）及其他音质音效等精修选项，对未开发功能在真实 UI 中做合理不可用或 Toast 提示。
+### 2026-06-07 — 定时播放优化、播放器重定向修复与音质即时切换
+
+- **定时关闭界面展开与滚动优化 (`FullPlayerScreen.kt`)**：
+  - 声明了 `skipPartiallyExpanded = true` 的 `sheetState`，使得定时关闭弹窗默认完全展开，避免下部卡片被隐藏。
+  - 给定时关闭主布局添加了 `.verticalScroll` 及 `navigationBarsPadding()`，彻底修复了在矮屏幕设备或极窄屏幕区域下，小白条遮挡/截断 Slider 与确定按钮的问题。
+- **ExoPlayer 重定向修复 (`MelodiaPlaybackService.kt`)**：
+  - 构建了启用 `setAllowCrossProtocolRedirects(true)` 的 `DefaultHttpDataSource.Factory` 并包装成 `DefaultDataSource.Factory`，注册入 `DefaultMediaSourceFactory` 并注入给 `ExoPlayer`。
+  - 完美解决了由于网易云 CDN 链接从 HTTPS 重定向到 HTTP 协议导致的 ExoPlayer 抛出 `Response code: 302` 的播放中断崩溃问题。
+- **音质选择、切换与即时重载 (`PlayerManager.kt`、`PlayerViewModel.kt` 和 `SongMoreOptionsSheet.kt`)**：
+  - `PlayerManager.kt` 新增公有方法 `reloadCurrentTrack()`，支持在保存当前播放进度的前提下，取消原请求并以新音质重载播放歌曲。
+  - `PlayerViewModel.kt` 引入 `SettingsPreferences` 和 `Context`，动态感应 WiFi/移动网络状态，产出融合后的 `activeQuality` 状态并支持持久化和触发即时重载。
+  - `SongMoreOptionsSheet.kt` 完善了“音质”选项交互。点击呼出的音质选择弹窗（支持标准、极高、无损、Hi-Res、超清母带单选）重构为与定时播放完全一致的 `ModalBottomSheet`，其文本和 VIP 红色微标可依据活动网络下的音质状态进行动态更新。
+
 ---
 
 ## 待办事项
@@ -303,5 +323,6 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 歌曲详情接口 (曲风/专辑/语种/发行时间/BPM/制作/影综/红心/评论/粉丝数聚合)
 - [x] 设置页面 (音质配置 + VIP 状态 + 缓存清理 + 昵称修改 + 头像上传)
 - [x] 歌单批量操作 (添加/移除歌曲 + 收藏弹窗)
-- [ ] 歌词解析与同步显示
-- [ ] 统一错误处理分发
+- [x] 歌词解析与同步显示
+- [x] 统一错误处理分发
+

@@ -40,6 +40,7 @@ import com.lin0721.linmusic.ui.theme.NeteaseRed
 import com.lin0721.linmusic.ui.theme.TextGray
 import com.lin0721.linmusic.ui.theme.ColorPalette
 import com.lin0721.linmusic.ui.theme.extractColorPalette
+import com.lin0721.linmusic.ui.theme.PaletteMemoryCache
 import dev.chrisbanes.haze.HazeState
 import androidx.compose.ui.platform.LocalContext
 import coil.request.ImageRequest
@@ -79,9 +80,11 @@ fun MiniPlayerCard(
             .build()
     }
 
-    // 缓存并提取主色调，默认为深灰色
-    var colorPalette by remember(currentTrack) {
-        mutableStateOf(ColorPalette(Color(0xFF333333), Color(0xFF222222)))
+    // 缓存并提取主色调，优先从缓存中获取，无缓存则默认为深灰色
+    var colorPalette by remember(currentTrack.mediaId) {
+        mutableStateOf(
+            PaletteMemoryCache.get(currentTrack.mediaId) ?: ColorPalette(Color(0xFF333333), Color(0xFF222222))
+        )
     }
     
     // 平滑过渡主色调变化
@@ -101,8 +104,14 @@ fun MiniPlayerCard(
             (animatedDominant.blue * 255).toInt(),
             hsv
         )
-        hsv[1] = (hsv[1] + 0.35f).coerceIn(0.75f, 1f)
-        hsv[2] = 0.3f
+        if (hsv[1] < 0.05f) {
+            // 如果是灰度中性色，保持灰度，亮度设为适合底栏的深色，避免偏向红色
+            hsv[1] = 0f
+            hsv[2] = 0.15f
+        } else {
+            hsv[1] = (hsv[1] + 0.35f).coerceIn(0.75f, 1f)
+            hsv[2] = 0.3f
+        }
         Color(android.graphics.Color.HSVToColor(hsv))
     }
 
@@ -139,7 +148,9 @@ fun MiniPlayerCard(
                     model = artworkRequest,
                     contentDescription = null,
                     onSuccess = { state ->
-                        colorPalette = extractColorPalette(state.result.drawable)
+                        val palette = extractColorPalette(state.result.drawable)
+                        colorPalette = palette
+                        PaletteMemoryCache.put(currentTrack.mediaId, palette)
                     },
                     modifier = Modifier
                         .size(44.dp)

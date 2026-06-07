@@ -1,7 +1,9 @@
 package com.lin0721.linmusic.ui.player
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lin0721.linmusic.data.local.SettingsPreferences
 import com.lin0721.linmusic.data.local.UserPreferences
 import com.lin0721.linmusic.data.remote.api.ArtistAlbum
 import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
@@ -12,20 +14,71 @@ import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.data.repository.SongWikiData
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.data.remote.api.CommentItem
 
 class PlayerViewModel(
+    private val context: Context,
     private val repository: MusicRepository,
     val playerManager: PlayerManager,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val settingsPreferences: SettingsPreferences
 ) : ViewModel() {
+
+    // 监听 WiFi 下的播放音质设置
+    val wifiQuality = settingsPreferences.wifiQuality.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = "lossless"
+    )
+
+    // 监听移动网络下的播放音质设置
+    val mobileQuality = settingsPreferences.mobileQuality.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = "standard"
+    )
+
+    // 判断当前是否连接 WiFi
+    fun isWifiConnected(): Boolean {
+        return kotlin.runCatching {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val activeNetwork = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+            capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
+        }.getOrDefault(false)
+    }
+
+    // 根据网络状态动态获取并组合成当前的活动播放音质 Flow
+    val activeQuality: StateFlow<String> = settingsPreferences.wifiQuality
+        .combine(settingsPreferences.mobileQuality) { wifi, mobile ->
+            if (isWifiConnected()) wifi else mobile
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "standard"
+        )
+
+    // 更新当前环境的音质设置并重新加载当前歌曲播放
+    fun updateQuality(quality: String) {
+        viewModelScope.launch {
+            if (isWifiConnected()) {
+                settingsPreferences.saveWifiQuality(quality)
+            } else {
+                settingsPreferences.saveMobileQuality(quality)
+            }
+            playerManager.reloadCurrentTrack()
+        }
+    }
 
     private val _lyrics = MutableStateFlow<List<LyricLine>>(emptyList())
     val lyrics: StateFlow<List<LyricLine>> = _lyrics.asStateFlow()
@@ -35,6 +88,9 @@ class PlayerViewModel(
 
     private val _isLyricsLoading = MutableStateFlow(false)
     val isLyricsLoading: StateFlow<Boolean> = _isLyricsLoading.asStateFlow()
+
+    private val _isUserScrolling = MutableStateFlow(false)
+    val isUserScrolling: StateFlow<Boolean> = _isUserScrolling.asStateFlow()
 
     private val _songDetail = MutableStateFlow<Track?>(null)
     val songDetail: StateFlow<Track?> = _songDetail.asStateFlow()
@@ -117,7 +173,7 @@ class PlayerViewModel(
     private fun observeTrackChanges() {
         viewModelScope.launch {
             playerManager.currentTrack
-                .map { it?.mediaMetadata?.extras?.getLong("songId") ?: -1L }
+                .map { it?.mediaId?.toLongOrNull() ?: -1L }
                 .distinctUntilChanged()
                 .collectLatest { songId ->
                     if (songId != -1L && songId != currentSongId) {
@@ -145,6 +201,7 @@ class PlayerViewModel(
         _isLiked.value = false
         _isArtistFollowed.value = false
         _commentsState.value = CommentsState.Loading
+        _isUserScrolling.value = false
     }
 
     private fun observePosition() {
@@ -327,6 +384,20 @@ class PlayerViewModel(
                 }
             }
         }
+    }
+
+    fun setUserScrolling(scrolling: Boolean) {
+        _isUserScrolling.value = scrolling
+    }
+
+    fun seekToTime(timeMs: Long) {
+        playerManager.seekTo(timeMs)
+    }
+
+    val sleepTimerRemaining: StateFlow<Long> = playerManager.sleepTimerRemaining
+
+    fun setSleepTimer(minutes: Int) {
+        playerManager.setSleepTimer(minutes)
     }
 }
 

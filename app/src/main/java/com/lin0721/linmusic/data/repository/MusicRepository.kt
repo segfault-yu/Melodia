@@ -48,11 +48,20 @@ data class PlaylistTag(
     val coverUrl: String = ""
 )
 
+// 单个字符/单词的耗时元数据
+data class WordInfo(
+    val text: String,
+    val startOffsetMs: Long,  // 相对于整行歌词起始时间的偏移毫秒数
+    val durationMs: Long      // 该字/词的持续发音毫秒数
+)
+
 // 歌词行领域模型
 data class LyricLine(
     val timeMs: Long,
+    val durationMs: Long = 0, // 新增：整行歌词的持续发音时间
     val text: String,
-    val translation: String? = null
+    val translation: String? = null,
+    val words: List<WordInfo> = emptyList() // 如果是普通LRC则此列表为空；YRC则填入单字列表
 )
 
 // 音乐数据层接口
@@ -205,13 +214,13 @@ interface MusicRepository {
 
 // 歌曲详情/百科信息领域模型
 data class SongWikiData(
-    val style: String = "",         // 曲风，如 "流行-华语流行"
-    val album: String = "",         // 专辑名
-    val language: String = "",      // 语种，如 "国语"
-    val publishTime: String = "",   // 发行日期，如 "2003-07-31"
-    val bpm: String = "",           // BPM
-    val creators: String = "",      // 制作人/主创列表，如 "作词 周杰伦 / 作曲 周杰伦"
-    val entertainment: String = "", // 影综背景，如 "电影《不能说的秘密》插曲"
-    val background: String = "",    // 歌曲背景故事
-    val awards: String = ""         // 歌曲所获奖项/荣誉
+    val style: String = "",
+    val album: String = "", 
+    val language: String = "",      
+    val publishTime: String = "",   
+    val bpm: String = "",           
+    val creators: String = "",      
+    val entertainment: String = "", 
+    val background: String = "",    
+    val awards: String = ""         
 )

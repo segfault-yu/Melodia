@@ -5,48 +5,74 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.exponentialDecay
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lin0721.linmusic.ui.components.MiniPlayerCard
 import com.lin0721.linmusic.ui.components.MelodiaNavigationBar
+import com.lin0721.linmusic.ui.components.MiniPlayerCard
+import com.lin0721.linmusic.ui.components.ProfileSidebar
+import com.lin0721.linmusic.ui.create.CreatePopupMenu
 import com.lin0721.linmusic.ui.home.HomeScreen
 import com.lin0721.linmusic.ui.home.HomeViewModel
 import com.lin0721.linmusic.ui.player.FullPlayerScreen
 import com.lin0721.linmusic.ui.theme.BackgroundDark
-// 导入 Melodia 全局主题配置
 import com.lin0721.linmusic.ui.theme.MelodiaTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
-import org.koin.androidx.compose.koinViewModel
-import androidx.compose.foundation.gestures.*
-import androidx.compose.animation.core.*
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.zIndex
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToDown
-import com.lin0721.linmusic.ui.components.ProfileSidebar
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.clickable
-import com.lin0721.linmusic.ui.create.CreatePopupMenu
-import androidx.compose.ui.layout.onSizeChanged
-// offset 同时移动视觉位置和布局边界(hit-test)，避免 graphicsLayer 只移动渲染层导致的手势拦截
-import androidx.compose.ui.unit.IntOffset
+import org.koin.androidx.compose.koinViewModel
 
 enum class Screen {
     Home, Playlist, Search, Library, Settings, Artist
@@ -521,7 +547,8 @@ fun MelodiaApp() {
             }
         }
 
-        if (currentTrack != null && screenHeightPx > 0f) {
+        // 仅在播放器打开或动画进行中时渲染，避免关闭后 nestedScroll 拦截触摸事件
+        if (currentTrack != null && screenHeightPx > 0f && isPlayerOpen) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -551,6 +578,12 @@ fun MelodiaApp() {
                         animatePlayerTo(false, 0f)
                         activeArtistId = artistId
                         navigateTo(Screen.Artist)
+                    },
+                    onAlbumClick = { albumId ->
+                        animatePlayerTo(false, 0f)
+                        activePlaylistId = albumId
+                        activePlaylistIsAlbum = true
+                        navigateTo(Screen.Playlist)
                     }
                 )
             }
