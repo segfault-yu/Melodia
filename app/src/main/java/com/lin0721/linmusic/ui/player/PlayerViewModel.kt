@@ -12,6 +12,7 @@ import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.data.repository.LyricLine
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
+import com.lin0721.linmusic.player.QueueItem
 import com.lin0721.linmusic.data.repository.SongWikiData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.data.remote.api.CommentItem
+import com.lin0721.linmusic.ui.components.ToastManager
 
 class PlayerViewModel(
     private val context: Context,
@@ -398,6 +400,64 @@ class PlayerViewModel(
 
     fun setSleepTimer(minutes: Int) {
         playerManager.setSleepTimer(minutes)
+    }
+
+    // 开启相似歌曲漫游逻辑
+    fun startSimilarSongsRoaming(songId: Long, currentTitle: String, currentArtist: String, currentCoverUrl: String) {
+        viewModelScope.launch {
+            repository.getSimilarSongs(songId).collect { result ->
+                result.onSuccess { simiSongs ->
+                    if (simiSongs.isNotEmpty()) {
+                        val currentItem = QueueItem(songId, currentTitle, currentArtist, currentCoverUrl)
+                        val simiItems = simiSongs.map { track ->
+                            QueueItem(
+                                songId = track.id,
+                                title = track.name,
+                                artist = track.ar.joinToString("/") { it.name },
+                                coverUrl = track.al.picUrl
+                            )
+                        }
+                        val roamingQueue = listOf(currentItem) + simiItems
+                        playerManager.playQueue(roamingQueue, 0, playContext = "similar_roaming")
+                        ToastManager.showToast("已开启相似歌曲漫游")
+                    } else {
+                        ToastManager.showToast("未找到相关相似歌曲")
+                    }
+                }.onFailure {
+                    ToastManager.showToast("漫游开启失败，请稍后重试")
+                }
+            }
+        }
+    }
+
+    // 插播一首相似歌曲到下一首位置
+    fun insertSimilarSongs(songId: Long) {
+        viewModelScope.launch {
+            repository.getSimilarSongs(songId).collect { result ->
+                result.onSuccess { simiSongs ->
+                    val firstSong = simiSongs.firstOrNull()
+                    if (firstSong != null) {
+                        val simiItem = QueueItem(
+                            songId = firstSong.id,
+                            title = firstSong.name,
+                            artist = firstSong.ar.joinToString("/") { it.name },
+                            coverUrl = firstSong.al.picUrl
+                        )
+                        playerManager.addToPlayNext(listOf(simiItem))
+                        ToastManager.showToast("已成功插播相似歌曲《${firstSong.name}》到下一首")
+                    } else {
+                        ToastManager.showToast("暂无相似歌曲可插播")
+                    }
+                }.onFailure {
+                    ToastManager.showToast("插播失败，请稍后重试")
+                }
+            }
+        }
+    }
+
+    // 清空播放队列
+    fun clearQueue() {
+        playerManager.clearQueue()
     }
 }
 

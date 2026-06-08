@@ -221,6 +221,41 @@ class PlayerManager(
         }
     }
 
+    // 批量插播歌曲到“下一首”播放位置
+    fun addToPlayNext(items: List<QueueItem>) {
+        if (items.isEmpty()) return
+        if (playQueue.isEmpty()) {
+            playQueue(items, 0)
+            return
+        }
+        
+        val curIndex = _currentIndex.value
+        val targetInsertIndex = curIndex + 1
+        
+        // 1. 插入到当前的活动播放队列中
+        val mutablePlay = playQueue.toMutableList()
+        mutablePlay.addAll(targetInsertIndex.coerceIn(0, mutablePlay.size), items)
+        playQueue = mutablePlay
+        
+        // 2. 插入到备份的原始队列中以支持防丢
+        val currentItem = playQueue.getOrNull(curIndex)
+        val mutableOrig = originalQueue.toMutableList()
+        if (currentItem != null) {
+            val origIdx = mutableOrig.indexOfFirst { it.songId == currentItem.songId }
+            if (origIdx >= 0) {
+                mutableOrig.addAll(origIdx + 1, items)
+            } else {
+                mutableOrig.addAll(items)
+            }
+        } else {
+            mutableOrig.addAll(items)
+        }
+        originalQueue = mutableOrig
+        
+        _queue.value = playQueue
+        saveQueueState()
+    }
+
     fun playNext() {
         if (playQueue.isEmpty()) return
         consecutiveErrors = 0
@@ -388,6 +423,62 @@ class PlayerManager(
                     lastPositionMs = controller?.currentPosition ?: _currentPosition.value
                 )
             )
+        }
+    }
+
+    // 清空播放队列中除当前播放歌曲外的其他歌曲，重置播放状态并同步本地持久化状态
+    fun clearQueue() {
+        val curIndex = _currentIndex.value
+        val currentTrackItem = if (curIndex in playQueue.indices) playQueue[curIndex] else null
+
+        if (currentTrackItem != null) {
+            originalQueue = listOf(currentTrackItem)
+            playQueue = listOf(currentTrackItem)
+            _currentIndex.value = 0
+            _queue.value = playQueue
+            _isPlaying.value = false
+            _currentPosition.value = 0L
+
+            controller?.pause()
+            controller?.seekTo(0)
+
+            saveQueueState()
+            scope.launch {
+                playbackPreferences.savePlaybackState(
+                    PlaybackState(
+                        songId = currentTrackItem.songId,
+                        title = currentTrackItem.title,
+                        artist = currentTrackItem.artist,
+                        coverUrl = currentTrackItem.coverUrl,
+                        lastPositionMs = 0L
+                    )
+                )
+            }
+        } else {
+            originalQueue = emptyList()
+            playQueue = emptyList()
+            _currentIndex.value = -1
+            _queue.value = emptyList()
+            _currentTrack.value = null
+            _isPlaying.value = false
+            _currentPosition.value = 0L
+            _duration.value = 0L
+
+            controller?.stop()
+            controller?.clearMediaItems()
+
+            saveQueueState()
+            scope.launch {
+                playbackPreferences.savePlaybackState(
+                    PlaybackState(
+                        songId = -1L,
+                        title = "",
+                        artist = "",
+                        coverUrl = "",
+                        lastPositionMs = 0L
+                    )
+                )
+            }
         }
     }
 

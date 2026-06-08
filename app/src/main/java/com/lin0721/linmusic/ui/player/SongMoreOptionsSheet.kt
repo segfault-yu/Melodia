@@ -52,6 +52,8 @@ fun SongMoreOptionsSheet(
     onArtistClick: () -> Unit,
     onShowTimerClick: () -> Unit,
     onQualitySelected: (String) -> Unit,
+    onStartSimilarRoaming: () -> Unit,
+    onInsertSimilarSongs: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -161,7 +163,11 @@ fun SongMoreOptionsSheet(
                     icon = Icons.Rounded.Explore,
                     text = "开始相似歌曲漫游",
                     onClick = {
-                        ToastManager.showToast("漫游功能暂未上线")
+                        scope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                            onStartSimilarRoaming()
+                        }
                     }
                 )
 
@@ -170,7 +176,11 @@ fun SongMoreOptionsSheet(
                     icon = Icons.Rounded.QueueMusic,
                     text = "插播相似歌曲",
                     onClick = {
-                        ToastManager.showToast("插播功能开发中")
+                        scope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                            onInsertSimilarSongs()
+                        }
                     }
                 )
 
@@ -292,19 +302,11 @@ fun SongMoreOptionsSheet(
                     }
                 }
 
-                // 8. 音效
-                OptionRow(
-                    icon = Icons.Rounded.GraphicEq,
-                    text = "音效: 经典空间环绕",
-                    onClick = {
-                        ToastManager.showToast("音效系统暂未开启")
-                    }
-                )
 
                 // 9. 定时关闭
                 val timerText = if (sleepTimerRemaining > 0L) {
                     val mins = (sleepTimerRemaining + 59999L) / (60 * 1000L)
-                    "定时关闭 (剩${mins}分钟)"
+                    "定时关闭 (${mins})"
                 } else {
                     "定时关闭"
                 }

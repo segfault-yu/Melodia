@@ -574,6 +574,18 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
+    override fun getSimilarSongs(songId: Long): Flow<Result<List<Track>>> = flow {
+        // 传入 songId.toString()
+        val response = apiService.getSimiSongs(SimiSongRequest(songid = songId.toString()))
+        if (response.isSuccess) {
+            emit(Result.success(response.songs))
+        } else {
+            emit(Result.failure(Exception("获取相似歌曲失败: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
     override fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>> = flow {
         val response = apiService.getArtistDetail(ArtistDetailRequest(id = artistId))
         if (response.isSuccess && response.data?.artist != null) {

@@ -54,6 +54,7 @@ fun PlayQueueSheet(
     onRemoveAtIndex: (Int) -> Unit,
     onMoveItem: (from: Int, to: Int) -> Unit,
     onToggleShuffle: () -> Unit,
+    onClearQueue: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -72,6 +73,33 @@ fun PlayQueueSheet(
     var draggedIndex by remember { mutableIntStateOf(-1) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val haptic = LocalHapticFeedback.current
+    var showClearConfirmDialog by remember { mutableStateOf(false) }
+
+    if (showClearConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirmDialog = false },
+            title = { Text("清空播放队列", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("确定要清空播放队列吗？", color = TextGray, fontSize = 14.sp) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onClearQueue()
+                        showClearConfirmDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = NeteaseRed)
+                ) {
+                    Text("是的", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirmDialog = false }) {
+                    Text("取消", color = Color.White)
+                }
+            },
+            containerColor = SurfaceDark,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -94,7 +122,11 @@ fun PlayQueueSheet(
                 .fillMaxWidth()
                 .fillMaxHeight(0.7f)
         ) {
-            QueueHeader(queueSize = queue.size, onDismiss = onDismiss)
+            QueueHeader(
+                queueSize = queue.size,
+                onClearClick = { showClearConfirmDialog = true },
+                onDismiss = onDismiss
+            )
 
             PlayModeInfoRow(
                 playMode = playMode,
@@ -271,7 +303,11 @@ private fun SwipeDeleteBackground() {
 }
 
 @Composable
-private fun QueueHeader(queueSize: Int, onDismiss: () -> Unit) {
+private fun QueueHeader(
+    queueSize: Int,
+    onClearClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -285,6 +321,20 @@ private fun QueueHeader(queueSize: Int, onDismiss: () -> Unit) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
         )
+        if (queueSize > 1) {
+            IconButton(
+                onClick = onClearClick,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = "清空队列",
+                    tint = TextGray,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
         Text(
             "共 $queueSize 首",
             color = TextGray,
@@ -364,7 +414,7 @@ private fun QueueSongRow(
     onDragEnd: () -> Unit
 ) {
     val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "drag_elev")
-    // 使用不透明背景颜色，防止底层的 SwipeToDismissBox 红色删除背景穿透显示，并优化行在不同状态下的配色
+    // 使用不透明背景颜色
     val bgColor by animateColorAsState(
         when {
             isDragging -> SurfaceLight

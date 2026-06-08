@@ -2,6 +2,7 @@ package com.lin0721.linmusic.data.remote.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -184,6 +185,13 @@ interface NeteaseApiService {
     suspend fun getSimiArtists(
         @Body body: SimiArtistRequest
     ): SimiArtistResponse
+
+    // ================== 相似歌曲 ==================
+
+    @POST("/eapi/v1/discovery/simiSong")
+    suspend fun getSimiSongs(
+        @Body body: SimiSongRequest
+    ): SimiSongResponse
 
     // ================== 艺人详情 ==================
 
@@ -570,7 +578,13 @@ data class PlaylistDetail(
 data class Track(
     val id: Long = 0,
     val name: String = "",
+    // 同时兼容 "ar" (常规接口) 和 "artists" (相似歌曲接口)
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    @JsonNames("ar", "artists")
     val ar: List<Artist> = emptyList(),
+    // 同时兼容 "al" (常规接口) 和 "album" (相似歌曲接口)
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    @JsonNames("al", "album")
     val al: Album = Album(),
     val fee: Int = 0,
     val publishTime: Long = 0, // 歌曲发行时间戳，部分接口在歌曲详情中包含
@@ -1419,6 +1433,19 @@ data class PlaylistTracksManipulateResponse(
     val count: Int = 0,
     val status: Int = 0,
     val message: String? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class SimiSongRequest(
+    val songid: String
+)
+
+@Serializable
+data class SimiSongResponse(
+    val code: Int = 0,
+    val songs: List<Track> = emptyList()
 ) {
     val isSuccess: Boolean get() = code == 200
 }
