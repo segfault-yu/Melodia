@@ -513,7 +513,9 @@ fun FullPlayerScreen(
                     onPlayPrevious = viewModel.playerManager::playPrevious,
                     onToggleShuffle = viewModel.playerManager::toggleShuffle,
                     onToggleRepeat = viewModel.playerManager::toggleRepeat,
-                    playMode = playMode
+                    playMode = playMode,
+                    isRoaming = playContext == "similar_roaming",
+                    onDisableRoaming = { viewModel.playerManager.disableRoaming() }
                 )
             }
 
@@ -628,6 +630,7 @@ fun FullPlayerScreen(
                     viewModel.clearQueue()
                     showQueueSheet = false
                 },
+                onDisableRoaming = { viewModel.playerManager.disableRoaming() },
                 onDismiss = { showQueueSheet = false }
             )
         }

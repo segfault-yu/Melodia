@@ -424,7 +424,7 @@ class PlayerViewModel(
                         ToastManager.showToast("未找到相关相似歌曲")
                     }
                 }.onFailure {
-                    ToastManager.showToast("漫游开启失败，请稍后重试")
+                    ToastManager.showToast("漫游开启失败")
                 }
             }
         }

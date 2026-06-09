@@ -37,7 +37,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.rounded.CenterFocusWeak
 import androidx.compose.material.icons.rounded.OpenInFull
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -495,6 +494,18 @@ fun FullScreenLyricsView(
         }
     }
 
+    val isPlayingState = rememberUpdatedState(isPlaying)
+
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            if (isUserScrolling) {
+                onUserScrollingChanged(false)
+            }
+        } else {
+            timerJob?.cancel()
+        }
+    }
+
     val gestureModifier = Modifier.pointerInput(Unit) {
         awaitPointerEventScope {
             while (true) {
@@ -504,9 +515,11 @@ fun FullScreenLyricsView(
                     onUserScrollingChanged(true)
                 } else if (event.type == PointerEventType.Release) {
                     timerJob?.cancel()
-                    timerJob = scope.launch {
-                        delay(5000)
-                        onUserScrollingChanged(false)
+                    if (isPlayingState.value) {
+                        timerJob = scope.launch {
+                            delay(5000)
+                            onUserScrollingChanged(false)
+                        }
                     }
                 }
             }
@@ -666,7 +679,8 @@ fun FullScreenLyricsView(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .padding(start = 8.dp, end = 6.dp)
+                    .padding(vertical = 16.dp)
                     .draggable(
                         orientation = Orientation.Vertical,
                         state = rememberDraggableState { delta ->
@@ -755,7 +769,7 @@ fun FullScreenLyricsView(
                             top = 0.dp,
                             bottom = with(density) { (viewportHeightPx / 2f).toDp() }
                         ),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.Start
                     ) {
                         itemsIndexed(items = lyrics, key = { i, _ -> i }) { index, line ->
                             val isCurrent = index == currentIndex
@@ -782,20 +796,20 @@ fun FullScreenLyricsView(
 
                             Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 40.dp)
+                                    .fillMaxWidth(0.85f)
+                                    .padding(start = 16.dp)
                                     .graphicsLayer {
                                         scaleX = animatedScale
                                         scaleY = animatedScale
                                         alpha = animatedAlpha
-                                        transformOrigin = TransformOrigin(0.5f, 0.5f)
+                                        transformOrigin = TransformOrigin(0f, 0.5f)
                                     }
                                     .clickable {
                                         timerJob?.cancel()
                                         onUserScrollingChanged(false)
                                         onSeek(line.timeMs)
                                     },
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                horizontalAlignment = Alignment.Start
                             ) {
                                 if (isCurrent && line.words.isNotEmpty()) {
                                     KaraokeLyricRow(
@@ -804,14 +818,14 @@ fun FullScreenLyricsView(
                                         inactiveColor = Color.White.copy(alpha = 0.35f),
                                         activeColor = Color.White,
                                         fontSize = 22.sp
-                                    )
+                                     )
                                 } else {
                                     Text(
                                         text = line.text,
                                         fontSize = 22.sp,
                                         color = if (isCurrent) Color.White else highlightColor,
                                         fontWeight = FontWeight.ExtraBold,
-                                        textAlign = TextAlign.Center,
+                                        textAlign = TextAlign.Start,
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }
@@ -821,7 +835,7 @@ fun FullScreenLyricsView(
                                         text = line.translation,
                                         fontSize = 17.sp,
                                         color = Color.White.copy(alpha = 0.65f),
-                                        textAlign = TextAlign.Center,
+                                        textAlign = TextAlign.Start,
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }
@@ -835,15 +849,7 @@ fun FullScreenLyricsView(
                         onSeek = onSeek,
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .padding(end = 20.dp)
-                    )
-
-                    BackToPlayingButton(
-                        visible = isUserScrolling,
-                        onClick = { onUserScrollingChanged(false) },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 36.dp)
+                            .padding(end = 16.dp)
                     )
                 }
             }
@@ -926,44 +932,6 @@ private fun PlayCapsule(
     }
 }
 
-@Composable
-private fun BackToPlayingButton(
-    visible: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(tween(250)) + slideInVertically(initialOffsetY = { it / 2 }),
-        exit = fadeOut(tween(250)) + slideOutVertically(targetOffsetY = { it / 2 }),
-        modifier = modifier
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(Color.White)
-                .clickable {
-                    onClick()
-                }
-                .padding(horizontal = 18.dp, vertical = 10.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.CenterFocusWeak,
-                contentDescription = "回到正在播放",
-                tint = Color.Black,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                "返回正在播放",
-                color = Color.Black,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -997,7 +965,7 @@ private fun FullScreenControls(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 16.dp)
             .padding(bottom = 28.dp)
     ) {
         Slider(
@@ -1063,7 +1031,7 @@ private fun FullScreenControls(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 用 Box 替代 IconButton，消除 48dp 隐式内边距，让图标贴近进度条左边缘
+
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -1122,7 +1090,7 @@ private fun FullScreenControls(
                 }
             }
 
-            // 同理，让 Repeat 图标贴近进度条右边缘
+            
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -1141,6 +1109,28 @@ private fun FullScreenControls(
     }
 }
 
+private class WordLayout(
+    val startMs: Long,
+    val endMs: Long,
+    val left: Float,
+    val right: Float,
+    val top: Float,
+    val bottom: Float,
+    val lineIndex: Int
+)
+
+private class LineLayout(
+    val left: Float,
+    val right: Float,
+    val top: Float,
+    val bottom: Float
+)
+
+private class LyricLayoutInfo(
+    val wordLayouts: List<WordLayout>,
+    val lineLayouts: List<LineLayout>
+)
+
 @Composable
 fun KaraokeLyricRow(
     line: LyricLine,
@@ -1152,9 +1142,68 @@ fun KaraokeLyricRow(
     var textLayoutResult by remember(line) { mutableStateOf<TextLayoutResult?>(null) }
     val currentPositionState = rememberUpdatedState(currentPositionMs)
     
+    // 在排版结果解析后，仅计算并缓存一次每个字词与行的物理渲染坐标，彻底避免每帧重复调用 getBoundingBox 的 JNI 开销
+    val lyricLayoutInfo = remember(line, textLayoutResult) {
+        val layout = textLayoutResult
+        if (layout == null) null else {
+            val textLength = line.text.length
+            var currentSearchIndex = 0
+            val wordRanges = line.words.map { word ->
+                val startIndex = line.text.indexOf(word.text, currentSearchIndex)
+                if (startIndex != -1) {
+                    currentSearchIndex = startIndex + word.text.length
+                    startIndex until currentSearchIndex
+                } else {
+                    val start = currentSearchIndex
+                    currentSearchIndex = (currentSearchIndex + word.text.length).coerceAtMost(textLength)
+                    start until currentSearchIndex
+                }
+            }
+
+            val wordLayouts = line.words.mapIndexed { i, word ->
+                val range = wordRanges[i]
+                val lineIndex = layout.getLineForOffset(range.first)
+                val lineTop = layout.getLineTop(lineIndex)
+                val lineBottom = layout.getLineBottom(lineIndex)
+                
+                val wordLeft = try {
+                    layout.getBoundingBox(range.first).left
+                } catch (e: Exception) {
+                    layout.getHorizontalPosition(range.first, true)
+                }
+                val wordRight = try {
+                    layout.getBoundingBox(range.last).right
+                } catch (e: Exception) {
+                    layout.getHorizontalPosition(range.last + 1, true)
+                }
+
+                WordLayout(
+                    startMs = word.startOffsetMs,
+                    endMs = word.startOffsetMs + word.durationMs,
+                    left = wordLeft,
+                    right = wordRight,
+                    top = lineTop,
+                    bottom = lineBottom,
+                    lineIndex = lineIndex
+                )
+            }
+
+            val lineLayouts = (0 until layout.lineCount).map { lineIndex ->
+                LineLayout(
+                    left = layout.getLineLeft(lineIndex),
+                    right = layout.getLineRight(lineIndex),
+                    top = layout.getLineTop(lineIndex),
+                    bottom = layout.getLineBottom(lineIndex)
+                )
+            }
+
+            LyricLayoutInfo(wordLayouts, lineLayouts)
+        }
+    }
+    
     Box(
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.CenterStart
     ) {
         // 底层灰色（未激活）歌词
         Text(
@@ -1162,31 +1211,26 @@ fun KaraokeLyricRow(
             fontSize = fontSize,
             fontWeight = FontWeight.ExtraBold,
             color = inactiveColor,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Start,
             onTextLayout = { textLayoutResult = it },
             modifier = Modifier.fillMaxWidth()
         )
         
-        // 顶层高亮（已激活）歌词，通过裁剪只显示已唱完的物理区域
+        // 顶层高亮（已激活）歌词，通过 Path 对每一行分别建立独立的裁剪矩形，防止单行歌词折行时产生漏光和干扰
         Text(
             text = line.text,
             fontSize = fontSize,
             fontWeight = FontWeight.ExtraBold,
             color = activeColor,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Start,
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer {
-                    val layout = textLayoutResult
-                    if (layout == null) {
+                    val info = lyricLayoutInfo
+                    if (info == null) {
                         alpha = 0f
                     } else {
                         alpha = 1f
-                        val progressPx = calculatePhysicalProgressPx(
-                            line = line,
-                            currentPositionMs = currentPositionState.value,
-                            textLayoutResult = layout
-                        )
                         clip = true
                         shape = object : Shape {
                             override fun createOutline(
@@ -1194,92 +1238,49 @@ fun KaraokeLyricRow(
                                 layoutDirection: LayoutDirection,
                                 density: Density
                             ): Outline {
-                                return Outline.Rectangle(
-                                    Rect(0f, 0f, progressPx, size.height)
-                                )
+                                val path = androidx.compose.ui.graphics.Path()
+                                val relativeProgress = currentPositionState.value - line.timeMs
+
+                                info.lineLayouts.forEachIndexed { lineIndex, lineLayout ->
+                                    val lastWordOnLine = info.wordLayouts.lastOrNull { it.lineIndex == lineIndex }
+                                    var maxRight = lineLayout.left
+                                    
+                                    if (lastWordOnLine != null && relativeProgress >= lastWordOnLine.endMs) {
+                                        // 整行已唱完，直接拉满高亮
+                                        maxRight = lineLayout.right
+                                    } else {
+                                        info.wordLayouts.forEach { word ->
+                                            if (word.lineIndex == lineIndex) {
+                                                if (relativeProgress >= word.endMs) {
+                                                    maxRight = maxRight.coerceAtLeast(word.right)
+                                                } else if (relativeProgress in word.startMs..word.endMs) {
+                                                    // 在当前唱到的字词内进行线性像素高亮插值
+                                                    val ratio = (relativeProgress - word.startMs).toFloat() / (word.endMs - word.startMs)
+                                                    val currentWordRight = word.left + (word.right - word.left) * ratio
+                                                    maxRight = maxRight.coerceAtLeast(currentWordRight)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // 如果当前行存在已播放高亮范围，则将其生成裁剪矩形加入到 Path 中
+                                    if (maxRight > lineLayout.left) {
+                                        path.addRect(
+                                            Rect(
+                                                left = lineLayout.left,
+                                                top = lineLayout.top,
+                                                right = maxRight.coerceIn(lineLayout.left, lineLayout.right),
+                                                bottom = lineLayout.bottom
+                                            )
+                                        )
+                                    }
+                                }
+
+                                return Outline.Generic(path)
                             }
                         }
                     }
                 }
         )
     }
-}
-
-private fun calculatePhysicalProgressPx(
-    line: LyricLine,
-    currentPositionMs: Long,
-    textLayoutResult: TextLayoutResult
-): Float {
-    val totalWidth = textLayoutResult.size.width.toFloat()
-    
-    // 若没有字词时间或时间总长为 0，则根据时间戳退化为整行切换
-    if (line.words.isEmpty() || line.durationMs <= 0L) {
-        return when {
-            currentPositionMs < line.timeMs -> 0f
-            currentPositionMs >= line.timeMs + line.durationMs -> totalWidth
-            else -> 0f
-        }
-    }
-
-    val relativeProgress = currentPositionMs - line.timeMs
-    if (relativeProgress <= 0) return 0f
-    
-    // 获取歌词文本的实际渲染几何边界
-    val lineLeft = textLayoutResult.getLineLeft(0)
-    val lineRight = textLayoutResult.getLineRight(0)
-    val actualTextWidth = lineRight - lineLeft
-    
-    if (relativeProgress >= line.durationMs) return totalWidth
-
-    // 预先映射每个 word 在整行文本中的索引区间
-    val textLength = line.text.length
-    var currentSearchIndex = 0
-    val wordRanges = line.words.map { word ->
-        val startIndex = line.text.indexOf(word.text, currentSearchIndex)
-        val range = if (startIndex != -1) {
-            currentSearchIndex = startIndex + word.text.length
-            startIndex until currentSearchIndex
-        } else {
-            val start = currentSearchIndex
-            currentSearchIndex = (currentSearchIndex + word.text.length).coerceAtMost(textLength)
-            start until currentSearchIndex
-        }
-        range
-    }
-
-    var playedWidth = 0f
-
-    for (i in line.words.indices) {
-        val word = line.words[i]
-        val range = wordRanges[i]
-        val wordStart = word.startOffsetMs
-        val wordEnd = wordStart + word.durationMs
-        
-        // 尝试获取该词首尾字符的实际物理坐标
-        val wordLeft = try {
-            textLayoutResult.getBoundingBox(range.first).left
-        } catch (e: Exception) {
-            textLayoutResult.getHorizontalPosition(range.first, true)
-        }
-        val wordRight = try {
-            textLayoutResult.getBoundingBox(range.last).right
-        } catch (e: Exception) {
-            textLayoutResult.getHorizontalPosition(range.last + 1, true)
-        }
-        
-        if (relativeProgress >= wordEnd) {
-            playedWidth = wordRight - lineLeft
-        } else if (relativeProgress in wordStart..wordEnd) {
-            // 在词内进行时间物理宽度插值
-            val wordProgress = (relativeProgress - wordStart).toFloat() / word.durationMs
-            val currentWordWidth = wordRight - wordLeft
-            val wordPlayedWidth = currentWordWidth * wordProgress.coerceIn(0f, 1f)
-            playedWidth = (wordLeft - lineLeft) + wordPlayedWidth
-            break
-        } else {
-            break
-        }
-    }
-    
-    return (lineLeft + playedWidth).coerceIn(0f, totalWidth)
 }

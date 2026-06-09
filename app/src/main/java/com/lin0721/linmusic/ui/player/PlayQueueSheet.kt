@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.rounded.AllInclusive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -55,14 +56,18 @@ fun PlayQueueSheet(
     onMoveItem: (from: Int, to: Int) -> Unit,
     onToggleShuffle: () -> Unit,
     onClearQueue: () -> Unit,
+    onDisableRoaming: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val isRoaming = playContext == "similar_roaming"
 
     LaunchedEffect(currentIndex) {
-        if (currentIndex in queue.indices) {
+        if (isRoaming) {
+            listState.scrollToItem(0)
+        } else if (currentIndex in queue.indices) {
             // 已播放占用的项数 = 1 (已播放头部) + currentIndex (已播放的歌曲数量)
             val scrollIndex = if (currentIndex > 0) currentIndex + 1 else 0
             listState.scrollToItem(scrollIndex)
@@ -131,7 +136,8 @@ fun PlayQueueSheet(
             PlayModeInfoRow(
                 playMode = playMode,
                 playContext = playContext,
-                onToggleShuffle = onToggleShuffle
+                onToggleShuffle = onToggleShuffle,
+                onDisableRoaming = onDisableRoaming
             )
 
             HorizontalDivider(
@@ -146,8 +152,8 @@ fun PlayQueueSheet(
                     .fillMaxWidth(),
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
-                // 1. "已播放" 
-                if (currentIndex > 0) {
+                // 1. "已播放" (仅在非漫游模式下显示)
+                if (!isRoaming && currentIndex > 0) {
                     item(key = "header_played") {
                         SectionLabel("已播放")
                     }
@@ -190,19 +196,8 @@ fun PlayQueueSheet(
                         SectionLabel("正在播放")
                     }
                     item(key = "current_${queue[currentIndex].songId}") {
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.EndToStart) {
-                                    onRemoveAtIndex(currentIndex)
-                                    true
-                                } else false
-                            }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = { SwipeDeleteBackground() },
-                            enableDismissFromStartToEnd = false
-                        ) {
+                        if (isRoaming) {
+                            // 漫游模式下禁用侧滑删除
                             QueueSongRow(
                                 item = queue[currentIndex],
                                 isCurrent = true,
@@ -215,76 +210,110 @@ fun PlayQueueSheet(
                                 onDrag = { _ -> },
                                 onDragEnd = {}
                             )
+                        } else {
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.EndToStart) {
+                                        onRemoveAtIndex(currentIndex)
+                                        true
+                                    } else false
+                                }
+                            )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = { SwipeDeleteBackground() },
+                                enableDismissFromStartToEnd = false
+                            ) {
+                                QueueSongRow(
+                                    item = queue[currentIndex],
+                                    isCurrent = true,
+                                    isPlaying = isPlaying,
+                                    isPlayed = false,
+                                    isDragging = false,
+                                    dragOffsetY = 0f,
+                                    onClick = { onPlayAtIndex(currentIndex) },
+                                    onDragStart = {},
+                                    onDrag = { _ -> },
+                                    onDragEnd = {}
+                                )
+                            }
                         }
                     }
                 }
 
-                // 3. "接下来播放"
-                val upcomingStart = currentIndex + 1
-                if (upcomingStart < queue.size) {
-                    item(key = "header_upcoming") {
-                        SectionLabel(
-                            if (playMode == PlayMode.SHUFFLE) "× 随机播放来源：${playContext ?: ""}"
-                            else "接下来播放"
-                        )
-                    }
-                    itemsIndexed(
-                        items = queue.subList(upcomingStart, queue.size),
-                        key = { idx, item -> "upcoming_${item.songId}_$idx" }
-                    ) { idx, item ->
-                        val actualIndex = upcomingStart + idx
-                        val isDragging = draggedIndex == actualIndex
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.EndToStart) {
-                                    onRemoveAtIndex(actualIndex)
-                                    true
-                                } else false
-                            }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = { SwipeDeleteBackground() },
-                            enableDismissFromStartToEnd = false
-                        ) {
-                            QueueSongRow(
-                                item = item,
-                                isCurrent = false,
-                                isPlaying = false,
-                                isPlayed = false,
-                                isDragging = isDragging,
-                                dragOffsetY = if (isDragging) dragOffset else 0f,
-                                onClick = { onPlayAtIndex(actualIndex) },
-                                onDragStart = {
-                                    draggedIndex = actualIndex
-                                    dragOffset = 0f
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                },
-                                onDrag = { delta ->
-                                    dragOffset += delta
-                                    val itemHeight = 64f
-                                    val threshold = itemHeight * 0.6f
-                                    if (dragOffset > threshold && actualIndex < queue.size - 1) {
-                                        onMoveItem(draggedIndex, draggedIndex + 1)
-                                        draggedIndex += 1
-                                        dragOffset -= itemHeight
-                                    } else if (dragOffset < -threshold && actualIndex > upcomingStart) {
-                                        onMoveItem(draggedIndex, draggedIndex - 1)
-                                        draggedIndex -= 1
-                                        dragOffset += itemHeight
-                                    }
-                                },
-                                onDragEnd = {
-                                    draggedIndex = -1
-                                    dragOffset = 0f
+                // 3. "接下来播放" (仅在非漫游模式下显示)
+                if (!isRoaming) {
+                    val upcomingStart = currentIndex + 1
+                    if (upcomingStart < queue.size) {
+                        item(key = "header_upcoming") {
+                            SectionLabel(
+                                if (playMode == PlayMode.SHUFFLE) "× 随机播放来源：${playContext ?: ""}"
+                                else "接下来播放"
+                            )
+                        }
+                        itemsIndexed(
+                            items = queue.subList(upcomingStart, queue.size),
+                            key = { idx, item -> "upcoming_${item.songId}_$idx" }
+                        ) { idx, item ->
+                            val actualIndex = upcomingStart + idx
+                            val isDragging = draggedIndex == actualIndex
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.EndToStart) {
+                                        onRemoveAtIndex(actualIndex)
+                                        true
+                                    } else false
                                 }
                             )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = { SwipeDeleteBackground() },
+                                enableDismissFromStartToEnd = false
+                            ) {
+                                QueueSongRow(
+                                    item = item,
+                                    isCurrent = false,
+                                    isPlaying = false,
+                                    isPlayed = false,
+                                    isDragging = isDragging,
+                                    dragOffsetY = if (isDragging) dragOffset else 0f,
+                                    onClick = { onPlayAtIndex(actualIndex) },
+                                    onDragStart = {
+                                        draggedIndex = actualIndex
+                                        dragOffset = 0f
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
+                                    onDrag = { delta ->
+                                        dragOffset += delta
+                                        val itemHeight = 64f
+                                        val threshold = itemHeight * 0.6f
+                                        if (dragOffset > threshold && actualIndex < queue.size - 1) {
+                                            onMoveItem(draggedIndex, draggedIndex + 1)
+                                            draggedIndex += 1
+                                            dragOffset -= itemHeight
+                                        } else if (dragOffset < -threshold && actualIndex > upcomingStart) {
+                                            onMoveItem(draggedIndex, draggedIndex - 1)
+                                            draggedIndex -= 1
+                                            dragOffset += itemHeight
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        draggedIndex = -1
+                                        dragOffset = 0f
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            BottomActionRow(playMode = playMode, onToggleShuffle = onToggleShuffle)
+            BottomActionRow(
+                playMode = playMode,
+                playContext = playContext,
+                onToggleShuffle = onToggleShuffle,
+                onDisableRoaming = onDisableRoaming
+            )
         }
     }
 }
@@ -351,7 +380,8 @@ private fun QueueHeader(
 private fun PlayModeInfoRow(
     playMode: PlayMode,
     playContext: String?,
-    onToggleShuffle: () -> Unit
+    onToggleShuffle: () -> Unit,
+    onDisableRoaming: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -359,16 +389,24 @@ private fun PlayModeInfoRow(
             .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val (icon, label) = when (playMode) {
-            PlayMode.LIST_LOOP -> Icons.Default.Repeat to "列表循环"
-            PlayMode.SINGLE_LOOP -> Icons.Default.RepeatOne to "单曲循环"
-            PlayMode.SHUFFLE -> Icons.Default.Shuffle to "随机播放"
+        val isRoaming = playContext == "similar_roaming"
+        val (icon, label) = when {
+            isRoaming -> Icons.Rounded.AllInclusive to "相似歌曲漫游"
+            playMode == PlayMode.LIST_LOOP -> Icons.Default.Repeat to "列表循环"
+            playMode == PlayMode.SINGLE_LOOP -> Icons.Default.RepeatOne to "单曲循环"
+            else -> Icons.Default.Shuffle to "随机播放"
         }
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
                 .background(SurfaceDark)
-                .clickable(onClick = onToggleShuffle)
+                .clickable {
+                    if (isRoaming) {
+                        onDisableRoaming()
+                    } else {
+                        onToggleShuffle()
+                    }
+                }
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -376,7 +414,7 @@ private fun PlayModeInfoRow(
             Spacer(Modifier.width(6.dp))
             Text(label, color = Color.White, fontSize = 12.sp)
         }
-        if (!playContext.isNullOrBlank()) {
+        if (!playContext.isNullOrBlank() && !isRoaming) {
             Spacer(Modifier.width(12.dp))
             Text(
                 "来自：$playContext",
@@ -512,26 +550,43 @@ private fun QueueSongRow(
 }
 
 @Composable
-private fun BottomActionRow(playMode: PlayMode, onToggleShuffle: () -> Unit) {
+private fun BottomActionRow(
+    playMode: PlayMode,
+    playContext: String?,
+    onToggleShuffle: () -> Unit,
+    onDisableRoaming: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        val isRoaming = playContext == "similar_roaming"
         Button(
-            onClick = onToggleShuffle,
+            onClick = {
+                if (isRoaming) {
+                    onDisableRoaming()
+                } else {
+                    onToggleShuffle()
+                }
+            },
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (playMode == PlayMode.SHUFFLE) NeteaseRed else SurfaceDark
+                containerColor = if (isRoaming || playMode == PlayMode.SHUFFLE) NeteaseRed else SurfaceDark
             ),
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier
                 .weight(1f)
                 .height(44.dp)
         ) {
-            Icon(Icons.Default.Shuffle, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = if (isRoaming) Icons.Rounded.AllInclusive else Icons.Default.Shuffle,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(18.dp)
+            )
             Spacer(Modifier.width(8.dp))
-            Text("随机播放", color = Color.White, fontSize = 13.sp)
+            Text(if (isRoaming) "关闭漫游" else "随机播放", color = Color.White, fontSize = 13.sp)
         }
         Button(
             onClick = { },

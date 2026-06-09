@@ -100,6 +100,9 @@ class PlayerManager(
 
     private var activePlayJob: Job? = null
     private var consecutiveErrors = 0
+    private var roamingJob: Job? = null
+    private var backupQueue: List<QueueItem> = emptyList()
+    private var backupIndex: Int = -1
 
     init {
         scope.launch {
@@ -184,6 +187,14 @@ class PlayerManager(
     // 设置队列并从指定位置开始播放
     fun playQueue(items: List<QueueItem>, startIndex: Int, playContext: String? = null) {
         if (items.isEmpty()) return
+        
+        if (playContext == "similar_roaming") {
+            backupQueue = originalQueue
+            backupIndex = _currentIndex.value
+            _playMode.value = PlayMode.LIST_LOOP
+            scope.launch { playbackPreferences.savePlayMode(PlayMode.LIST_LOOP) }
+        }
+        
         originalQueue = items
         _playContext.value = playContext
 
@@ -499,6 +510,13 @@ class PlayerManager(
         _duration.value = 0L
 
         activePlayJob?.cancel()
+        roamingJob?.cancel()
+        if (_playContext.value == "similar_roaming") {
+            roamingJob = scope.launch {
+                fetchAndAppendSimilarSongs(item.songId, index)
+            }
+        }
+
         activePlayJob = scope.launch {
             repository.getSongUrl(item.songId).collect { result ->
                 result.onSuccess { url ->
@@ -580,6 +598,61 @@ class PlayerManager(
         // 单曲循环由 ExoPlayer REPEAT_MODE_ONE 处理，不会到达 STATE_ENDED
         if (playbackState == Player.STATE_ENDED && _playMode.value != PlayMode.SINGLE_LOOP) {
             playNext()
+        }
+    }
+
+    // 异步拉取相似歌曲并替换后继播放队列
+    private suspend fun fetchAndAppendSimilarSongs(songId: Long, index: Int) {
+        repository.getSimilarSongs(songId).collect { result ->
+            result.onSuccess { simiSongs ->
+                if (simiSongs.isNotEmpty() && _playContext.value == "similar_roaming") {
+                    val simiItems = simiSongs.map { track ->
+                        QueueItem(
+                            songId = track.id,
+                            title = track.name,
+                            artist = track.ar.joinToString("/") { it.name },
+                            coverUrl = track.al.picUrl
+                        )
+                    }
+                    val newOriginalQueue = originalQueue.take(index + 1) + simiItems
+                    originalQueue = newOriginalQueue
+                    playQueue = newOriginalQueue
+                    _queue.value = playQueue
+                    saveQueueState()
+                }
+            }
+        }
+    }
+
+    // 关闭漫游并还原备份的队列数据
+    fun disableRoaming() {
+        if (_playContext.value == "similar_roaming") {
+            roamingJob?.cancel()
+            _playContext.value = null
+            
+            if (backupQueue.isNotEmpty()) {
+                originalQueue = backupQueue
+                val currentTrackItem = playQueue.getOrNull(_currentIndex.value)
+                val newIndex = if (currentTrackItem != null) {
+                    val idx = backupQueue.indexOfFirst { it.songId == currentTrackItem.songId }
+                    if (idx != -1) idx else backupIndex.coerceIn(0, backupQueue.size - 1)
+                } else {
+                    backupIndex.coerceIn(0, backupQueue.size - 1)
+                }
+                
+                if (_playMode.value == PlayMode.SHUFFLE) {
+                    playQueue = shufflePreservingCurrent(backupQueue, newIndex)
+                    _currentIndex.value = 0
+                } else {
+                    playQueue = backupQueue
+                    _currentIndex.value = newIndex
+                }
+                
+                _queue.value = playQueue
+                backupQueue = emptyList()
+                backupIndex = -1
+            }
+            saveQueueState()
         }
     }
 

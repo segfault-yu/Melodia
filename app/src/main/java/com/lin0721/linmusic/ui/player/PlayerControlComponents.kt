@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.AllInclusive
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -111,7 +113,7 @@ fun TopBar(
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    modifier = Modifier.basicMarquee()
                 )
                 Text(
                     text = artist,
@@ -271,7 +273,7 @@ fun SongInfo(
                 fontSize = 22.sp,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                modifier = Modifier.basicMarquee()
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -519,7 +521,9 @@ fun PlaybackControls(
     onPlayPrevious: () -> Unit,
     onToggleShuffle: () -> Unit,
     onToggleRepeat: () -> Unit,
-    playMode: PlayMode
+    playMode: PlayMode,
+    isRoaming: Boolean = false,
+    onDisableRoaming: () -> Unit = {}
 ) {
     val bounceScale = remember { Animatable(1f) }
     LaunchedEffect(isPlaying) {
@@ -536,13 +540,19 @@ fun PlaybackControls(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(
-            onClick = onToggleShuffle,
+            onClick = {
+                if (isRoaming) {
+                    onDisableRoaming()
+                } else {
+                    onToggleShuffle()
+                }
+            },
             modifier = Modifier.offset(x = (-10).dp)
         ) {
             Icon(
-                Icons.Default.Shuffle,
+                imageVector = if (isRoaming) Icons.Rounded.AllInclusive else Icons.Default.Shuffle,
                 contentDescription = null,
-                tint = if (playMode == PlayMode.SHUFFLE) Color.White else TextGray,
+                tint = if (isRoaming || playMode == PlayMode.SHUFFLE) Color.White else TextGray,
                 modifier = Modifier.size(28.dp)
             )
         }
