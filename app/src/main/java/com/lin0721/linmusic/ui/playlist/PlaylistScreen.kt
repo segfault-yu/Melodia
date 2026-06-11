@@ -74,6 +74,7 @@ fun PlaylistScreen(
     val likedSongIds by viewModel.likedSongIds.collectAsStateWithLifecycle()
     val collectState by viewModel.collectState.collectAsStateWithLifecycle()
     val userProfile  by viewModel.userProfile.collectAsStateWithLifecycle()
+    val recommendedSongs by viewModel.recommendedSongs.collectAsStateWithLifecycle()
     val context = LocalContext.current
     android.util.Log.d("PlaylistScreen", "PlaylistScreen Composition: playlistId = $playlistId, isAlbum = $isAlbum")
 
@@ -115,6 +116,7 @@ fun PlaylistScreen(
                     likedSongIds   = likedSongIds,
                     collectState   = collectState,
                     isLoggedIn     = userProfile != null,
+                    recommendedSongs = recommendedSongs,
                     onBack         = onBack,
                     onArtistClick  = onArtistClick,
                     onPlaySong     = { track ->
@@ -136,6 +138,12 @@ fun PlaylistScreen(
                     },
                     onRequireLogin = {
                         showLoginSheet = true
+                    },
+                    onRefreshRecommendations = {
+                        viewModel.refreshRecommendations()
+                    },
+                    onAddRecommendSong = { track ->
+                        viewModel.addRecommendSongToPlaylist(state.playlist.id, track)
                     }
                 )
         }
@@ -174,6 +182,7 @@ private fun PlaylistContent(
     likedSongIds: Set<Long>,
     collectState: PlaylistCollectState,
     isLoggedIn: Boolean,
+    recommendedSongs: List<Track>,
     onBack: () -> Unit,
     onArtistClick: (Long) -> Unit,
     onPlaySong: (Track) -> Unit,
@@ -181,7 +190,9 @@ private fun PlaylistContent(
     onLikeClick: (Long) -> Unit,
     onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
     onSaveNewCollection: (String, Long) -> Unit,
-    onRequireLogin: () -> Unit
+    onRequireLogin: () -> Unit,
+    onRefreshRecommendations: () -> Unit,
+    onAddRecommendSong: (Track) -> Unit
 ) {
     val density = LocalDensity.current
 
@@ -273,6 +284,24 @@ private fun PlaylistContent(
                     },
                     onArtistClick = onArtistClick
                 )
+            }
+
+            // 推荐歌曲板块
+            if (recommendedSongs.isNotEmpty()) {
+                item(key = "recommendation_header") {
+                    RecommendationHeader(
+                        onRefresh = onRefreshRecommendations
+                    )
+                }
+                items(recommendedSongs, key = { "rec_${it.id}" }) { track ->
+                    RecommendSongRow(
+                        track = track,
+                        isActive = currentTrackId == track.id.toString(),
+                        onPlaySong = { onPlaySong(track) },
+                        onAddClick = { onAddRecommendSong(track) },
+                        onArtistClick = onArtistClick
+                    )
+                }
             }
         }
 
@@ -709,16 +738,15 @@ private fun PlaylistHeaderItem(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 歌曲行
+// 基础歌曲行组件（供普通歌曲行和推荐歌曲行复用，消除多余布局代码）
 // ────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun SongRow(
-    track: Track, 
-    isActive: Boolean, 
-    likedSongIds: Set<Long>,
+private fun BaseSongRow(
+    track: Track,
+    isActive: Boolean,
     onClick: () -> Unit,
-    onLikeClick: () -> Unit,
-    onArtistClick: (Long) -> Unit
+    onArtistClick: (Long) -> Unit,
+    actionArea: @Composable RowScope.() -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -737,11 +765,15 @@ private fun SongRow(
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(track.name,
-                    color      = if (isActive) NeteaseRed else Color.White,
-                    fontWeight = FontWeight.Medium, fontSize = 15.sp,
-                    maxLines   = 1, overflow = TextOverflow.Ellipsis,
-                    modifier   = Modifier.weight(1f, fill = false))
+                Text(
+                    text = track.name,
+                    color = if (isActive) NeteaseRed else Color.White,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
                 if (track.fee == 1) {
                     Spacer(Modifier.width(6.dp))
                     Box(
@@ -774,6 +806,28 @@ private fun SongRow(
                 }
             )
         }
+        actionArea()
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 歌曲行
+// ────────────────────────────────────────────────────────────────────────────
+@Composable
+private fun SongRow(
+    track: Track, 
+    isActive: Boolean, 
+    likedSongIds: Set<Long>,
+    onClick: () -> Unit,
+    onLikeClick: () -> Unit,
+    onArtistClick: (Long) -> Unit
+) {
+    BaseSongRow(
+        track = track,
+        isActive = isActive,
+        onClick = onClick,
+        onArtistClick = onArtistClick
+    ) {
         val isLiked = track.id in likedSongIds
         IconButton(
             onClick = onLikeClick,
@@ -787,5 +841,83 @@ private fun SongRow(
             )
         }
         Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(20.dp))
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 推荐板块头部
+// ────────────────────────────────────────────────────────────────────────────
+@Composable
+private fun RecommendationHeader(onRefresh: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "推荐歌曲",
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onRefresh)
+                .background(SurfaceDark)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "刷新推荐",
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "刷新",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 推荐歌曲行
+// ────────────────────────────────────────────────────────────────────────────
+@Composable
+private fun RecommendSongRow(
+    track: Track,
+    isActive: Boolean,
+    onPlaySong: () -> Unit,
+    onAddClick: () -> Unit,
+    onArtistClick: (Long) -> Unit
+) {
+    BaseSongRow(
+        track = track,
+        isActive = isActive,
+        onClick = onPlaySong,
+        onArtistClick = onArtistClick
+    ) {
+        IconButton(
+            onClick = onAddClick,
+            modifier = Modifier.size(36.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "添加歌曲到歌单",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(22.dp)
+                    .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    .padding(2.dp)
+            )
+        }
     }
 }

@@ -586,6 +586,49 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
+    override fun getIntelligenceSongs(songId: Long, playlistId: Long): Flow<Result<List<Track>>> = flow {
+        var success = false
+        var tracksList = emptyList<Track>()
+        
+        try {
+            val response = apiService.getIntelligenceSongs(
+                IntelligenceSongsRequest(
+                    songId = songId.toString(),
+                    playlistId = playlistId.toString(),
+                    startMusicId = songId.toString(),
+                    count = 20
+                )
+            )
+            if (response.isSuccess) {
+                val tracks = response.data.mapNotNull { it.songInfo }
+                if (tracks.isNotEmpty()) {
+                    tracksList = tracks
+                    success = true
+                }
+            }
+        } catch (_: Exception) {
+            // 捕获智能推荐的异常
+        }
+
+        if (success) {
+            emit(Result.success(tracksList))
+        } else {
+            // 若心动模式报错或不支持，自动通过相似歌曲接口获取推荐
+            try {
+                val simiResponse = apiService.getSimiSongs(SimiSongRequest(songid = songId.toString()))
+                if (simiResponse.isSuccess) {
+                    emit(Result.success(simiResponse.songs))
+                } else {
+                    emit(Result.failure(Exception("获取智能推荐与相似推荐均失败")))
+                }
+            } catch (e: Exception) {
+                emit(Result.failure(e))
+            }
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
     override fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>> = flow {
         val response = apiService.getArtistDetail(ArtistDetailRequest(id = artistId))
         if (response.isSuccess && response.data?.artist != null) {

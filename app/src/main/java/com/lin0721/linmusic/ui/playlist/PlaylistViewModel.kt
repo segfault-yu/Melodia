@@ -34,6 +34,12 @@ class PlaylistViewModel(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
+    private val _recommendedSongs = MutableStateFlow<List<Track>>(emptyList())
+    val recommendedSongs: StateFlow<List<Track>> = _recommendedSongs.asStateFlow()
+
+    private var allRecommendedTracks = listOf<Track>()
+    private var currentRecIndex = 0
+
     private var isAlbumMode = false
     private var loadJob: Job? = null
 
@@ -73,6 +79,8 @@ class PlaylistViewModel(
     fun loadPlaylist(id: Long, isAlbum: Boolean = false) {
         isAlbumMode = isAlbum
         _uiState.value = PlaylistUiState.Loading
+        _recommendedSongs.value = emptyList()
+        allRecommendedTracks = emptyList()
         loadJob?.cancel() // 取消之前的加载任务，防止并发竞态冲突导致状态错乱
         loadJob = viewModelScope.launch {
             val flow = if (isAlbum) repository.getAlbumDetail(id) else repository.getPlaylistDetail(id)
@@ -80,6 +88,13 @@ class PlaylistViewModel(
                 result.fold(
                     onSuccess = { detail ->
                         _uiState.value = PlaylistUiState.Success(detail)
+                        val baseSong = detail.tracks.firstOrNull()
+                        if (baseSong != null && !isAlbum) {
+                            loadRecommendations(detail.id, baseSong.id, detail.tracks)
+                        } else {
+                            _recommendedSongs.value = emptyList()
+                            allRecommendedTracks = emptyList()
+                        }
                     },
                     onFailure = { error ->
                         _uiState.value = PlaylistUiState.Error(error.message ?: "Unknown Error")
@@ -217,6 +232,76 @@ class PlaylistViewModel(
                         )
                         loadLikedSongIds()
                     }
+                }
+            }
+        }
+    }
+
+    fun loadRecommendations(playlistId: Long, baseSongId: Long, existingTracks: List<Track>) {
+        viewModelScope.launch {
+            repository.getIntelligenceSongs(baseSongId, playlistId).collect { result ->
+                result.onSuccess { recommendedList ->
+                    val filteredList = recommendedList.filter { recTrack ->
+                        existingTracks.none { it.id == recTrack.id }
+                    }
+                    allRecommendedTracks = filteredList
+                    currentRecIndex = 0
+                    updateCurrentRecommendations()
+                }.onFailure { e ->
+                    // 静默失败，不弹出 Toast，隐藏底部的推荐板块，提升用户体验
+                    _recommendedSongs.value = emptyList()
+                    allRecommendedTracks = emptyList()
+                }
+            }
+        }
+    }
+
+    private fun updateCurrentRecommendations() {
+        if (allRecommendedTracks.isEmpty()) {
+            _recommendedSongs.value = emptyList()
+            return
+        }
+        val size = allRecommendedTracks.size
+        val start = currentRecIndex % size
+        val list = mutableListOf<Track>()
+        for (i in 0 until 5) {
+            val idx = (start + i) % size
+            val track = allRecommendedTracks[idx]
+            if (!list.contains(track)) {
+                list.add(track)
+            }
+            if (list.size >= size) break
+        }
+        _recommendedSongs.value = list
+    }
+
+    fun refreshRecommendations() {
+        if (allRecommendedTracks.isNotEmpty()) {
+            currentRecIndex = (currentRecIndex + 5) % allRecommendedTracks.size
+            updateCurrentRecommendations()
+        }
+    }
+
+    fun addRecommendSongToPlaylist(playlistId: Long, track: Track) {
+        viewModelScope.launch {
+            repository.manipulatePlaylistTracks("add", playlistId, track.id).collect { result ->
+                result.onSuccess {
+                    _toastEvent.emit("已添加到歌单")
+                    allRecommendedTracks = allRecommendedTracks.filter { it.id != track.id }
+                    updateCurrentRecommendations()
+                    
+                    val currentState = _uiState.value
+                    if (currentState is PlaylistUiState.Success) {
+                        val updatedTracks = currentState.playlist.tracks.toMutableList().apply {
+                            if (none { it.id == track.id }) {
+                                add(track)
+                            }
+                        }
+                        val updatedPlaylist = currentState.playlist.copy(tracks = updatedTracks)
+                        _uiState.value = PlaylistUiState.Success(updatedPlaylist)
+                    }
+                }.onFailure { e ->
+                    _toastEvent.emit("添加失败: ${e.message}")
                 }
             }
         }

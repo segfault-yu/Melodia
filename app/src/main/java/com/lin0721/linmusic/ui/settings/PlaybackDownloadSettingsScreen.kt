@@ -9,9 +9,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PlaybackDownloadSettingsView() {
+fun PlaybackDownloadSettingsView(viewModel: SettingsViewModel) {
     var autoPlayNext by remember { mutableStateOf(true) }
-    var streamCacheEnabled by remember { mutableStateOf(false) }
+    val streamCacheEnabled by viewModel.streamCacheEnabled.collectAsState()
     var playMode by remember { mutableStateOf("列表循环") }
     
     // 渲染播放与下载的子设置项
@@ -43,7 +43,7 @@ fun PlaybackDownloadSettingsView() {
                     title = "边听边存",
                     subtitle = "在线播放歌曲时自动缓存到本地",
                     checked = streamCacheEnabled,
-                    onCheckedChange = { streamCacheEnabled = it }
+                    onCheckedChange = { viewModel.updateStreamCacheEnabled(it) }
                 )
                 HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
                 SettingsRow(

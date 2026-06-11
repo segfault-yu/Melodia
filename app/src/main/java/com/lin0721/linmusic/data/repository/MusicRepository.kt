@@ -155,6 +155,10 @@ interface MusicRepository {
 
     fun getSimilarSongs(songId: Long): Flow<Result<List<Track>>>
 
+    // ================== 智能推荐 ==================
+
+    fun getIntelligenceSongs(songId: Long, playlistId: Long): Flow<Result<List<Track>>>
+
     // ================== 艺人详情 ==================
 
     fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>>

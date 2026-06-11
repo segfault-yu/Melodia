@@ -263,7 +263,7 @@ private fun SubMenuContent(
             .padding(horizontal = 16.dp)
     ) {
         when (subMenu) {
-            SettingsSubMenu.PLAYBACK_DOWNLOAD -> PlaybackDownloadSettingsView()
+            SettingsSubMenu.PLAYBACK_DOWNLOAD -> PlaybackDownloadSettingsView(viewModel)
             SettingsSubMenu.AUDIO_QUALITY -> AudioQualitySettingsView(viewModel)
             SettingsSubMenu.PRIVACY -> PrivacySettingsView(viewModel)
             SettingsSubMenu.STORAGE -> StorageSettingsView(viewModel, context)

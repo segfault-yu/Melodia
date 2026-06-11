@@ -9,6 +9,7 @@ import com.lin0721.linmusic.data.remote.api.UserBindingItem
 import com.lin0721.linmusic.data.remote.api.UserLevelData
 import com.lin0721.linmusic.data.remote.api.VipInfoData
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.player.AudioCacheManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -38,6 +39,18 @@ class SettingsViewModel(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = false
+    )
+
+    val streamCacheEnabled = settingsPreferences.streamCacheEnabled.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val audioCacheMaxSize = settingsPreferences.audioCacheMaxSize.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 512 * 1024 * 1024L
     )
 
     // ─── 服务端拉取数据状态 ───
@@ -107,6 +120,19 @@ class SettingsViewModel(
     fun updateDefaultPlaylistPrivate(private: Boolean) {
         viewModelScope.launch {
             settingsPreferences.saveDefaultPlaylistPrivate(private)
+        }
+    }
+
+    fun updateStreamCacheEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveStreamCacheEnabled(enabled)
+        }
+    }
+
+    fun updateAudioCacheMaxSize(context: Context, size: Long) {
+        viewModelScope.launch {
+            settingsPreferences.saveAudioCacheMaxSize(size)
+            AudioCacheManager.recreateCache(context, size)
         }
     }
 
@@ -229,6 +255,9 @@ class SettingsViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             runCatching {
+                // 0. 清理 ExoPlayer 媒体缓存
+                AudioCacheManager.clearCache(context)
+
                 // 1. 清理 Coil 图片缓存
                 val imageLoader = coil.Coil.imageLoader(context)
                 imageLoader.memoryCache?.clear()

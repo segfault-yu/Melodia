@@ -333,6 +333,12 @@ interface NeteaseApiService {
     suspend fun uploadAvatar(
         @retrofit2.http.Part imgFile: okhttp3.MultipartBody.Part
     ): AvatarUploadResponse
+
+    // ================== 智能推荐歌曲 ==================
+    @POST("/eapi/playmode/intelligence/list")
+    suspend fun getIntelligenceSongs(
+        @Body body: IntelligenceSongsRequest
+    ): IntelligenceSongsResponse
 }
 
 // 首页动态内容请求体
@@ -1449,3 +1455,27 @@ data class SimiSongResponse(
 ) {
     val isSuccess: Boolean get() = code == 200
 }
+
+@Serializable
+data class IntelligenceSongsRequest(
+    val songId: String,
+    val playlistId: String,
+    val type: String = "fromPlayOne",
+    val startMusicId: String,
+    val count: Int = 20
+)
+
+@Serializable
+data class IntelligenceSongsResponse(
+    val code: Int = 0,
+    val data: List<IntelligenceItem> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class IntelligenceItem(
+    val id: Long = 0,
+    val recommended: Boolean = false,
+    val songInfo: Track? = null
+)

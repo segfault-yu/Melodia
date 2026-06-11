@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import coil.Coil
+import coil.request.ImageRequest
 
 class PlayerManager(
     private val context: Context,
@@ -594,6 +596,7 @@ class PlayerManager(
         if (playbackState == Player.STATE_READY) {
             val dur = controller?.duration ?: 0L
             _duration.value = if (dur > 0L) dur else 0L
+            preloadNextTrackCover()
         }
         // 单曲循环由 ExoPlayer REPEAT_MODE_ONE 处理，不会到达 STATE_ENDED
         if (playbackState == Player.STATE_ENDED && _playMode.value != PlayMode.SINGLE_LOOP) {
@@ -662,5 +665,24 @@ class PlayerManager(
             android.widget.Toast.makeText(context, "当前歌曲无法播放，已自动跳过", android.widget.Toast.LENGTH_SHORT).show()
         }
         skipToNextOnError(_currentIndex.value)
+    }
+
+    private fun preloadNextTrackCover() {
+        val size = playQueue.size
+        if (size <= 1) return
+        val nextIndex = when (_playMode.value) {
+            PlayMode.SINGLE_LOOP -> _currentIndex.value
+            else -> (_currentIndex.value + 1) % size
+        }
+        if (nextIndex in playQueue.indices) {
+            val nextItem = playQueue[nextIndex]
+            val coverUrl = nextItem.coverUrl
+            if (coverUrl.isNotBlank()) {
+                val imageRequest = ImageRequest.Builder(context)
+                    .data(coverUrl)
+                    .build()
+                Coil.imageLoader(context).enqueue(imageRequest)
+            }
+        }
     }
 }

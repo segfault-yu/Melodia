@@ -72,11 +72,12 @@ private fun adjustColor(r: Int, g: Int, b: Int, minSat: Float, valRange: ClosedF
 }
 
 object PaletteMemoryCache {
-    private val cache = java.util.concurrent.ConcurrentHashMap<String, ColorPalette>()
+    private val cache = android.util.LruCache<String, ColorPalette>(150)
 
-    fun get(mediaId: String): ColorPalette? = cache[mediaId]
+    fun get(mediaId: String): ColorPalette? = cache.get(mediaId)
 
     fun put(mediaId: String, palette: ColorPalette) {
-        cache[mediaId] = palette
+        cache.put(mediaId, palette)
     }
 }
+
