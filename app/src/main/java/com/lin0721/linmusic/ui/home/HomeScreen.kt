@@ -91,12 +91,9 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundDark)
+            .background(Color(0xFF1C1C1E))
     ) {
-        // 动态光效底层
-            DynamicAmbientLight()
-
-            LazyColumn(
+        LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding(),
@@ -120,8 +117,21 @@ fun HomeScreen(
                         }
                     }
                     is HomeUiState.Success -> {
-                        // 1. 推荐歌单
-                        item { SectionHeader(title = "为你推荐", showAction = false) }
+                        item {
+                            ForYouModule(
+                                dailySongs = state.data.dailySongs,
+                                toplists = state.data.toplistItems,
+                                recommendPlaylists = state.data.recommendPlaylists,
+                                onDailyRecommendClick = { viewModel.playDailySong(0) },
+                                onHotlistClick = { onPlaylistClick(it) },
+                                onIntelligenceClick = { viewModel.startIntelligenceMode() },
+                                onRadarClick = { onPlaylistClick(it) },
+                                onRoamingClick = { viewModel.startRoaming() }
+                            )
+                        }
+
+                        // 推荐歌单
+                        item { SectionHeader(title = "推荐歌单", showAction = false) }
                         item {
                             RecommendationCarousel(
                                 playlists = state.data.recommendPlaylists,
@@ -129,7 +139,7 @@ fun HomeScreen(
                             )
                         }
 
-                        // 4. 最近播放
+                        // 最近播放
                         if (state.data.recentPlaylists.isNotEmpty()) {
                             item {
                                 var recentViewIsGrid by remember { mutableStateOf(false) }
@@ -179,49 +189,13 @@ fun HomeScreen(
                             }
                         }
 
-                        // 5. 每日推荐
-                        if (state.data.dailySongs.isNotEmpty()) {
-                            item { SectionHeader(title = "今日推荐", showAction = false) }
-                            item {
-                                var showHistorySheet by remember { mutableStateOf(false) }
-                                val historyDates by viewModel.historyDates.collectAsStateWithLifecycle()
-                                val historyDatesLoading by viewModel.historyDatesLoading.collectAsStateWithLifecycle()
-                                val historySongs by viewModel.historySongs.collectAsStateWithLifecycle()
-                                val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
-                                val historySongsLoading by viewModel.historySongsLoading.collectAsStateWithLifecycle()
-
-                                DailyRecommendCard(
-                                    songs = state.data.dailySongs,
-                                    onPlayAll = { viewModel.playDailySong(0) },
-                                    onPlaySong = { index -> viewModel.playDailySong(index) },
-                                    onViewHistory = {
-                                        showHistorySheet = true
-                                        viewModel.loadHistoryDates()
-                                    }
-                                )
-
-                                if (showHistorySheet) {
-                                    HistoryRecommendSheet(
-                                        dates = historyDates,
-                                        datesLoading = historyDatesLoading,
-                                        songs = historySongs,
-                                        selectedDate = selectedDate,
-                                        songsLoading = historySongsLoading,
-                                        onDateSelected = { viewModel.loadHistoryDetail(it) },
-                                        onPlaySong = { viewModel.playHistorySong(it) },
-                                        onDismiss = { showHistorySheet = false }
-                                    )
-                                }
-                            }
-                        }
-
-                        // 6. 排行榜
+                        // 排行榜
                         if (state.data.toplistItems.isNotEmpty()) {
                             item { SectionHeader(title = "排行榜", showAction = false) }
                             item { ToplistCarousel(toplists = state.data.toplistItems) }
                         }
 
-                        // 7. 你最爱的艺人
+                        // 你最爱的艺人
                         if (state.data.favoriteArtists.isNotEmpty()) {
                             item { FavoriteArtistsSection(artists = state.data.favoriteArtists) }
                         }
@@ -342,11 +316,10 @@ fun SectionHeader(title: String, showAction: Boolean = true) {
 fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (PersonalizedPlaylist) -> Unit) {
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         items(playlists, key = { it.id }) { playlist ->
-            Column(modifier = Modifier.width(160.dp).clickable { onClick(playlist) }) {
-                AsyncImage(model = "${playlist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(160.dp).clip(RoundedCornerShape(24.dp)), contentScale = ContentScale.Crop)
+            Column(modifier = Modifier.width(150.dp).clickable { onClick(playlist) }) {
+                AsyncImage(model = "${playlist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(150.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = "根据你的口味生成", color = Color.Gray, fontSize = 12.sp, maxLines = 1)
+                Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -354,14 +327,15 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
 
 @Composable
 fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>, onClick: (com.lin0721.linmusic.data.remote.api.RecentPlayItem) -> Unit) {
-    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         items(items, key = { it.data.id }) { item ->
             val playlist = item.data
-            Column(modifier = Modifier.width(120.dp).clickable { onClick(item) }) {
-                AsyncImage(model = "${playlist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.Crop)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = playlist.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = "歌单 · ${playlist.creator?.nickname ?: "网易云音乐"}", color = Color.Gray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Column(modifier = Modifier.width(150.dp).clickable { onClick(item) }) {
+                AsyncImage(model = "${playlist.picUrl}?param=300y300", contentDescription = null, modifier = Modifier.size(150.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(text = "歌单 · ${playlist.creator?.nickname ?: "网易云音乐"}", color = Color.Gray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -399,7 +373,7 @@ fun RecentPlaylistGrid(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(1f)
-                                .clip(RoundedCornerShape(12.dp)),
+                                .clip(RoundedCornerShape(10.dp)),
                             contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.height(6.dp))
@@ -425,7 +399,7 @@ fun RecentPlaylistGrid(
 fun ToplistCarousel(toplists: List<ToplistInfo>) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(items = toplists, key = { it.id }) { item ->
             ToplistCard(item = item)
@@ -439,21 +413,20 @@ private fun ToplistCard(item: ToplistInfo) {
     val imageRequest = remember(item.coverUrl) {
         coil.request.ImageRequest.Builder(context)
             .data(item.coverUrl)
-            .size(360, 360)
+            .size(300, 300)
             .crossfade(true)
             .build()
     }
     Column(
         modifier = Modifier
-            .width(180.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .width(150.dp)
+            .clip(RoundedCornerShape(10.dp))
             .background(Color(0xFF1A1F2E))
     ) {
-        // 封面图 + 渐变蒙层
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .height(150.dp)
         ) {
             AsyncImage(
                 model = imageRequest,
@@ -461,11 +434,10 @@ private fun ToplistCard(item: ToplistInfo) {
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            // 底部渐变遥控可读性
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(80.dp)
+                    .height(60.dp)
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
@@ -473,7 +445,6 @@ private fun ToplistCard(item: ToplistInfo) {
                         )
                     )
             )
-            // 更新频率徽章
             if (item.updateDesc.isNotBlank()) {
                 Text(
                     text = item.updateDesc,
@@ -490,12 +461,11 @@ private fun ToplistCard(item: ToplistInfo) {
                 )
             }
         }
-        // 榜单名
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 text = item.name,
                 color = Color.White,
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -504,224 +474,6 @@ private fun ToplistCard(item: ToplistInfo) {
     }
 }
 
-@Composable
-fun DailyRecommendCard(
-    songs: List<DailySong>,
-    onPlayAll: () -> Unit,
-    onPlaySong: (Int) -> Unit,
-    onViewHistory: () -> Unit = {}
-) {
-    if (songs.isEmpty()) return
-
-    val today = remember {
-        val cal = Calendar.getInstance()
-        "${cal.get(Calendar.MONTH) + 1}月${cal.get(Calendar.DAY_OF_MONTH)}日"
-    }
-    val dayOfMonth = remember {
-        Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString()
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161B2E))
-    ) {
-        Column {
-            // 卡片头部：渐变色标题区
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(Color(0xFFCC0000), Color(0xFF1A1F3A))
-                        )
-                    )
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // 日历图标
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = dayOfMonth,
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                lineHeight = 22.sp
-                            )
-                            Text(
-                                text = "DAY",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "每日推荐",
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Text(
-                            text = today,
-                            color = Color.White.copy(alpha = 0.65f),
-                            fontSize = 13.sp
-                        )
-                    }
-                    // 历史推荐按钮
-                    IconButton(
-                        onClick = { onViewHistory() },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.15f))
-                    ) {
-                        Icon(
-                            Icons.Default.History,
-                            contentDescription = "历史推荐",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // 播放全部按钮
-                    Surface(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clickable { onPlayAll() },
-                        shape = CircleShape,
-                        color = Color.White
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Default.PlayArrow,
-                                contentDescription = "播放全部",
-                                tint = NeteaseRed,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 歌曲列表（全部，可滚动）
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(320.dp)
-            ) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp)
-                ) {
-                    itemsIndexed(songs) { index, song ->
-                        DailySongRow(
-                            index = index + 1,
-                            song = song,
-                            isLast = index == songs.lastIndex,
-                            onClick = { onPlaySong(index) }
-                        )
-                    }
-                }
-                // 底部渐出蒙层，提示可继续滚动
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color(0xFF161B2E))
-                            )
-                        )
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DailySongRow(
-    index: Int,
-    song: DailySong,
-    isLast: Boolean = false,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 序号
-        Text(
-            text = index.toString().padStart(2, '0'),
-            color = if (index == 1) NeteaseRed else Color.Gray,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.width(28.dp)
-        )
-        // 专辑封面
-        AsyncImage(
-            model = "${song.al.picUrl}?param=120y120",
-            contentDescription = null,
-            modifier = Modifier
-                .size(46.dp)
-                .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = song.name,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            val artistStr = song.ar.joinToString(" / ") { it.name }
-            val subtitle = if (!song.reason.isNullOrBlank()) song.reason else artistStr
-            Text(
-                text = subtitle,
-                color = if (!song.reason.isNullOrBlank()) Color(0xFFFFAA44) else Color.Gray,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Icon(
-            Icons.Default.PlayArrow,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.25f),
-            modifier = Modifier.size(18.dp)
-        )
-    }
-    // 分隔线（最后一项不显示）
-    if (!isLast) {
-        HorizontalDivider(
-            modifier = Modifier.padding(start = 60.dp, end = 20.dp),
-            color = Color.White.copy(alpha = 0.06f),
-            thickness = 0.5.dp
-        )
-    }
-}
 
 @Composable
 fun FavoriteArtistsSection(artists: List<com.lin0721.linmusic.data.repository.ArtistInfo>) {
@@ -744,19 +496,15 @@ fun ArtistCircleCard(artist: com.lin0721.linmusic.data.repository.ArtistInfo) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp).clickable { /* artist click */ }
     ) {
-        // 圆形头像
         AsyncImage(
             model = "${artist.avatarUrl}?param=200y200", 
             contentDescription = artist.name,
             modifier = Modifier
                 .size(100.dp)
-                .clip(CircleShape), // 裁剪为圆形
+                .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
-
         Spacer(modifier = Modifier.height(8.dp))
-
-        // 歌手名
         Text(
             text = artist.name,
             fontSize = 13.sp,
@@ -800,7 +548,7 @@ fun HistoryRecommendSheet(
         sheetState = sheetState,
         containerColor = Color(0xFF12172A),
         dragHandle = null,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // 标题栏
@@ -957,7 +705,7 @@ fun HistoryRecommendSheet(
                                             contentDescription = null,
                                             modifier = Modifier
                                                 .size(42.dp)
-                                                .clip(RoundedCornerShape(8.dp)),
+                                                .clip(RoundedCornerShape(10.dp)),
                                             contentScale = ContentScale.Crop
                                         )
                                         Spacer(modifier = Modifier.width(10.dp))
@@ -999,40 +747,202 @@ fun HistoryRecommendSheet(
 }
 
 @Composable
-fun DynamicAmbientLight() {
-    // 采用全屏画布
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val width = size.width
-        val height = size.height
+fun ForYouModule(
+    dailySongs: List<DailySong>,
+    toplists: List<ToplistInfo>,
+    recommendPlaylists: List<PersonalizedPlaylist>,
+    onDailyRecommendClick: () -> Unit,
+    onHotlistClick: (Long) -> Unit,
+    onIntelligenceClick: () -> Unit,
+    onRadarClick: (Long) -> Unit,
+    onRoamingClick: () -> Unit
+) {
+    val hotlist = remember(toplists) {
+        toplists.firstOrNull { it.name.contains("热") } ?: toplists.firstOrNull()
+    }
+    
+    val radarPlaylist = remember(recommendPlaylists) {
+        recommendPlaylists.firstOrNull { it.name.contains("雷达") } ?: recommendPlaylists.firstOrNull()
+    }
 
-        // 顶部中央偏左的红色光晕
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    NeteaseRed.copy(alpha = 0.20f),
-                    NeteaseRed.copy(alpha = 0.08f),
-                    Color.Transparent
-                ),
-                center = Offset(width * 0.3f, height * 0.15f),
-                radius = width * 1.3f
-            ),
-            center = Offset(width * 0.3f, height * 0.15f),
-            radius = width * 1.3f
-        )
-
-        // 底部漫长柔化遮罩
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    Color.Transparent,
-                    BackgroundDark.copy(alpha = 0.2f),
-                    BackgroundDark.copy(alpha = 0.6f),
-                    BackgroundDark.copy(alpha = 0.9f),
-                    BackgroundDark
-                ),
-                startY = height * 0.15f,
-                endY = height * 0.8f
-            )
-        )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SectionHeader(title = "为你推荐", showAction = false)
+        
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                val coverUrl = dailySongs.firstOrNull()?.al?.picUrl
+                ForYouCard(
+                    title = "每日推荐",
+                    subtitle = "专属歌曲每日更新",
+                    coverUrl = coverUrl,
+                    fallbackGradientColors = listOf(Color(0xFFE53935), Color(0xFFE35D5B)),
+                    onClick = onDailyRecommendClick
+                )
+            }
+            
+            item {
+                ForYouCard(
+                    title = "热歌榜",
+                    subtitle = "最热音乐随时听",
+                    coverUrl = hotlist?.coverUrl,
+                    fallbackGradientColors = listOf(Color(0xFFFFB300), Color(0xFFFBC02D)),
+                    onClick = { hotlist?.let { onHotlistClick(it.id) } }
+                )
+            }
+            
+            item {
+                val coverUrl = recommendPlaylists.getOrNull(2)?.picUrl
+                ForYouCard(
+                    title = "心动模式",
+                    subtitle = "开启智能红心电台",
+                    coverUrl = coverUrl,
+                    fallbackGradientColors = listOf(Color(0xFF8E24AA), Color(0xFFAB47BC)),
+                    onClick = onIntelligenceClick
+                )
+            }
+            
+            item {
+                ForYouCard(
+                    title = "私人雷达",
+                    subtitle = "根据喜好精准定制",
+                    coverUrl = radarPlaylist?.picUrl,
+                    fallbackGradientColors = listOf(Color(0xFF1E88E5), Color(0xFF42A5F5)),
+                    onClick = { radarPlaylist?.let { onRadarClick(it.id) } }
+                )
+            }
+            
+            item {
+                val coverUrl = recommendPlaylists.getOrNull(1)?.picUrl
+                ForYouCard(
+                    title = "音乐漫游",
+                    subtitle = "无限探索相似歌曲",
+                    coverUrl = coverUrl,
+                    fallbackGradientColors = listOf(Color(0xFF43A047), Color(0xFF66BB6A)),
+                    onClick = onRoamingClick
+                )
+            }
+        }
     }
 }
+
+@Composable
+private fun ForYouCard(
+    title: String,
+    subtitle: String,
+    coverUrl: String?,
+    fallbackGradientColors: List<Color>,
+    onClick: () -> Unit
+) {
+    val fallbackIcon = when (title) {
+        "每日推荐" -> Icons.Rounded.DateRange
+        "热歌榜" -> Icons.Rounded.Star
+        "心动模式" -> Icons.Rounded.Favorite
+        "私人雷达" -> Icons.Rounded.Search
+        "音乐漫游" -> Icons.Rounded.Shuffle
+        else -> Icons.Rounded.MusicNote
+    }
+
+    Box(
+        modifier = Modifier
+            .width(150.dp)
+            .height(210.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() }
+    ) {
+        // 底层模糊背景
+        if (!coverUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = "$coverUrl?param=100y100",
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(24.dp)
+                    .graphicsLayer(alpha = 0.35f),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(colors = fallbackGradientColors))
+            )
+        }
+
+        // 上方 150dp 封面区
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .size(150.dp)
+        ) {
+            if (!coverUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = "$coverUrl?param=300y300",
+                    contentDescription = title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Brush.verticalGradient(colors = fallbackGradientColors))
+                )
+            }
+
+            if (coverUrl.isNullOrBlank()) {
+                Icon(
+                    imageVector = fallbackIcon,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.15f),
+                    modifier = Modifier
+                        .size(64.dp)
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 8.dp, y = 8.dp)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(10.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        // 底部副标题区
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(60.dp)
+                .background(Color.Black.copy(alpha = 0.35f))
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = subtitle,
+                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+

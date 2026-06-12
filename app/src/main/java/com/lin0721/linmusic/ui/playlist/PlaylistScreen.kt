@@ -366,7 +366,7 @@ private fun PlaylistContent(
         ModalBottomSheet(
             onDismissRequest = { collectSongId = null },
             containerColor = SurfaceDark,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
             dragHandle = {
                 Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
                     Surface(
@@ -429,7 +429,7 @@ private fun PlaylistContent(
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
-                                        .clip(RoundedCornerShape(6.dp))
+                                        .clip(RoundedCornerShape(10.dp))
                                         .background(NeteaseRed.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -483,7 +483,7 @@ private fun PlaylistContent(
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier
                                                 .size(40.dp)
-                                                .clip(RoundedCornerShape(6.dp))
+                                                .clip(RoundedCornerShape(10.dp))
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Text(
@@ -522,7 +522,7 @@ private fun PlaylistContent(
                                 collectSongId = null
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Text("确定", color = Color.White, fontWeight = FontWeight.Bold)
                         }
@@ -540,7 +540,7 @@ private fun PlaylistContent(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(44.dp)
-                                            .clip(RoundedCornerShape(8.dp))
+                                            .clip(RoundedCornerShape(10.dp))
                                             .background(BackgroundDark)
                                             .padding(horizontal = 12.dp),
                                         contentAlignment = Alignment.CenterStart
@@ -580,7 +580,7 @@ private fun PlaylistContent(
                                 }
                             },
                             containerColor = SurfaceDark,
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(10.dp)
                         )
                     }
                 }
@@ -680,8 +680,8 @@ private fun PlaylistHeaderItem(
                 },
                 modifier           = Modifier
                     .size(coverSize)
-                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(8.dp), clip = false)
-                    .clip(RoundedCornerShape(8.dp))
+                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(10.dp), clip = false)
+                    .clip(RoundedCornerShape(10.dp))
                     .then(if (coverAlpha < 1f) Modifier.alpha(coverAlpha) else Modifier)
             )
         }
@@ -865,7 +865,7 @@ private fun RecommendationHeader(onRefresh: () -> Unit) {
 
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .clickable(onClick = onRefresh)
                 .background(SurfaceDark)
                 .padding(horizontal = 10.dp, vertical = 6.dp),

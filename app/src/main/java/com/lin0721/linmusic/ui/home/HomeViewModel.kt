@@ -219,4 +219,113 @@ class HomeViewModel(
         }
         playerManager.playQueue(queueItems, index.coerceIn(0, queueItems.size - 1), "历史日推")
     }
+
+    // 开启相似歌曲漫游
+    fun startRoaming() {
+        val current = playerManager.currentTrack.value
+        if (current != null) {
+            val songId = current.mediaId?.toLongOrNull() ?: return
+            val title = current.mediaMetadata.title?.toString() ?: ""
+            val artist = current.mediaMetadata.artist?.toString() ?: ""
+            val coverUrl = current.mediaMetadata.artworkUri?.toString() ?: ""
+            viewModelScope.launch {
+                musicRepository.getSimilarSongs(songId).collect { result ->
+                    result.onSuccess { simiSongs ->
+                        if (simiSongs.isNotEmpty()) {
+                            val currentItem = QueueItem(songId, title, artist, coverUrl)
+                            val simiItems = simiSongs.map { track ->
+                                QueueItem(
+                                    songId = track.id,
+                                    title = track.name,
+                                    artist = track.ar.joinToString("/") { it.name },
+                                    coverUrl = track.al.picUrl
+                                )
+                            }
+                            val roamingQueue = listOf(currentItem) + simiItems
+                            playerManager.playQueue(roamingQueue, 0, playContext = "similar_roaming")
+                            _toastEvent.emit("已开启相似歌曲漫游")
+                        } else {
+                            _toastEvent.emit("未找到相关相似歌曲")
+                        }
+                    }.onFailure {
+                        _toastEvent.emit("漫游开启失败")
+                    }
+                }
+            }
+        } else {
+            val state = uiState.value
+            if (state is HomeUiState.Success && state.data.dailySongs.isNotEmpty()) {
+                val firstSong = state.data.dailySongs.first()
+                viewModelScope.launch {
+                    musicRepository.getSimilarSongs(firstSong.id).collect { result ->
+                        result.onSuccess { simiSongs ->
+                            val currentItem = QueueItem(firstSong.id, firstSong.name, firstSong.ar.joinToString("/") { it.name }, firstSong.al.picUrl)
+                            val simiItems = simiSongs.map { track ->
+                                QueueItem(track.id, track.name, track.ar.joinToString("/") { it.name }, track.al.picUrl)
+                            }
+                            val roamingQueue = listOf(currentItem) + simiItems
+                            playerManager.playQueue(roamingQueue, 0, playContext = "similar_roaming")
+                            _toastEvent.emit("已为您开启《${firstSong.name}》的漫游")
+                        }.onFailure {
+                            _toastEvent.emit("开启漫游失败")
+                        }
+                    }
+                }
+            } else {
+                viewModelScope.launch { _toastEvent.emit("播放列表中没有歌曲且无法获取今日推荐") }
+            }
+        }
+    }
+
+    // 开启心动模式
+    fun startIntelligenceMode() {
+        val current = playerManager.currentTrack.value
+        if (current != null) {
+            val songId = current.mediaId?.toLongOrNull() ?: return
+            viewModelScope.launch {
+                musicRepository.getIntelligenceSongs(songId, 0).collect { result ->
+                    result.onSuccess { tracks ->
+                        if (tracks.isNotEmpty()) {
+                            val currentItem = QueueItem(
+                                songId,
+                                current.mediaMetadata.title?.toString() ?: "",
+                                current.mediaMetadata.artist?.toString() ?: "",
+                                current.mediaMetadata.artworkUri?.toString() ?: ""
+                            )
+                            val items = listOf(currentItem) + tracks.map { track ->
+                                QueueItem(track.id, track.name, track.ar.joinToString("/") { it.name }, track.al.picUrl)
+                            }
+                            playerManager.playQueue(items, 0, playContext = "intelligence")
+                            _toastEvent.emit("已开启心动模式")
+                        } else {
+                            _toastEvent.emit("获取心动推荐失败")
+                        }
+                    }.onFailure {
+                        _toastEvent.emit("开启心动模式失败: ${it.message}")
+                    }
+                }
+            }
+        } else {
+                                    val state = uiState.value
+                                        if (state is HomeUiState.Success && state.data.dailySongs.isNotEmpty()) {
+                                            val firstSong = state.data.dailySongs.first()
+                                            viewModelScope.launch {
+                                                musicRepository.getIntelligenceSongs(firstSong.id, 0).collect { result ->
+                                                    result.onSuccess { tracks ->
+                                                        val currentItem = QueueItem(firstSong.id, firstSong.name, firstSong.ar.joinToString("/") { it.name }, firstSong.al.picUrl)
+                                                        val items = listOf(currentItem) + tracks.map { track ->
+                                                            QueueItem(track.id, track.name, track.ar.joinToString("/") { it.name }, track.al.picUrl)
+                            }
+                            playerManager.playQueue(items, 0, playContext = "intelligence")
+                            _toastEvent.emit("已从《${firstSong.name}》开启心动模式")
+                        }.onFailure {
+                            _toastEvent.emit("开启心动模式失败")
+                        }
+                    }
+                }
+            } else {
+                viewModelScope.launch { _toastEvent.emit("请先播放一首歌曲") }
+            }
+        }
+    }
 }

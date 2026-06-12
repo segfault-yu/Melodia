@@ -396,7 +396,7 @@ fun LibraryScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(44.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(BackgroundDark)
                                 .padding(horizontal = 12.dp),
                             contentAlignment = Alignment.CenterStart
@@ -438,7 +438,7 @@ fun LibraryScreen(
                     }
                 },
                 containerColor = SurfaceDark,
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(10.dp)
             )
         }
 
@@ -518,7 +518,7 @@ private fun NotLoggedInView(onLoginClick: () -> Unit) {
         Button(
             onClick = onLoginClick,
             colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(10.dp),
             contentPadding = PaddingValues(horizontal = 48.dp, vertical = 12.dp)
         ) {
             Text(
@@ -587,7 +587,7 @@ private fun FilterChipItem(
 
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(backgroundColor)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -625,7 +625,7 @@ private fun LibraryItemRow(
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
@@ -645,7 +645,7 @@ private fun LibraryItemRow(
                 )
             }
         } else {
-            val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(8.dp)
+            val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(10.dp)
             
             AsyncImage(
                 model = "${item.coverUrl}?param=150y150",
@@ -708,7 +708,7 @@ private fun LibraryGridItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(8.dp)
+    val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(10.dp)
 
     Column(
         modifier = modifier.clickable(onClick = onClick),
@@ -719,7 +719,7 @@ private fun LibraryGridItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
