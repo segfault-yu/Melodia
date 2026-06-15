@@ -141,7 +141,7 @@ fun MiniPlayerCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 // 专辑封面
                 AsyncImage(

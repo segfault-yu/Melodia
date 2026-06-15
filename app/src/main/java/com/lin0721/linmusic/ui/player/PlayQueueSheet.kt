@@ -102,7 +102,7 @@ fun PlayQueueSheet(
                 }
             },
             containerColor = SurfaceDark,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(10.dp)
         )
     }
 
@@ -110,7 +110,7 @@ fun PlayQueueSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = BackgroundDark,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
         dragHandle = {
             Box(
                 modifier = Modifier
@@ -398,7 +398,7 @@ private fun PlayModeInfoRow(
         }
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(SurfaceDark)
                 .clickable {
                     if (isRoaming) {
@@ -574,7 +574,7 @@ private fun BottomActionRow(
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isRoaming || playMode == PlayMode.SHUFFLE) NeteaseRed else SurfaceDark
             ),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(10.dp),
             modifier = Modifier
                 .weight(1f)
                 .height(44.dp)
@@ -591,7 +591,7 @@ private fun BottomActionRow(
         Button(
             onClick = { },
             colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(10.dp),
             modifier = Modifier
                 .weight(1f)
                 .height(44.dp)
