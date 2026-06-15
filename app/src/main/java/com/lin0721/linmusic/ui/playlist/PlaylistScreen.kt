@@ -867,6 +867,7 @@ private fun PlaylistHeaderItem(
             // 没有封面时，仅在顶部占位状态栏高度加间距
             Spacer(modifier = Modifier.height(statusBarHeight + 16.dp))
         }
+        }
 
         // 歌单信息与操作行：折叠后隐藏
         if (!isCollapsed) {
