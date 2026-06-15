@@ -350,7 +350,7 @@ class PlayerViewModel(
     private fun loadComments(songId: Long) {
         viewModelScope.launch {
             _commentsState.value = CommentsState.Loading
-            repository.getComments(songId, limit = 15).collect { result ->
+            repository.getComments(songId, limit = 20).collect { result ->
                 if (currentSongId != songId) return@collect
                 result.onSuccess { response ->
                     _commentsState.value = CommentsState.Success(
@@ -369,6 +369,52 @@ class PlayerViewModel(
         val songId = currentSongId
         if (songId != -1L) {
             loadComments(songId)
+        }
+    }
+
+    fun likeComment(comment: CommentItem) {
+        viewModelScope.launch {
+            val profile = userPreferences.userProfile.first()
+            if (profile == null) {
+                ToastManager.showToast("请先登录账号")
+                return@launch
+            }
+
+            val currentState = _commentsState.value as? CommentsState.Success ?: return@launch
+            
+            val songId = currentSongId
+            if (songId == -1L) return@launch
+            val threadId = "R_SO_4_$songId"
+            val targetLike = !comment.liked
+
+            val updatedComments = currentState.comments.map {
+                if (it.commentId == comment.commentId) {
+                    it.copy(
+                        liked = targetLike,
+                        likedCount = it.likedCount + if (targetLike) 1 else -1
+                    )
+                } else it
+            }
+            val updatedHotComments = currentState.hotComments.map {
+                if (it.commentId == comment.commentId) {
+                    it.copy(
+                        liked = targetLike,
+                        likedCount = it.likedCount + if (targetLike) 1 else -1
+                    )
+                } else it
+            }
+            _commentsState.value = CommentsState.Success(
+                hotComments = updatedHotComments,
+                comments = updatedComments,
+                total = currentState.total
+            )
+
+            repository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
+                result.onFailure { e ->
+                    _commentsState.value = currentState
+                    ToastManager.showToast("操作失败: ${e.message}")
+                }
+            }
         }
     }
 
@@ -459,14 +505,4 @@ class PlayerViewModel(
     fun clearQueue() {
         playerManager.clearQueue()
     }
-}
-
-sealed interface CommentsState {
-    object Loading : CommentsState
-    data class Success(
-        val hotComments: List<CommentItem>,
-        val comments: List<CommentItem>,
-        val total: Int
-    ) : CommentsState
-    data class Error(val message: String) : CommentsState
 }

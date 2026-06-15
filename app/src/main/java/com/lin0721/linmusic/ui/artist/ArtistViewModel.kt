@@ -48,6 +48,21 @@ class ArtistViewModel(
         initialValue = null
     )
 
+    val blockedArtistIds = userPreferences.blockedArtistIds.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptySet()
+    )
+
+    fun toggleBlockArtist(artistId: Long) {
+        viewModelScope.launch {
+            userPreferences.toggleBlockArtist(artistId)
+            val isBlocked = userPreferences.blockedArtistIds.first().contains(artistId)
+            val msg = if (isBlocked) "已屏蔽该艺人所有歌曲" else "已取消屏蔽该艺人所有歌曲"
+            _toastEvent.emit(msg)
+        }
+    }
+
     private val _likedSongIds = MutableStateFlow<Set<Long>>(emptySet())
     val likedSongIds: StateFlow<Set<Long>> = _likedSongIds.asStateFlow()
 

@@ -7,7 +7,7 @@ Melodia 是一款基于 Kotlin + Jetpack Compose 构建的轻量级第三方网�
 
 本项目采用现代 Android 开发的最佳实践与分层架构设计（MVVM + Repository）：
 
-```text
+```t[]()ext
 app/src/main/java/com/lin0721/linmusic/
 ├── MelodiaApplication.kt           # 应用入口，初始化 Koin 依赖注入及 Coil 图片加载预热
 ├── MainActivity.kt                 # 单 Activity 容器，管理全局手势、侧边栏及全局浮动播放器

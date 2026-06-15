@@ -122,7 +122,7 @@ fun HomeScreen(
                                 dailySongs = state.data.dailySongs,
                                 toplists = state.data.toplistItems,
                                 recommendPlaylists = state.data.recommendPlaylists,
-                                onDailyRecommendClick = { viewModel.playDailySong(0) },
+                                onDailyRecommendClick = { onPlaylistClick(-1L) },
                                 onHotlistClick = { onPlaylistClick(it) },
                                 onIntelligenceClick = { viewModel.startIntelligenceMode() },
                                 onRadarClick = { onPlaylistClick(it) },

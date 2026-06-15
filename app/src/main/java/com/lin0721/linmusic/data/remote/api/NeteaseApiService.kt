@@ -7,7 +7,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-// 网易云音乐 Retrofit 接口定义。所有 POST 请求会被 [CryptoInterceptor] 自动加密。
+// 网易云音乐 Retrofit 接口定义。
 interface NeteaseApiService {
 
     // ===================== 推荐歌单 =====================
@@ -206,7 +206,7 @@ interface NeteaseApiService {
         @Body body: ArtistFollowCountRequest
     ): ArtistFollowCountResponse
 
-    // 使用 WEAPI 接口获取歌手粉丝数量（规避 EAPI 混合 PC Cookie 下被风控返回 0 粉丝的问题）
+    // 获取歌手粉丝数量
     @POST("/weapi/artist/follow/count/get")
     suspend fun getArtistFollowCount(
         @Body body: ArtistFollowCountRequest
@@ -261,6 +261,14 @@ interface NeteaseApiService {
     suspend fun manipulatePlaylistTracks(
         @Body body: PlaylistTracksManipulateRequest
     ): PlaylistTracksManipulateResponse
+
+    // ================== 歌单收藏操作 (收藏/取消收藏) ==================
+    @POST("/eapi/playlist/{op}")
+    suspend fun subscribePlaylist(
+        @Path("op") op: String,
+        @Body body: PlaylistSubscribeRequest
+    ): PlaylistSubscribeResponse
+
 
     // ================== 百科 (WeApi) ==================
 
@@ -339,6 +347,13 @@ interface NeteaseApiService {
     suspend fun getIntelligenceSongs(
         @Body body: IntelligenceSongsRequest
     ): IntelligenceSongsResponse
+
+    // 评论点赞与取消点赞
+    @POST("/weapi/v1/comment/{op}")
+    suspend fun likeComment(
+        @Path("op") op: String, // "like" 或 "unlike"
+        @Body body: LikeCommentRequest
+    ): LikeCommentResponse
 }
 
 // 首页动态内容请求体
@@ -380,20 +395,13 @@ data class NeteaseResponse<T>(
     val msg: String? = null,
     val message: String? = null,
 ) {
-    /** 请求是否成功 */
     val isSuccess: Boolean get() = code == 200
 }
 
-/**
- * 登录响应数据
- */
 @Serializable
 data class LoginData(
-    /** 登录令牌 */
     val token: String? = null,
-    /** 用户基本信息 */
     val profile: UserProfile? = null,
-    /** Cookie 中的 MUSIC_U 值 (部分情况下接口会直接返回) */
     val cookie: String? = null,
 )
 
@@ -407,12 +415,8 @@ data class UserProfile(
     val signature: String = "",
 )
 
-/**
- * 每日推荐歌单响应数据
- */
 @Serializable
 data class RecommendPlaylistData(
-    /** 推荐歌单列表 */
     val recommend: List<RecommendPlaylist> = emptyList(),
 )
 
@@ -420,13 +424,13 @@ data class RecommendPlaylistData(
 data class RecommendPlaylist(
     val id: Long = 0,
     val name: String = "",
-    /** 歌单封面 */
+    // 歌单封面
     val picUrl: String = "",
-    /** 播放次数 */
+    // 播放次数
     val playcount: Long = 0,
-    /** 歌曲数量 */
+    // 歌曲数量
     val trackCount: Int = 0,
-    /** 创建者昵称 */
+    // 创建者昵称
     @SerialName("creator")
     val creator: PlaylistCreator? = null,
 )
@@ -445,12 +449,7 @@ data class PersonalizedRequest(
     val limit: Int = 30
 )
 
-/**
- * 个性化推荐接口的响应包装
- *
- * 该接口的响应结构为 { code: 200, result: [...] }，
- * 与其他接口的扁平结构不同，因此单独定义响应类型。
- */
+// 个性化推荐响应
 @Serializable
 data class PersonalizedResponse(
     val code: Int = 0,
@@ -459,12 +458,10 @@ data class PersonalizedResponse(
     val isSuccess: Boolean get() = code == 200
 }
 
-/**
- * 个性化推荐歌单数据（供 UI 层使用的简化包装）
- */
+// 个性化推荐歌单数据
 @Serializable
 data class PersonalizedData(
-    /** 推荐歌单列表 */
+    // 推荐歌单列表
     val playlists: List<PersonalizedPlaylist> = emptyList(),
 )
 
@@ -472,7 +469,7 @@ data class PersonalizedData(
 data class PersonalizedPlaylist(
     val id: Long = 0,
     val name: String = "",
-    /** 歌单封面 */
+    // 歌单封面
     val picUrl: String = "",
 )
 
@@ -501,10 +498,7 @@ data class SongUrlItem(
     val size: Long = 0,
     val md5: String? = null,
     val type: String? = null,
-    /**
-     * VIP歌曲或者无版权时收费标识
-     * freeTrialInfo 不为空表示可能只能试听
-     */
+    // VIP歌曲或者无版权时收费标识，freeTrialInfo 不为空表示可能只能试听
     val freeTrialInfo: FreeTrialInfo? = null,
 )
 
@@ -577,6 +571,7 @@ data class PlaylistDetail(
     val coverImgUrl: String = "",
     val description: String? = null,
     val playCount: Long = 0,
+    val subscribed: Boolean = false,
     val tracks: List<Track> = emptyList()
 )
 
@@ -1084,7 +1079,7 @@ data class ArtistFollowCountGetResponse(
     @SerialName("message") val message: String? = null, // 响应消息
     @SerialName("data") val data: ArtistFollowCountData? = null // 核心业务数据
 ) {
-    /** 请求是否成功 */
+    // 请求是否成功
     val isSuccess: Boolean get() = code == 200
 }
 
@@ -1144,6 +1139,21 @@ data class ArtistSubscriptionResponse(
     val isSuccess: Boolean get() = code == 200
 }
 
+// ======================= 收藏与取消收藏歌单 DTO =======================
+
+@Serializable
+data class PlaylistSubscribeRequest(
+    val id: Long
+)
+
+@Serializable
+data class PlaylistSubscribeResponse(
+    val code: Int = 0,
+    val message: String? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
 // ======================= 专辑详情 DTO =======================
 
 @Serializable
@@ -1184,6 +1194,20 @@ data class CommentsResponse(
     val more: Boolean = false,
     val comments: List<CommentItem> = emptyList(),
     val hotComments: List<CommentItem> = emptyList()
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class LikeCommentRequest(
+    val threadId: String,
+    val commentId: Long
+)
+
+@Serializable
+data class LikeCommentResponse(
+    val code: Int = 0,
+    val message: String? = null
 ) {
     val isSuccess: Boolean get() = code == 200
 }

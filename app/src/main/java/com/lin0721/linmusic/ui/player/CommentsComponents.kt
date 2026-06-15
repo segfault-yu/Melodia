@@ -1,7 +1,9 @@
 package com.lin0721.linmusic.ui.player
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,17 +27,20 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.data.remote.api.CommentItem
 import com.lin0721.linmusic.ui.theme.NeteaseRed
+import com.lin0721.linmusic.ui.theme.SurfaceDark
 import com.lin0721.linmusic.ui.theme.TextGray
 
 @Composable
 fun CommentsPreviewCard(
     commentsState: CommentsState,
     cardColor: Color,
+    onClick: () -> Unit,
     onRetry: () -> Unit
 ) {
     val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
     val cardHeight = cardWidth * 0.88f
     Surface(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -122,7 +127,7 @@ fun CommentsPreviewCard(
 
                     if (allComments.isEmpty()) {
                         Text(
-                            text = "暂无评论，分享你的第一条感受吧~",
+                            text = "暂无评论",
                             color = TextGray,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(vertical = 16.dp)
@@ -166,7 +171,10 @@ fun CommentsPreviewCard(
 }
 
 @Composable
-fun CommentRowItem(comment: CommentItem) {
+fun CommentRowItem(
+    comment: CommentItem,
+    onLikeClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -205,17 +213,21 @@ fun CommentRowItem(comment: CommentItem) {
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable { onLikeClick() }
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = formatLikedCount(comment.likedCount),
-                        color = TextGray.copy(alpha = 0.8f),
+                        color = if (comment.liked) NeteaseRed else TextGray.copy(alpha = 0.8f),
                         fontSize = 11.sp
                     )
                     Icon(
                         imageVector = Icons.Rounded.ThumbUp,
                         contentDescription = null,
-                        tint = TextGray.copy(alpha = 0.6f),
+                        tint = if (comment.liked) NeteaseRed else TextGray.copy(alpha = 0.6f),
                         modifier = Modifier.size(13.dp)
                     )
                 }
@@ -241,3 +253,122 @@ fun formatLikedCount(count: Int): String {
         else -> count.toString()
     }
 }
+
+sealed interface CommentsState {
+    object Loading : CommentsState
+    data class Success(
+        val hotComments: List<CommentItem>,
+        val comments: List<CommentItem>,
+        val total: Int
+    ) : CommentsState
+    data class Error(val message: String) : CommentsState
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CommentsBottomSheet(
+    commentsState: CommentsState,
+    onLikeComment: (CommentItem) -> Unit,
+    onDismiss: () -> Unit,
+    onRetry: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceDark,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        dragHandle = {
+            Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                Surface(
+                    modifier = Modifier.width(40.dp).height(4.dp),
+                    shape = RoundedCornerShape(2.dp),
+                    color = Color.White.copy(alpha = 0.3f)
+                ) {}
+            }
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f)
+                .padding(horizontal = 20.dp)
+                .navigationBarsPadding()
+        ) {
+            Text(
+                text = "评论",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            when (commentsState) {
+                is CommentsState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = NeteaseRed)
+                    }
+                }
+                is CommentsState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "加载失败: ${commentsState.message}",
+                            color = TextGray,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = onRetry,
+                            colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed)
+                        ) {
+                            Text("重试", color = Color.White)
+                        }
+                    }
+                }
+                is CommentsState.Success -> {
+                    val allComments = (commentsState.hotComments + commentsState.comments)
+                        .distinctBy { it.commentId }
+
+                    if (allComments.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "暂无评论",
+                                color = TextGray,
+                                fontSize = 14.sp
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(bottom = 24.dp)
+                        ) {
+                            items(allComments, key = { it.commentId }) { comment ->
+                                CommentRowItem(
+                                    comment = comment,
+                                    onLikeClick = { onLikeComment(comment) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

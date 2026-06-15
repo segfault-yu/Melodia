@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.UserPreferences
 import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.data.remote.api.PlaylistDetail
 import com.lin0721.linmusic.data.remote.api.Track
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
@@ -13,6 +14,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import com.lin0721.linmusic.ui.player.CommentsState
+import com.lin0721.linmusic.data.remote.api.CommentItem
+
 
 data class PlaylistCollectItem(
     val playlistId: Long,
@@ -61,6 +65,13 @@ class PlaylistViewModel(
     private val _collectState = MutableStateFlow(PlaylistCollectState())
     val collectState: StateFlow<PlaylistCollectState> = _collectState.asStateFlow()
 
+    private val _isSubscribed = MutableStateFlow(false)
+    val isSubscribed: StateFlow<Boolean> = _isSubscribed.asStateFlow()
+
+    private val _commentsState = MutableStateFlow<CommentsState>(CommentsState.Loading)
+    val commentsState: StateFlow<CommentsState> = _commentsState.asStateFlow()
+
+
     init {
         loadLikedSongIds()
     }
@@ -82,13 +93,50 @@ class PlaylistViewModel(
         _recommendedSongs.value = emptyList()
         allRecommendedTracks = emptyList()
         loadJob?.cancel() // 取消之前的加载任务，防止并发竞态冲突导致状态错乱
+        if (id == -1L) {
+            loadJob = viewModelScope.launch {
+                repository.getDailyRecommendSongs().collect { result ->
+                    result.fold(
+                        onSuccess = { dailySongs ->
+                            val tracks = dailySongs.map { song ->
+                                Track(
+                                    id = song.id,
+                                    name = song.name,
+                                    ar = song.ar,
+                                    al = song.al,
+                                    fee = song.fee
+                                )
+                            }
+                            val detail = PlaylistDetail(
+                                id = -1L,
+                                name = "每日推荐",
+                                coverImgUrl = "",
+                                description = "为您量身定制的每日好歌",
+                                playCount = 0L,
+                                tracks = tracks
+                            )
+                            _uiState.value = PlaylistUiState.Success(detail)
+                            _isSubscribed.value = false
+                            _recommendedSongs.value = emptyList()
+                            allRecommendedTracks = emptyList()
+                        },
+                        onFailure = { error ->
+                            _uiState.value = PlaylistUiState.Error(error.message ?: "Unknown Error")
+                        }
+                    )
+                }
+            }
+            return
+        }
         loadJob = viewModelScope.launch {
             val flow = if (isAlbum) repository.getAlbumDetail(id) else repository.getPlaylistDetail(id)
             flow.collect { result ->
                 result.fold(
                     onSuccess = { detail ->
                         _uiState.value = PlaylistUiState.Success(detail)
+                        _isSubscribed.value = detail.subscribed
                         val baseSong = detail.tracks.firstOrNull()
+
                         if (baseSong != null && !isAlbum) {
                             loadRecommendations(detail.id, baseSong.id, detail.tracks)
                         } else {
@@ -248,7 +296,7 @@ class PlaylistViewModel(
                     currentRecIndex = 0
                     updateCurrentRecommendations()
                 }.onFailure { e ->
-                    // 静默失败，不弹出 Toast，隐藏底部的推荐板块，提升用户体验
+                    // 静默失败，不弹出 Toast，隐藏底部的推荐板块
                     _recommendedSongs.value = emptyList()
                     allRecommendedTracks = emptyList()
                 }
@@ -302,6 +350,86 @@ class PlaylistViewModel(
                     }
                 }.onFailure { e ->
                     _toastEvent.emit("添加失败: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun toggleSubscribePlaylist() {
+        val successState = _uiState.value as? PlaylistUiState.Success ?: return
+        val playlistId = successState.playlist.id
+        val targetSubscribe = !_isSubscribed.value
+        viewModelScope.launch {
+            repository.subscribePlaylist(playlistId, targetSubscribe).collect { result ->
+                result.onSuccess {
+                    _isSubscribed.value = targetSubscribe
+                    _toastEvent.emit(if (targetSubscribe) "已收藏歌单" else "已取消收藏歌单")
+                }.onFailure { e ->
+                    _toastEvent.emit("操作失败: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun loadPlaylistComments(playlistId: Long) {
+        viewModelScope.launch {
+            _commentsState.value = CommentsState.Loading
+            val threadId = "A_PL_0_$playlistId"
+            repository.getComments(threadId, limit = 20).collect { result ->
+                result.onSuccess { response ->
+                    _commentsState.value = CommentsState.Success(
+                        hotComments = response.hotComments,
+                        comments = response.comments,
+                        total = response.total
+                    )
+                }.onFailure { error ->
+                    _commentsState.value = CommentsState.Error(error.message ?: "Unknown error")
+                }
+            }
+        }
+    }
+
+    fun likeComment(comment: CommentItem) {
+        viewModelScope.launch {
+            val profile = userProfile.value
+            if (profile == null) {
+                _toastEvent.emit("请先登录账号")
+                return@launch
+            }
+
+            val currentState = _commentsState.value as? CommentsState.Success ?: return@launch
+            
+            val successState = _uiState.value as? PlaylistUiState.Success ?: return@launch
+            val playlistId = successState.playlist.id
+            val threadId = "A_PL_0_$playlistId"
+            val targetLike = !comment.liked
+
+            val updatedComments = currentState.comments.map {
+                if (it.commentId == comment.commentId) {
+                    it.copy(
+                        liked = targetLike,
+                        likedCount = it.likedCount + if (targetLike) 1 else -1
+                    )
+                } else it
+            }
+            val updatedHotComments = currentState.hotComments.map {
+                if (it.commentId == comment.commentId) {
+                    it.copy(
+                        liked = targetLike,
+                        likedCount = it.likedCount + if (targetLike) 1 else -1
+                    )
+                } else it
+            }
+            _commentsState.value = CommentsState.Success(
+                hotComments = updatedHotComments,
+                comments = updatedComments,
+                total = currentState.total
+            )
+
+            repository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
+                result.onFailure { e ->
+                    _commentsState.value = currentState
+                    _toastEvent.emit("操作失败: ${e.message}")
                 }
             }
         }

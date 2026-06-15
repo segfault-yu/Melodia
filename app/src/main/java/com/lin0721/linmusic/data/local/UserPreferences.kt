@@ -3,6 +3,7 @@ package com.lin0721.linmusic.data.local
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -26,6 +27,7 @@ class UserPreferences(private val context: Context) {
     companion object {
         private val KEY_USER_PROFILE = stringPreferencesKey("user_profile_json")
         private val KEY_COOKIES = stringPreferencesKey("user_cookies")
+        private val KEY_BLOCKED_ARTIST_IDS = stringSetPreferencesKey("blocked_artist_ids")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -40,6 +42,24 @@ class UserPreferences(private val context: Context) {
     // 读取 Cookie
     val cookies: Flow<String?> = context.userDataStore.data.map { prefs ->
         prefs[KEY_COOKIES]
+    }
+
+    // 读取屏蔽艺人 ID 列表
+    val blockedArtistIds: Flow<Set<Long>> = context.userDataStore.data.map { prefs ->
+        prefs[KEY_BLOCKED_ARTIST_IDS]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+    }
+
+    // 屏蔽/取消屏蔽艺人
+    suspend fun toggleBlockArtist(artistId: Long) {
+        context.userDataStore.edit { prefs ->
+            val current = prefs[KEY_BLOCKED_ARTIST_IDS] ?: emptySet()
+            val newSet = if (current.contains(artistId.toString())) {
+                current - artistId.toString()
+            } else {
+                current + artistId.toString()
+            }
+            prefs[KEY_BLOCKED_ARTIST_IDS] = newSet
+        }
     }
 
     // 保存用户信息

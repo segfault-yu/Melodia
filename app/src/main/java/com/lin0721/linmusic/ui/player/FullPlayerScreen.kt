@@ -148,6 +148,7 @@ fun FullPlayerScreen(
     var showMoreOptionsSheet by remember { mutableStateOf(false) }
     var showTimerSheet by remember { mutableStateOf(false) }
     val timerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showCommentsSheet by remember { mutableStateOf(false) }
 
     BackHandler(enabled = showQueueSheet) {
         showQueueSheet = false
@@ -163,6 +164,10 @@ fun FullPlayerScreen(
 
     BackHandler(enabled = showTimerSheet) {
         showTimerSheet = false
+    }
+
+    BackHandler(enabled = showCommentsSheet) {
+        showCommentsSheet = false
     }
 
     DisposableEffect(isLyricsFullScreen, isPlaying) {
@@ -520,7 +525,10 @@ fun FullPlayerScreen(
             }
 
             item(key = "actions") {
-                ActionButtons(onQueueClick = { showQueueSheet = true })
+                ActionButtons(
+                    onTimerClick = { showTimerSheet = true },
+                    onQueueClick = { showQueueSheet = true }
+                )
             }
 
             val isPureMusic = lyrics.size == 1 && lyrics[0].text == "纯音乐"
@@ -543,6 +551,7 @@ fun FullPlayerScreen(
                 CommentsPreviewCard(
                     commentsState = commentsState,
                     cardColor = SurfaceDark,
+                    onClick = { showCommentsSheet = true },
                     onRetry = viewModel::retryComments
                 )
             }
@@ -1067,6 +1076,15 @@ fun FullPlayerScreen(
                     }
                 }
             }
+        }
+
+        if (showCommentsSheet) {
+            CommentsBottomSheet(
+                commentsState = commentsState,
+                onLikeComment = viewModel::likeComment,
+                onDismiss = { showCommentsSheet = false },
+                onRetry = { viewModel.retryComments() }
+            )
         }
     }
 }

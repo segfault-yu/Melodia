@@ -29,7 +29,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.rounded.Devices
+import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -602,7 +602,10 @@ fun PlaybackControls(
 }
 
 @Composable
-fun ActionButtons(onQueueClick: () -> Unit) {
+fun ActionButtons(
+    onTimerClick: () -> Unit,
+    onQueueClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -613,10 +616,10 @@ fun ActionButtons(onQueueClick: () -> Unit) {
     ) {
         Row {
             IconButton(
-                onClick = { },
+                onClick = onTimerClick,
                 modifier = Modifier.offset(x = (-12).dp)
             ) {
-                Icon(Icons.Rounded.Devices, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
+                Icon(Icons.Rounded.AccessTime, contentDescription = "定时关闭", tint = TextGray, modifier = Modifier.size(24.dp))
             }
         }
         Row {

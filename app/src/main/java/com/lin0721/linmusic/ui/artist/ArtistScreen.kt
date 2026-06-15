@@ -117,6 +117,7 @@ fun ArtistScreen(
                 }
             }
             is ArtistUiState.Success -> {
+                val blockedArtistIds by viewModel.blockedArtistIds.collectAsStateWithLifecycle()
                 ArtistContent(
                     artist = state.artist,
                     isFollowed = state.isFollowed,
@@ -125,6 +126,7 @@ fun ArtistScreen(
                     albums = state.albums,
                     similarArtists = state.similarArtists,
                     likedSongIds = likedSongIds,
+                    blockedArtistIds = blockedArtistIds,
                     currentTrackId = currentTrack?.mediaId,
                     collectState = collectState,
                     isLoggedIn = userProfile != null,
@@ -133,6 +135,7 @@ fun ArtistScreen(
                     onPlaylistClick = onPlaylistClick,
                     onAlbumClick = onAlbumClick,
                     onFollowClick = { viewModel.toggleFollow(artistId) },
+                    onBlockClick = { viewModel.toggleBlockArtist(artistId) },
                     onPlaySong = { track ->
                         viewModel.playSongInList(track, state.topSongs)
                     },
@@ -190,6 +193,7 @@ private fun ArtistContent(
     albums: List<ArtistAlbum>,
     similarArtists: List<ArtistInfo>,
     likedSongIds: Set<Long>,
+    blockedArtistIds: Set<Long>,
     currentTrackId: String?,
     collectState: PlaylistCollectState,
     isLoggedIn: Boolean,
@@ -198,6 +202,7 @@ private fun ArtistContent(
     onPlaylistClick: (Long) -> Unit,
     onAlbumClick: (Long) -> Unit,
     onFollowClick: () -> Unit,
+    onBlockClick: () -> Unit,
     onPlaySong: (Track) -> Unit,
     onPlayAll: () -> Unit,
     onLikeClick: (Long) -> Unit,
@@ -209,6 +214,7 @@ private fun ArtistContent(
     val listState = rememberLazyListState()
 
     var isExpanded by remember { mutableStateOf(false) }
+    var showMoreMenuSheet by remember { mutableStateOf(false) }
 
     var dominantColor by remember { mutableStateOf(Color(0xFF2C2C2C)) }
 
@@ -417,7 +423,7 @@ private fun ArtistContent(
                             Spacer(Modifier.width(16.dp))
 
                             IconButton(
-                                onClick = {},
+                                onClick = { showMoreMenuSheet = true },
                                 modifier = Modifier.size(36.dp)
                             ) {
                                 Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(24.dp))
@@ -1049,6 +1055,72 @@ private fun ArtistContent(
                 containerColor = SurfaceDark,
                 shape = RoundedCornerShape(16.dp)
             )
+        }
+
+        // 7. 更多操作 Bottom Sheet
+        if (showMoreMenuSheet) {
+            val isBlocked = blockedArtistIds.contains(artist.id)
+            ModalBottomSheet(
+                onDismissRequest = { showMoreMenuSheet = false },
+                containerColor = SurfaceDark,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                dragHandle = {
+                    Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                        Surface(
+                            modifier = Modifier.width(40.dp).height(4.dp),
+                            shape = RoundedCornerShape(2.dp),
+                            color = Color.White.copy(alpha = 0.3f)
+                        ) {}
+                    }
+                }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                ) {
+                    Text(
+                        text = "歌手操作",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showMoreMenuSheet = false
+                                onBlockClick()
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isBlocked) Icons.Default.CheckCircle else Icons.Default.Warning,
+                            contentDescription = if (isBlocked) "取消屏蔽" else "屏蔽歌手",
+                            tint = if (isBlocked) NeteaseRed else Color.White.copy(alpha = 0.8f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = if (isBlocked) "取消屏蔽该艺人所有歌曲" else "屏蔽该艺人所有歌曲",
+                                color = Color.White,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (isBlocked) "取消屏蔽后，其歌曲将重新显示在推荐和搜索中" else "屏蔽后，其歌曲将不再在推荐和搜索中展示",
+                                color = TextGray,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

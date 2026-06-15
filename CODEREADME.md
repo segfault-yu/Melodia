@@ -30,24 +30,49 @@ app/src/main/java/com/lin0721/linmusic/
 ├── MelodiaApplication.kt           # Koin 初始化 + Coil 预热
 ├── MainActivity.kt                 # 入口容器，全局手势、侧边栏、浮动播放器
 ├── data/
+│   ├── local/                      # 本地持久化 (DataStore + SharedPreferences)
 │   ├── remote/
-│   │   ├── api/                    # API 定义与 DTO
+│   │   ├── api/                    # Retrofit 接口定义与全部 DTO
 │   │   ├── crypto/                 # 加密逻辑 (WeApi/EApi/LinuxApi)
-│   │   └── network/                # 拦截器 (加密、Header、空包处理)
-│   └── repository/                 # 数据层 (MusicRepository + 领域模型)
-├── di/                             # 依赖注入模块
+│   │   └── network/                # 拦截器 (加密路由、Header 注入、空包处理)
+│   └── repository/                 # MusicRepository 接口 + Impl 实现
+├── di/                             # Koin 依赖注入模块
+├── domain/                         # 领域模型（独立于 DTO 的纯 Kotlin 类型）
 ├── player/
 │   ├── MelodiaPlaybackService.kt   # Media3 后台播放服务
-│   └── PlayerManager.kt            # 播放控制器封装
+│   └── PlayerManager.kt            # 播放控制器封装，暴露 StateFlow
 └── ui/
-    ├── home/                       # 首页模块
-    ├── library/                    # 音乐库模块
-    ├── create/                     # 创建模块 (BottomSheet + ViewModel)
-    ├── player/                     # 全屏播放器组件
+    ├── artist/                     # 歌手详情页
+    ├── components/                 # 通用组件 (登录 WebView、侧边栏、底部导航栏、Toast)
+    ├── create/                     # 创建模块 (BottomSheet + CreateViewModel)
+    ├── home/                       # 首页模块 (今日推荐、排行榜、历史日推)
+    ├── library/                    # 音乐库模块 (歌单/专辑/歌手聚合)
+    ├── player/                     # 全屏播放器
+    │   ├── CommentsComponents.kt   # 评论预览卡片 + BottomSheet + CommentsState
+    │   ├── FullPlayerScreen.kt     # 主全屏播放器页
+    │   ├── LyricsComponents.kt     # 歌词渲染 (普通/逐字 KaraokeView)
+    │   ├── PlayQueueSheet.kt       # 播放队列 BottomSheet
+    │   ├── PlayerControlComponents.kt  # 进度条、控制按钮组件
+    │   ├── PlayerViewModel.kt      # 播放器状态机
+    │   ├── SongDetailComponents.kt # 歌曲详情/百科/制作团队卡片
+    │   └── SongMoreOptionsSheet.kt # 更多选项底部菜单
     ├── playlist/                   # 歌单详情页
+    │   ├── PlaylistScreen.kt       # 主页面 (沉浸式折叠 + 动态色彩)
+    │   ├── PlaylistViewModel.kt    # 歌单状态机 (收藏/评论/推荐)
+    │   ├── PlaylistModels.kt       # PlaylistCollectItem/State 等 UI 模型
+    │   └── PlaylistUiState.kt      # Loading/Success/Error 密封类
     ├── search/                     # 搜索/发现页
-    ├── components/                 # 通用组件 (登录、侧边栏、底部导航栏等)
-    └── theme/                      # 主题配置
+    ├── settings/                   # 设置页面
+    │   ├── SettingsScreen.kt       # 设置主入口页
+    │   ├── SettingsViewModel.kt    # 设置状态机
+    │   ├── AudioQualitySettingsScreen.kt
+    │   ├── StorageSettingsScreen.kt
+    │   ├── PrivacySettingsScreen.kt
+    │   ├── NetworkSettingsScreen.kt
+    │   ├── PlaybackDownloadSettingsScreen.kt
+    │   ├── ExtensionsSettingsScreen.kt
+    │   └── AboutSettingsScreen.kt
+    └── theme/                      # Material 3 主题与配色 (NeteaseRed、SurfaceDark 等)
 ```
 
 ---
@@ -77,7 +102,9 @@ app/src/main/java/com/lin0721/linmusic/
 | `/weapi/artist/follow/count/get` | WeApi | 获取歌手粉丝数量（避开 EApi 0 字节风控） |
 | `/eapi/song/like` | EApi | 喜欢/红心歌曲操作 |
 | `/eapi/song/like/get` | EApi | 获取当前用户已红心的歌曲 ID 列表 |
-| `/eapi/v1/resource/comments/{threadId}` | EApi | 获取歌曲评论列表（含热门评论与普通评论） |
+| `/eapi/v1/resource/comments/{threadId}` | EApi | 获取评论列表（歌曲 `R_SO_4_$id` / 歌单 `A_PL_0_$id`，含热评与普通评论）|
+| `/eapi/playlist/subscribe` | EApi | 收藏歌单（`op=subscribe`）|
+| `/eapi/playlist/unsubscribe` | EApi | 取消收藏歌单（`op=unsubscribe`）|
 
 ---
 
@@ -236,6 +263,7 @@ app/src/main/java/com/lin0721/linmusic/
 - **播放来源栏双行排版**: 首行显示来源类型（11sp 白 60% 透明度），第二行显示具体名称（14sp 纯白加粗），加双引号包裹。
 - **进度条对齐与时长兜底**: 水平边距收窄为 `24.dp`；`Track` DTO 增加 `val dt: Long = 0`；缓冲期间如播放器时长为 0，自动降级采用 `songDetail.dt` 兜底。
 - **切歌进度闪烁修复**: `fetchUrlAndPlay` 加载新歌时立即重置 `currentPosition/duration`；`onMediaItemTransition` 时强制设定进度为 0；轮询器增加 `Player.STATE_READY` 状态过滤。
+
 - **歌曲百科扩展**: 从 `SONG_PLAY_ABOUT_WIKI` 模块抽取 `background`（背景故事）与 `awards`（所获奖项）字段并展示。
 - **制作团队名单扩展**: 抓取 API 返回的所有幕后角色（制作人、混音师、吉他手等）并排版展示。
 - **AboutArtistCard 调优**: 顶部艺人图片高度从 180dp 调大至 260dp。
@@ -293,6 +321,31 @@ app/src/main/java/com/lin0721/linmusic/
   - `PlayerViewModel.kt` 引入 `SettingsPreferences` 和 `Context`，动态感应 WiFi/移动网络状态，产出融合后的 `activeQuality` 状态并支持持久化和触发即时重载。
   - `SongMoreOptionsSheet.kt` 完善了“音质”选项交互。点击呼出的音质选择弹窗（支持标准、极高、无损、Hi-Res、超清母带单选）重构为与定时播放完全一致的 `ModalBottomSheet`，其文本和 VIP 红色微标可依据活动网络下的音质状态进行动态更新。
 
+### 2026-06-12 — 歌单收藏、歌单评论区与代码规范整理
+
+- **歌单收藏 (`PlaylistViewModel.kt` + `NeteaseApiService.kt`)**：
+  - 新增 `PlaylistSubscribeRequest` / `PlaylistSubscribeResponse` DTO 及 `subscribePlaylist(op, body)` Retrofit 接口方法。
+  - `MusicRepository` / `MusicRepositoryImpl` 新增 `subscribePlaylist(playlistId, subscribe)` Flow 封装，动态拼接 `playlist/subscribe` 或 `playlist/unsubscribe`。
+  - `PlaylistDetail` DTO 增加 `val subscribed: Boolean = false` 字段，`loadPlaylist` 时同步初始化 `_isSubscribed`。
+  - `PlaylistViewModel.toggleSubscribePlaylist()`：乐观更新本地状态，成功/失败均 Toast 提示。
+  - UI 层在 `onSubscribeClick` 回调中直接拦截未登录，ViewModel 无需感知登录态。
+  - 收藏图标：未收藏显示 `Add + TextGray`，已收藏切换为 `Check + NeteaseRed`。
+
+- **歌单评论区 (`CommentsComponents.kt` + `PlaylistViewModel.kt`)**：
+  - `CommentsState` 密封接口从 `PlayerViewModel.kt` 迁移至 `CommentsComponents.kt`，实现跨模块复用（播放器与歌单共用同一状态类型）。
+  - `PlaylistViewModel.loadPlaylistComments(playlistId)`：调用时首先重置为 `CommentsState.Loading` 防止闪现旧数据，`threadId` 格式为 `A_PL_0_$playlistId`。
+  - `CommentsBottomSheet` 新增于 `CommentsComponents.kt`：`ModalBottomSheet` 含自定义拖动把手、全量评论 `LazyColumn`（热门 + 普通去重合并），与 `CommentsPreviewCard` 共用 `CommentRowItem`。
+  - `PlaylistScreen` 中 `showCommentsSheet` 状态控制显隐；点击评论图标同时触发数据加载。
+  - 评论图标由原下载箭头替换为 `Icons.AutoMirrored.Rounded.Comment`。
+
+- **更多选项占位菜单**：`showMoreMenuSheet` 控制一个包含「更多功能开发中」占位文本的 `ModalBottomSheet`，预留扩展入口。
+
+- **代码规范整理**：
+  - 移除 `PlaylistScreen.kt` 中两处 `android.util.Log.d` 调试日志。
+  - 删除同包的显式导入（`PlaylistCollectState` / `PlaylistCollectItem`）。
+  - 删除无功能的空占位 `Box`。
+  - `CommentsComponents.kt` 移除未使用的 `clickable` 导入，补充 `SurfaceDark` 导入并替换全限定名引用，整理导入分组顺序。
+
 ---
 
 ## 待办事项
@@ -325,4 +378,8 @@ app/src/main/java/com/lin0721/linmusic/
 - [x] 歌单批量操作 (添加/移除歌曲 + 收藏弹窗)
 - [x] 歌词解析与同步显示
 - [x] 统一错误处理分发
+- [x] 歌单收藏与取消收藏功能
+- [x] 歌单评论区展示 (包含热门/普通评论合并与重置状态)
+- [ ] 歌单详情页更多功能半屏菜单的实际逻辑开发
+
 
