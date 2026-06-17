@@ -59,6 +59,7 @@ import com.lin0721.linmusic.ui.theme.TextGray
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 
 // TopBar 操作区高度（不含状态栏）
 private val TOP_BAR_HEIGHT = 56.dp
@@ -97,6 +98,9 @@ fun PlaylistScreen(
     var showMoreMenuSheet by remember { mutableStateOf(false) }
     var selectedHistoryDate by remember { mutableStateOf("今天") }
 
+    LaunchedEffect(selectedDate) {
+        selectedHistoryDate = selectedDate ?: "今天"
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { com.lin0721.linmusic.ui.components.ToastManager.showToast(it) }
@@ -400,8 +404,9 @@ private fun PlaylistContent(
 ) {
     val density = LocalDensity.current
 
-    // 初始显示 index=1（封面），搜索栏 index=0 藏于上方，下拉可见
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 1)
+    val isDailyRecommend = playlist.id == -1L
+    // 初始显示 index=1（封面），搜索栏 index=0 藏于上方，下拉可见（每日推荐无搜索栏，初始显示 index=0）
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = if (isDailyRecommend) 0 else 1)
     var searchQuery by remember { mutableStateOf("") }
     
     // 从封面提取的主色调，默认为深灰色
@@ -416,11 +421,19 @@ private fun PlaylistContent(
     val collapseThresholdPx = with(density) { 300.dp.toPx() }
     val progress by remember {
         derivedStateOf {
-            when {
-                listState.firstVisibleItemIndex == 0 -> 0f
-                listState.firstVisibleItemIndex == 1 ->
-                    (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
-                else -> 1f
+            if (isDailyRecommend) {
+                when {
+                    listState.firstVisibleItemIndex == 0 ->
+                        (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
+                    else -> 1f
+                }
+            } else {
+                when {
+                    listState.firstVisibleItemIndex == 0 -> 0f
+                    listState.firstVisibleItemIndex == 1 ->
+                        (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
+                    else -> 1f
+                }
             }
         }
     }
@@ -443,32 +456,35 @@ private fun PlaylistContent(
             contentPadding = PaddingValues(bottom = 180.dp)
         ) {
             // Item 0：搜索栏（下拉可见）
-            item(key = "search") {
-                SearchBarItem(
-                    query           = searchQuery, 
-                    onQueryChange   = { searchQuery = it },
-                    topPadding      = overlayHeight,
-                    backgroundColor = dominantColor
-                )
+            if (!isDailyRecommend) {
+                item(key = "search") {
+                    SearchBarItem(
+                        query           = searchQuery, 
+                        onQueryChange   = { searchQuery = it },
+                        topPadding      = overlayHeight,
+                        backgroundColor = dominantColor
+                    )
+                }
             }
 
             // Item 1：全出血 Hero
             // 封面从内容顶部延伸，视觉上与透明 overlay 无缝衔接
             item(key = "header") {
                 PlaylistHeaderItem(
-                    playlist          = playlist,
-                    coverSize         = coverSize,
-                    coverAlpha        = coverAlpha,
-                    isCollapsed       = isCollapsed,
-                    statusBarHeight   = statusBarHeight,
-                    dominantColor     = dominantColor,
-                    onColorCalculated = { dominantColor = it },
-                    onPlayAll         = onPlayAll,
-                    isSubscribed      = isSubscribed,
-                    onSubscribeClick  = onSubscribeClick,
-                    onCommentsClick   = onCommentsClick,
-                    onMoreClick       = onMoreClick,
-                    onHistoryClick    = onHistoryClick
+                    playlist            = playlist,
+                    coverSize           = coverSize,
+                    coverAlpha          = coverAlpha,
+                    isCollapsed         = isCollapsed,
+                    statusBarHeight     = statusBarHeight,
+                    dominantColor       = dominantColor,
+                    onColorCalculated   = { dominantColor = it },
+                    onPlayAll           = onPlayAll,
+                    isSubscribed        = isSubscribed,
+                    onSubscribeClick    = onSubscribeClick,
+                    onCommentsClick     = onCommentsClick,
+                    onMoreClick         = onMoreClick,
+                    onHistoryClick      = onHistoryClick,
+                    selectedHistoryDate = selectedHistoryDate
                 )
             }
 
@@ -600,24 +616,27 @@ private fun PlaylistContent(
                 Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, "Back",
                     tint = Color.White, modifier = Modifier.size(32.dp))
             }
-            // 歌单名称：折叠后瞬间显示
-            if (isCollapsed) {
-                Text(
-                    text       = playlist.name,
-                    color      = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize   = 17.sp,
-                    maxLines   = 1,
-                    overflow   = TextOverflow.Ellipsis,
-                    modifier   = Modifier
-                        .align(Alignment.Center)
-                        .padding(horizontal = 60.dp)
-                )
-            }
+            // 歌单名称：随着滚动淡入及向上微移
+            val titleAlpha = ((progress - 0.6f) / 0.4f).coerceIn(0f, 1f)
+            val titleOffsetY = lerp(8.dp, 0.dp, titleAlpha)
+            Text(
+                text       = playlist.name,
+                color      = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize   = 17.sp,
+                maxLines   = 1,
+                overflow   = TextOverflow.Ellipsis,
+                modifier   = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 60.dp)
+                    .offset(y = titleOffsetY)
+                    .alpha(titleAlpha)
+            )
         }
 
-        // 折叠后吸附播放按钮（半挂 overlay 底部边缘）
-        if (isCollapsed) {
+        // 折叠后吸附播放按钮（半挂 overlay 底部边缘，每日推荐歌单隐藏）
+        val fabScale = ((progress - 0.8f) / 0.2f).coerceIn(0f, 1f)
+        if (!isDailyRecommend && fabScale > 0f) {
             FloatingActionButton(
                 onClick        = onPlayAll,
                 containerColor = NeteaseRed,
@@ -628,7 +647,12 @@ private fun PlaylistContent(
                     .offset(y = overlayHeight - 28.dp)
                     .size(56.dp)
                     .zIndex(10f)
-                    .shadow(8.dp, CircleShape)
+                    .graphicsLayer(
+                        scaleX = fabScale,
+                        scaleY = fabScale,
+                        alpha = fabScale
+                    )
+                    .shadow(8.dp * fabScale, CircleShape)
             ) {
                 Icon(Icons.Default.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(32.dp))
             }
@@ -1068,18 +1092,31 @@ private fun PlaylistHeaderItem(
     onSubscribeClick: () -> Unit,
     onCommentsClick: () -> Unit,
     onMoreClick: () -> Unit,
-    onHistoryClick: () -> Unit = {}
+    onHistoryClick: () -> Unit = {},
+    selectedHistoryDate: String = "今天"
 ) {
     val todayStr = remember {
         java.text.SimpleDateFormat("yyyy年MM月dd日", java.util.Locale.getDefault()).format(java.util.Date())
     }
+    val displayDateStr = remember(selectedHistoryDate) {
+        if (selectedHistoryDate == "今天") {
+            todayStr
+        } else {
+            val parts = selectedHistoryDate.split("-")
+            if (parts.size == 3) {
+                "${parts[0]}年${parts[1]}月${parts[2]}日"
+            } else {
+                selectedHistoryDate
+            }
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            // 使用从封面提取的主色调渐变到背景黑，实现高度一体化的视觉效果
+            // 使用从封面提取的主色调渐变到背景黑
             .background(Brush.verticalGradient(listOf(dominantColor, BackgroundDark)))
     ) {
-        // 封面：偏移状态栏的高度，加上一点 padding，使其与操作区的返回键水平对齐
+        // 封面：与操作区的返回键水平对齐
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1089,7 +1126,7 @@ private fun PlaylistHeaderItem(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data("${playlist.coverImgUrl}?param=400y400")
-                    .allowHardware(false) // 禁用硬件位图，否则后续提取像素时会抛出异常导致降级为默认颜色
+                    .allowHardware(false) // 禁用硬件位图
                     .crossfade(true)
                     .build(),
                 contentDescription = playlist.name,
@@ -1112,12 +1149,24 @@ private fun PlaylistHeaderItem(
                     fontSize = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(6.dp))
                 if (playlist.id == -1L) {
-                    Text(todayStr, color = TextGray, fontSize = 13.sp)
+                    Text(displayDateStr, color = TextGray, fontSize = 13.sp)
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CheckCircle, null, tint = NeteaseRed, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("为你打造", color = TextGray, fontSize = 13.sp)
+                        if (playlist.creator != null) {
+                            AsyncImage(
+                                model = "${playlist.creator.avatarUrl}?param=50y50",
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(playlist.creator.nickname, color = TextGray, fontSize = 13.sp)
+                        } else {
+                            Icon(Icons.Default.CheckCircle, null, tint = NeteaseRed, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("为你打造", color = TextGray, fontSize = 13.sp)
+                        }
                     }
                     if (!playlist.description.isNullOrBlank()) {
                         Spacer(Modifier.height(4.dp))
@@ -1126,7 +1175,8 @@ private fun PlaylistHeaderItem(
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                Text("${playlist.tracks.size} 首歌曲", color = TextGray, fontSize = 12.sp)
+                val playCountText = if (playlist.playCount > 0) " • 播放 ${formatPlayCount(playlist.playCount)} 次" else ""
+                Text("${playlist.tracks.size} 首歌曲$playCountText", color = TextGray, fontSize = 12.sp)
             }
 
             if (playlist.id != -1L) {
@@ -1188,7 +1238,7 @@ private fun PlaylistHeaderItem(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 基础歌曲行组件（供普通歌曲行和推荐歌曲行复用，消除多余布局代码）
+// 基础歌曲行组件
 // ────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun BaseSongRow(
@@ -1405,6 +1455,14 @@ private fun OptionRow(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+private fun formatPlayCount(count: Long): String {
+    return when {
+        count >= 100000000 -> "${(count / 10000000) / 10.0}亿"
+        count >= 10000 -> "${(count / 1000) / 10.0}万"
+        else -> count.toString()
     }
 }
 

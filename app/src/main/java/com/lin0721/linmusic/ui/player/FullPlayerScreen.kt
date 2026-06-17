@@ -527,7 +527,13 @@ fun FullPlayerScreen(
             item(key = "actions") {
                 ActionButtons(
                     onTimerClick = { showTimerSheet = true },
-                    onQueueClick = { showQueueSheet = true }
+                    onQueueClick = { showQueueSheet = true },
+                    onInsertSimilarClick = {
+                        val songId = currentTrack.mediaId?.toLongOrNull()
+                        if (songId != null && songId != -1L) {
+                            viewModel.insertSimilarSongs(songId)
+                        }
+                    }
                 )
             }
 

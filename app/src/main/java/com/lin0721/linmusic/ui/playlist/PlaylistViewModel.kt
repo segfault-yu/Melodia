@@ -111,6 +111,7 @@ class PlaylistViewModel(
         allRecommendedTracks = emptyList()
         loadJob?.cancel() // 取消之前的加载任务
         if (id == -1L) {
+            _selectedDate.value = "今天"
             loadJob = viewModelScope.launch {
                 repository.getDailyRecommendSongs().collect { result ->
                     result.fold(
@@ -464,9 +465,6 @@ class PlaylistViewModel(
             repository.getHistoryRecommendDates().collect { result ->
                 result.onSuccess { dates ->
                     _historyDates.value = dates
-                    if (dates.isNotEmpty() && _selectedDate.value == null) {
-                        loadHistoryDetail(dates.first())
-                    }
                 }.onFailure {
                     _toastEvent.emit("历史日推需要黑胶会员")
                 }

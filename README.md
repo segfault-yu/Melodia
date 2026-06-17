@@ -1,6 +1,6 @@
 # Melodia 
 
-Melodia 是一款基于 Kotlin + Jetpack Compose 构建的轻量级第三方网易云音乐客户端。
+Melodia 是一款基于 Ko[app](app)tlin + Jetpack Compose 构建的轻量级第三方网易云音乐客户端。
 ---
 
 ## 项目架构

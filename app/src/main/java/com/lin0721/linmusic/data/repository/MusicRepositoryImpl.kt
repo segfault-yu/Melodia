@@ -617,24 +617,32 @@ class MusicRepositoryImpl(
         var success = false
         var tracksList = emptyList<Track>()
         
-        try {
-            val response = apiService.getIntelligenceSongs(
-                IntelligenceSongsRequest(
-                    songId = songId.toString(),
-                    playlistId = playlistId.toString(),
-                    startMusicId = songId.toString(),
-                    count = 20
+        val finalPlaylistId = if (playlistId == 0L) {
+            userPreferences.userProfile.first()?.uid ?: 0L
+        } else {
+            playlistId
+        }
+
+        if (finalPlaylistId != 0L) {
+            try {
+                val response = apiService.getIntelligenceSongs(
+                    IntelligenceSongsRequest(
+                        songId = songId.toString(),
+                        playlistId = finalPlaylistId.toString(),
+                        startMusicId = songId.toString(),
+                        count = 20
+                    )
                 )
-            )
-            if (response.isSuccess) {
-                val tracks = response.data.mapNotNull { it.songInfo }
-                if (tracks.isNotEmpty()) {
-                    tracksList = tracks
-                    success = true
+                if (response.isSuccess) {
+                    val tracks = response.data.mapNotNull { it.songInfo }
+                    if (tracks.isNotEmpty()) {
+                        tracksList = tracks
+                        success = true
+                    }
                 }
+            } catch (_: Exception) {
+                // 捕获智能推荐的异常
             }
-        } catch (_: Exception) {
-            // 捕获智能推荐的异常
         }
 
         val blockedIds = userPreferences.blockedArtistIds.first()

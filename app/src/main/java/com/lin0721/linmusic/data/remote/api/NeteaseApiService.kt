@@ -572,6 +572,7 @@ data class PlaylistDetail(
     val description: String? = null,
     val playCount: Long = 0,
     val subscribed: Boolean = false,
+    val creator: PlaylistCreator? = null,
     val tracks: List<Track> = emptyList()
 )
 

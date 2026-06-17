@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
@@ -604,7 +605,8 @@ fun PlaybackControls(
 @Composable
 fun ActionButtons(
     onTimerClick: () -> Unit,
-    onQueueClick: () -> Unit
+    onQueueClick: () -> Unit,
+    onInsertSimilarClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -623,14 +625,19 @@ fun ActionButtons(
             }
         }
         Row {
-            IconButton(onClick = { }) {
-                Icon(Icons.Rounded.Share, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
+            IconButton(onClick = onInsertSimilarClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.QueueMusic,
+                    contentDescription = "插播相似歌曲",
+                    tint = TextGray,
+                    modifier = Modifier.size(26.dp)
+                )
             }
             IconButton(
                 onClick = onQueueClick,
                 modifier = Modifier.offset(x = 12.dp)
             ) {
-                Icon(Icons.AutoMirrored.Rounded.PlaylistPlay, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
+                Icon(Icons.AutoMirrored.Rounded.PlaylistPlay, contentDescription = null, tint = TextGray, modifier = Modifier.size(30.dp))
             }
         }
     }
