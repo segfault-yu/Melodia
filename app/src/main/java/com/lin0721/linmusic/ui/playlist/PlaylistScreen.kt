@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +26,7 @@ import androidx.compose.ui.window.Dialog
 import com.lin0721.linmusic.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.ui.components.WebViewLoginScreen
 import com.lin0721.linmusic.ui.player.CommentsBottomSheet
+import com.lin0721.linmusic.ui.home.HistoryRecommendSheet
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,7 +73,8 @@ fun PlaylistScreen(
     isAlbum: Boolean = false,
     viewModel: PlaylistViewModel = koinViewModel(),
     onBack: () -> Unit,
-    onArtistClick: (Long) -> Unit
+    onArtistClick: (Long) -> Unit,
+    onAlbumClick: (Long) -> Unit
 ) {
     val uiState      by viewModel.uiState.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
@@ -81,12 +84,18 @@ fun PlaylistScreen(
     val recommendedSongs by viewModel.recommendedSongs.collectAsStateWithLifecycle()
     val isSubscribed by viewModel.isSubscribed.collectAsStateWithLifecycle()
     val commentsState by viewModel.commentsState.collectAsStateWithLifecycle()
+    val historyDates by viewModel.historyDates.collectAsStateWithLifecycle()
+    val historyDatesLoading by viewModel.historyDatesLoading.collectAsStateWithLifecycle()
+    val historySongs by viewModel.historySongs.collectAsStateWithLifecycle()
+    val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
+    val historySongsLoading by viewModel.historySongsLoading.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
     var showCommentsSheet by remember { mutableStateOf(false) }
     var showMoreMenuSheet by remember { mutableStateOf(false) }
+    var selectedHistoryDate by remember { mutableStateOf("今天") }
 
 
     LaunchedEffect(viewModel) {
@@ -94,6 +103,9 @@ fun PlaylistScreen(
     }
     LaunchedEffect(playlistId, isAlbum) {
         viewModel.loadPlaylist(playlistId, isAlbum)
+        if (playlistId == -1L) {
+            viewModel.loadHistoryDates()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(BackgroundDark)) {
@@ -126,8 +138,20 @@ fun PlaylistScreen(
                     recommendedSongs = recommendedSongs,
                     onBack         = onBack,
                     onArtistClick  = onArtistClick,
+                    onAlbumClick   = onAlbumClick,
+                    onToggleLike   = viewModel::toggleLikeSong,
                     onPlaySong     = { track ->
                         viewModel.playSongInList(track, state.playlist.tracks)
+                    },
+                    onAddToPlayNext = { track ->
+                        val queueItem = com.lin0721.linmusic.player.QueueItem(
+                            track.id,
+                            track.name,
+                            track.ar.joinToString("/") { it.name },
+                            track.al.picUrl
+                        )
+                        viewModel.playerManager.addToPlayNext(listOf(queueItem))
+                        com.lin0721.linmusic.ui.components.ToastManager.showToast("已添加至下一首播放")
                     },
                     onPlayAll = {
                         state.playlist.tracks.firstOrNull()?.let { first ->
@@ -166,7 +190,15 @@ fun PlaylistScreen(
                     },
                     onMoreClick = {
                         showMoreMenuSheet = true
-                    }
+                    },
+                    onHistoryClick = {},
+                    historyDates = historyDates,
+                    historySongsLoading = historySongsLoading,
+                    showHistoryDatePicker = true,
+                    selectedHistoryDate = selectedHistoryDate,
+                    onSelectedHistoryDateChange = { selectedHistoryDate = it },
+                    onLoadHistoryDetail = { viewModel.loadHistoryDetail(it) },
+                    onLoadDailyRecommend = { viewModel.loadPlaylist(-1L) }
                 )
 
         }
@@ -200,6 +232,8 @@ fun PlaylistScreen(
                 onRetry = { viewModel.loadPlaylistComments(playlistId) }
             )
         }
+
+
 
         val successState = uiState as? PlaylistUiState.Success
         if (showMoreMenuSheet && successState != null) {
@@ -340,7 +374,10 @@ private fun PlaylistContent(
     recommendedSongs: List<Track>,
     onBack: () -> Unit,
     onArtistClick: (Long) -> Unit,
+    onAlbumClick: (Long) -> Unit,
+    onToggleLike: (Long, Boolean) -> Unit,
     onPlaySong: (Track) -> Unit,
+    onAddToPlayNext: (Track) -> Unit,
     onPlayAll: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
@@ -351,12 +388,20 @@ private fun PlaylistContent(
     isSubscribed: Boolean,
     onSubscribeClick: () -> Unit,
     onCommentsClick: () -> Unit,
-    onMoreClick: () -> Unit
+    onMoreClick: () -> Unit,
+    onHistoryClick: () -> Unit = {},
+    historyDates: List<String> = emptyList(),
+    historySongsLoading: Boolean = false,
+    showHistoryDatePicker: Boolean = false,
+    selectedHistoryDate: String = "今天",
+    onSelectedHistoryDateChange: (String) -> Unit = {},
+    onLoadHistoryDetail: (String) -> Unit = {},
+    onLoadDailyRecommend: () -> Unit = {}
 ) {
     val density = LocalDensity.current
 
-    val initialFirstVisibleItemIndex = if (playlist.id == -1L) 0 else 1
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialFirstVisibleItemIndex)
+    // 初始显示 index=1（封面），搜索栏 index=0 藏于上方，下拉可见
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 1)
     var searchQuery by remember { mutableStateOf("") }
     
     // 从封面提取的主色调，默认为深灰色
@@ -371,19 +416,11 @@ private fun PlaylistContent(
     val collapseThresholdPx = with(density) { 300.dp.toPx() }
     val progress by remember {
         derivedStateOf {
-            if (playlist.id == -1L) {
-                if (listState.firstVisibleItemIndex == 0) {
+            when {
+                listState.firstVisibleItemIndex == 0 -> 0f
+                listState.firstVisibleItemIndex == 1 ->
                     (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
-                } else {
-                    1f
-                }
-            } else {
-                when {
-                    listState.firstVisibleItemIndex == 0 -> 0f
-                    listState.firstVisibleItemIndex == 1 ->
-                        (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
-                    else -> 1f
-                }
+                else -> 1f
             }
         }
     }
@@ -396,6 +433,7 @@ private fun PlaylistContent(
     val isCollapsed       = progress >= 0.8f
 
     var collectSongId by remember { mutableStateOf<Long?>(null) }
+    var activeSongMoreOptions by remember { mutableStateOf<Track?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -404,16 +442,14 @@ private fun PlaylistContent(
             state          = listState,
             contentPadding = PaddingValues(bottom = 180.dp)
         ) {
-            // Item 0：搜索栏（下拉可见，每日推荐无搜索栏）
-            if (playlist.id != -1L) {
-                item(key = "search") {
-                    SearchBarItem(
-                        query           = searchQuery, 
-                        onQueryChange   = { searchQuery = it },
-                        topPadding      = overlayHeight,
-                        backgroundColor = dominantColor
-                    )
-                }
+            // Item 0：搜索栏（下拉可见）
+            item(key = "search") {
+                SearchBarItem(
+                    query           = searchQuery, 
+                    onQueryChange   = { searchQuery = it },
+                    topPadding      = overlayHeight,
+                    backgroundColor = dominantColor
+                )
             }
 
             // Item 1：全出血 Hero
@@ -431,32 +467,97 @@ private fun PlaylistContent(
                     isSubscribed      = isSubscribed,
                     onSubscribeClick  = onSubscribeClick,
                     onCommentsClick   = onCommentsClick,
-                    onMoreClick       = onMoreClick
+                    onMoreClick       = onMoreClick,
+                    onHistoryClick    = onHistoryClick
                 )
             }
 
-            // 歌曲（支持搜索过滤）
-            val filtered = if (searchQuery.isBlank()) playlist.tracks
-                           else playlist.tracks.filter {
-                               it.name.contains(searchQuery, true) ||
-                               it.ar.any { a -> a.name.contains(searchQuery, true) }
-                           }
-            items(filtered, key = { it.id }) { track ->
-                SongRow(
-                    track        = track,
-                    isActive     = currentTrackId == track.id.toString(),
-                    likedSongIds = likedSongIds,
-                    onClick      = { onPlaySong(track) },
-                    onLikeClick  = {
-                        if (!isLoggedIn) {
-                            onRequireLogin()
-                        } else {
-                            collectSongId = track.id
-                            onLikeClick(track.id)
+            if (playlist.id == -1L && showHistoryDatePicker) {
+                item(key = "history_date_picker") {
+                    val allDates = remember(historyDates) {
+                        listOf("今天") + historyDates
+                    }
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(BackgroundDark)
+                            .padding(vertical = 12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        this@LazyRow.items(allDates) { date ->
+                            val isSelected = date == selectedHistoryDate
+                            val displayText = if (date == "今天") {
+                                "今天"
+                            } else {
+                                val parts = date.split("-")
+                                if (parts.size == 3) "${parts[1]}/${parts[2]}" else date
+                            }
+                            
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(
+                                        if (isSelected) NeteaseRed.copy(alpha = 0.15f)
+                                        else Color.White.copy(alpha = 0.05f)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f),
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .clickable {
+                                        onSelectedHistoryDateChange(date)
+                                        if (date == "今天") {
+                                            onLoadDailyRecommend()
+                                        } else {
+                                            onLoadHistoryDetail(date)
+                                        }
+                                    }
+                                    .padding(vertical = 6.dp, horizontal = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = displayText,
+                                    color = if (isSelected) NeteaseRed else Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
                         }
-                    },
-                    onArtistClick = onArtistClick
-                )
+                    }
+                }
+            }
+
+            if (historySongsLoading) {
+                item(key = "history_songs_loading") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = NeteaseRed)
+                    }
+                }
+            } else {
+                // 歌曲（支持搜索过滤）
+                val filtered = if (searchQuery.isBlank()) playlist.tracks
+                               else playlist.tracks.filter {
+                                   it.name.contains(searchQuery, true) ||
+                                   it.ar.any { a -> a.name.contains(searchQuery, true) }
+                               }
+                items(filtered, key = { it.id }) { track ->
+                    SongRow(
+                        track        = track,
+                        isActive     = currentTrackId == track.id.toString(),
+                        onClick      = { onPlaySong(track) },
+                        onArtistClick = onArtistClick,
+                        onMoreClick = {
+                            activeSongMoreOptions = track
+                        }
+                    )
+                }
             }
 
             // 推荐歌曲板块
@@ -760,6 +861,143 @@ private fun PlaylistContent(
             }
         }
     }
+
+    if (activeSongMoreOptions != null) {
+        val track = activeSongMoreOptions!!
+        ModalBottomSheet(
+            onDismissRequest = { activeSongMoreOptions = null },
+            containerColor = BackgroundDark,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            dragHandle = {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 12.dp, bottom = 4.dp)
+                        .width(36.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color.White.copy(alpha = 0.3f))
+                )
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AsyncImage(
+                        model = "${track.al.picUrl}?param=150y150",
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = track.name,
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = track.ar.joinToString(" • ") { it.name },
+                            color = TextGray,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                HorizontalDivider(
+                    color = Color.White.copy(alpha = 0.08f),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OptionRow(
+                        icon = Icons.AutoMirrored.Filled.QueueMusic,
+                        text = "下一首播放",
+                        onClick = {
+                            activeSongMoreOptions = null
+                            onAddToPlayNext(track)
+                        }
+                    )
+
+                    val isLiked = track.id in likedSongIds
+                    val likeIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
+                    val likeIconTint = if (isLiked) NeteaseRed else Color.White.copy(alpha = 0.7f)
+                    val likeText = if (isLiked) "取消喜欢" else "喜欢"
+
+                    OptionRow(
+                        icon = likeIcon,
+                        text = likeText,
+                        iconTint = likeIconTint,
+                        onClick = {
+                            activeSongMoreOptions = null
+                            if (!isLoggedIn) {
+                                onRequireLogin()
+                            } else {
+                                onToggleLike(track.id, !isLiked)
+                            }
+                        }
+                    )
+
+                    OptionRow(
+                        icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+                        text = "收藏到歌单",
+                        onClick = {
+                            activeSongMoreOptions = null
+                            if (!isLoggedIn) {
+                                onRequireLogin()
+                            } else {
+                                collectSongId = track.id
+                                onLikeClick(track.id)
+                            }
+                        }
+                    )
+
+                    val artistsText = track.ar.joinToString(" • ") { it.name }
+                    OptionRow(
+                        icon = Icons.Default.Person,
+                        text = "歌手: $artistsText",
+                        onClick = {
+                            activeSongMoreOptions = null
+                            track.ar.firstOrNull()?.id?.let { artistId ->
+                                onArtistClick(artistId)
+                            }
+                        }
+                    )
+
+                    OptionRow(
+                        icon = Icons.Default.Album,
+                        text = "专辑: ${track.al.name}",
+                        onClick = {
+                            activeSongMoreOptions = null
+                            if (track.al.id > 0) {
+                                onAlbumClick(track.al.id)
+                            } else {
+                                com.lin0721.linmusic.ui.components.ToastManager.showToast("暂无专辑信息")
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -829,44 +1067,42 @@ private fun PlaylistHeaderItem(
     isSubscribed: Boolean,
     onSubscribeClick: () -> Unit,
     onCommentsClick: () -> Unit,
-    onMoreClick: () -> Unit
+    onMoreClick: () -> Unit,
+    onHistoryClick: () -> Unit = {}
 ) {
+    val todayStr = remember {
+        java.text.SimpleDateFormat("yyyy年MM月dd日", java.util.Locale.getDefault()).format(java.util.Date())
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             // 使用从封面提取的主色调渐变到背景黑，实现高度一体化的视觉效果
             .background(Brush.verticalGradient(listOf(dominantColor, BackgroundDark)))
     ) {
-        // 封面：偏移状态栏的高度，加上一点 padding，使其与操作区的返回键水平对齐。当没有封面（每日推荐）时不渲染 AsyncImage 区域
-        if (playlist.id != -1L) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = statusBarHeight + 16.dp, bottom = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data("${playlist.coverImgUrl}?param=400y400")
-                        .allowHardware(false) // 禁用硬件位图，否则后续提取像素时会抛出异常导致降级为默认颜色
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = playlist.name,
-                    contentScale       = ContentScale.Crop,
-                    onSuccess          = { state -> 
-                        onColorCalculated(extractDominantColor(state.result.drawable))
-                    },
-                    modifier           = Modifier
-                        .size(coverSize)
-                        .shadow(elevation = 16.dp, shape = RoundedCornerShape(10.dp), clip = false)
-                        .clip(RoundedCornerShape(10.dp))
-                        .then(if (coverAlpha < 1f) Modifier.alpha(coverAlpha) else Modifier)
-                )
-            }
-        } else {
-            // 没有封面时，仅在顶部占位状态栏高度加间距
-            Spacer(modifier = Modifier.height(statusBarHeight + 16.dp))
-        }
+        // 封面：偏移状态栏的高度，加上一点 padding，使其与操作区的返回键水平对齐
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = statusBarHeight + 16.dp, bottom = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data("${playlist.coverImgUrl}?param=400y400")
+                    .allowHardware(false) // 禁用硬件位图，否则后续提取像素时会抛出异常导致降级为默认颜色
+                    .crossfade(true)
+                    .build(),
+                contentDescription = playlist.name,
+                contentScale       = ContentScale.Crop,
+                onSuccess          = { state -> 
+                    onColorCalculated(extractDominantColor(state.result.drawable))
+                },
+                modifier           = Modifier
+                    .size(coverSize)
+                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(10.dp), clip = false)
+                    .clip(RoundedCornerShape(10.dp))
+                    .then(if (coverAlpha < 1f) Modifier.alpha(coverAlpha) else Modifier)
+            )
         }
 
         // 歌单信息与操作行：折叠后隐藏
@@ -875,64 +1111,75 @@ private fun PlaylistHeaderItem(
                 Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold,
                     fontSize = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CheckCircle, null, tint = NeteaseRed, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("为你打造", color = TextGray, fontSize = 13.sp)
-                }
-                if (!playlist.description.isNullOrBlank()) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(playlist.description, color = TextGray, fontSize = 12.sp,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (playlist.id == -1L) {
+                    Text(todayStr, color = TextGray, fontSize = 13.sp)
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CheckCircle, null, tint = NeteaseRed, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("为你打造", color = TextGray, fontSize = 13.sp)
+                    }
+                    if (!playlist.description.isNullOrBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(playlist.description, color = TextGray, fontSize = 12.sp,
+                            maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
                 }
                 Spacer(Modifier.height(4.dp))
                 Text("${playlist.tracks.size} 首歌曲", color = TextGray, fontSize = 12.sp)
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onSubscribeClick) {
-                        Icon(
-                            imageVector = if (isSubscribed) Icons.Default.Check else Icons.Default.Add,
-                            contentDescription = if (isSubscribed) "已收藏" else "收藏",
-                            tint = if (isSubscribed) NeteaseRed else TextGray,
-                            modifier = Modifier.size(24.dp)
-                        )
+            if (playlist.id != -1L) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onSubscribeClick) {
+                            Icon(
+                                imageVector = if (isSubscribed) Icons.Default.Check else Icons.Default.Add,
+                                contentDescription = if (isSubscribed) "已收藏" else "收藏",
+                                tint = if (isSubscribed) NeteaseRed else TextGray,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        IconButton(onClick = onCommentsClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.Comment,
+                                contentDescription = "评论",
+                                tint = TextGray,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        IconButton(onClick = onMoreClick) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "更多",
+                                tint = TextGray,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
-                    IconButton(onClick = onCommentsClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.Comment,
-                            contentDescription = "评论",
-                            tint = TextGray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    IconButton(onClick = onMoreClick) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "更多",
-                            tint = TextGray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Shuffle, "Shuffle", tint = NeteaseRed, modifier = Modifier.size(26.dp))
-                    FloatingActionButton(
-                        onClick        = onPlayAll,
-                        containerColor = NeteaseRed,
-                        shape          = CircleShape,
-                        modifier       = Modifier
-                            .size(56.dp)
-                            .shadow(6.dp, CircleShape)
-                    ) {
-                        Icon(Icons.Default.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(32.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { /* 随机播放 */ },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(Icons.Default.Shuffle, "Shuffle", tint = NeteaseRed, modifier = Modifier.size(28.dp))
+                        }
+                        FloatingActionButton(
+                            onClick        = onPlayAll,
+                            containerColor = NeteaseRed,
+                            shape          = CircleShape,
+                            modifier       = Modifier
+                                .size(56.dp)
+                                .shadow(6.dp, CircleShape)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(32.dp))
+                        }
                     }
                 }
             }
@@ -1020,10 +1267,9 @@ private fun BaseSongRow(
 private fun SongRow(
     track: Track, 
     isActive: Boolean, 
-    likedSongIds: Set<Long>,
     onClick: () -> Unit,
-    onLikeClick: () -> Unit,
-    onArtistClick: (Long) -> Unit
+    onArtistClick: (Long) -> Unit,
+    onMoreClick: () -> Unit = {}
 ) {
     BaseSongRow(
         track = track,
@@ -1031,19 +1277,18 @@ private fun SongRow(
         onClick = onClick,
         onArtistClick = onArtistClick
     ) {
-        val isLiked = track.id in likedSongIds
         IconButton(
-            onClick = onLikeClick,
-            modifier = Modifier.size(32.dp).padding(end = 4.dp)
+            onClick = onMoreClick,
+            modifier = Modifier.size(40.dp)
         ) {
             Icon(
-                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = "收藏歌单操作",
-                tint = if (isLiked) NeteaseRed else TextGray,
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "更多",
+                tint = TextGray,
                 modifier = Modifier.size(20.dp)
             )
         }
-        Icon(Icons.Default.MoreVert, "More", tint = TextGray, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
     }
 }
 
@@ -1131,4 +1376,35 @@ private data class PlaylistMenuItem(
     val subtitle: String? = null,
     val onClick: () -> Unit
 )
+
+@Composable
+private fun OptionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    iconTint: Color = Color.White.copy(alpha = 0.7f),
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 15.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
 

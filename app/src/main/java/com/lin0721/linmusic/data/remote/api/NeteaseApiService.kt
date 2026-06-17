@@ -728,6 +728,7 @@ data class HistoryDatesResponse(
 
 @Serializable
 data class HistoryDatesData(
+    @SerialName("dates")
     val list: List<String> = emptyList()
 )
 
@@ -744,6 +745,7 @@ data class HistoryDetailResponse(
 
 @Serializable
 data class HistoryDetailData(
+    @SerialName("songs")
     val dailySongs: List<DailySong> = emptyList()
 )
 

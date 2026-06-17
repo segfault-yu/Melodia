@@ -93,8 +93,6 @@ fun MiniPlayerCard(
         animationSpec = tween(800),
         label = "mini_player_dominant"
     )
-    
-    // 采用与播放界面歌词卡片一致的算法
 
     val cardBackgroundColor = remember(animatedDominant) {
         val hsv = FloatArray(3)
@@ -105,7 +103,7 @@ fun MiniPlayerCard(
             hsv
         )
         if (hsv[1] < 0.05f) {
-            // 如果是灰度中性色，保持灰度，亮度设为适合底栏的深色，避免偏向红色
+            // 如果是灰度中性色，保持灰度，亮度设为适合底栏的深色
             hsv[1] = 0f
             hsv[2] = 0.15f
         } else {

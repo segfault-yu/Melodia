@@ -546,7 +546,7 @@ fun HistoryRecommendSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xFF12172A),
+        containerColor = BackgroundDark,
         dragHandle = null,
         shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
     ) {
@@ -577,19 +577,13 @@ fun HistoryRecommendSheet(
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "历史每日推荐",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "黑胶 VIP 专属功能",
-                        color = Color.Gray,
-                        fontSize = 12.sp
-                    )
-                }
+                Text(
+                    text = "历史每日推荐",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Default.Close, contentDescription = "关闭", tint = Color.Gray)
                 }
@@ -618,68 +612,70 @@ fun HistoryRecommendSheet(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("暂无历史记录", color = Color.Gray, fontSize = 14.sp)
-                        Text("需要黑胶 VIP 会员", color = Color.Gray.copy(alpha = 0.6f), fontSize = 12.sp)
+                        Text("需要 VIP 会员", color = Color.Gray.copy(alpha = 0.6f), fontSize = 12.sp)
                     }
                 }
             } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(400.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    // 左侧日期列表
-                    LazyColumn(
+                    // 顶部的日期 LazyRow
+                    LazyRow(
                         modifier = Modifier
-                            .width(110.dp)
-                            .fillMaxHeight()
-                            .background(Color(0xFF0D1120)),
-                        contentPadding = PaddingValues(vertical = 8.dp)
+                            .fillMaxWidth()
+                            .background(SurfaceDark)
+                            .padding(vertical = 12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(dates) { date ->
                             val isSelected = date == selectedDate
+                            val parts = date.split("-")
+                            val monthDay = if (parts.size == 3) "${parts[1]}/${parts[2]}" else date
+                            val year = parts.firstOrNull() ?: ""
+                            
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onDateSelected(date) }
+                                    .clip(RoundedCornerShape(8.dp))
                                     .background(
                                         if (isSelected) NeteaseRed.copy(alpha = 0.15f)
-                                        else Color.Transparent
+                                        else Color.White.copy(alpha = 0.03f)
                                     )
-                                    .padding(vertical = 14.dp, horizontal = 12.dp)
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.08f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { onDateSelected(date) }
+                                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                // 日期显示：拆分为月/日两行
-                                val parts = date.split("-")
-                                val monthDay = if (parts.size == 3) "${parts[1]}/${parts[2]}" else date
-                                val year = parts.firstOrNull() ?: ""
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = monthDay,
                                         color = if (isSelected) NeteaseRed else Color.White,
-                                        fontSize = 15.sp,
+                                        fontSize = 14.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )
+                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = year,
-                                        color = Color.Gray,
+                                        color = if (isSelected) NeteaseRed.copy(alpha = 0.7f) else Color.Gray,
                                         fontSize = 10.sp
-                                    )
-                                }
-                                if (isSelected) {
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.CenterEnd)
-                                            .width(3.dp)
-                                            .height(20.dp)
-                                            .clip(RoundedCornerShape(2.dp))
-                                            .background(NeteaseRed)
                                     )
                                 }
                             }
                         }
                     }
 
-                    // 右侧歌曲列表
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+
+                    // 下方的歌曲列表
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(380.dp)
+                    ) {
                         if (songsLoading) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
@@ -697,7 +693,7 @@ fun HistoryRecommendSheet(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable { onPlaySong(index) }
-                                            .padding(horizontal = 12.dp, vertical = 9.dp),
+                                            .padding(horizontal = 16.dp, vertical = 9.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         AsyncImage(
@@ -729,7 +725,7 @@ fun HistoryRecommendSheet(
                                     }
                                     if (index < songs.lastIndex) {
                                         HorizontalDivider(
-                                            modifier = Modifier.padding(start = 64.dp, end = 12.dp),
+                                            modifier = Modifier.padding(start = 68.dp, end = 16.dp),
                                             color = Color.White.copy(alpha = 0.05f),
                                             thickness = 0.5.dp
                                         )

@@ -388,6 +388,11 @@ fun MelodiaApp() {
                                     onArtistClick = { artistId ->
                                         activeArtistId = artistId
                                         navigateTo(Screen.Artist)
+                                    },
+                                    onAlbumClick = { albumId ->
+                                        activePlaylistId = albumId
+                                        activePlaylistIsAlbum = true
+                                        navigateTo(Screen.Playlist)
                                     }
                                 )
                             }

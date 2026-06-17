@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.ui.player.CommentsState
 import com.lin0721.linmusic.data.remote.api.CommentItem
+import com.lin0721.linmusic.data.remote.api.DailySong
 
 
 data class PlaylistCollectItem(
@@ -71,6 +72,22 @@ class PlaylistViewModel(
     private val _commentsState = MutableStateFlow<CommentsState>(CommentsState.Loading)
     val commentsState: StateFlow<CommentsState> = _commentsState.asStateFlow()
 
+    // 历史日推状态
+    private val _historyDates = MutableStateFlow<List<String>>(emptyList())
+    val historyDates: StateFlow<List<String>> = _historyDates.asStateFlow()
+
+    private val _historyDatesLoading = MutableStateFlow(false)
+    val historyDatesLoading: StateFlow<Boolean> = _historyDatesLoading.asStateFlow()
+
+    private val _historySongs = MutableStateFlow<List<DailySong>>(emptyList())
+    val historySongs: StateFlow<List<DailySong>> = _historySongs.asStateFlow()
+
+    private val _selectedDate = MutableStateFlow<String?>(null)
+    val selectedDate: StateFlow<String?> = _selectedDate.asStateFlow()
+
+    private val _historySongsLoading = MutableStateFlow(false)
+    val historySongsLoading: StateFlow<Boolean> = _historySongsLoading.asStateFlow()
+
 
     init {
         loadLikedSongIds()
@@ -92,7 +109,7 @@ class PlaylistViewModel(
         _uiState.value = PlaylistUiState.Loading
         _recommendedSongs.value = emptyList()
         allRecommendedTracks = emptyList()
-        loadJob?.cancel() // 取消之前的加载任务，防止并发竞态冲突导致状态错乱
+        loadJob?.cancel() // 取消之前的加载任务
         if (id == -1L) {
             loadJob = viewModelScope.launch {
                 repository.getDailyRecommendSongs().collect { result ->
@@ -110,8 +127,8 @@ class PlaylistViewModel(
                             val detail = PlaylistDetail(
                                 id = -1L,
                                 name = "每日推荐",
-                                coverImgUrl = "",
-                                description = "为您量身定制的每日好歌",
+                                coverImgUrl = tracks.firstOrNull()?.al?.picUrl ?: "",
+                                description = "为您量身定制的每日歌曲",
                                 playCount = 0L,
                                 tracks = tracks
                             )
@@ -172,7 +189,7 @@ class PlaylistViewModel(
 
                     val items = myPlaylists.map { playlist ->
                         async {
-                            // 喜欢歌单不需要额外请求详情，直接使用 _likedSongIds 判断
+                            // 直接使用 _likedSongIds 判断
                             val isInitiallyContains = if (playlist.name.contains("喜欢的音乐") || playlist.id == profile.uid) {
                                 _likedSongIds.value.contains(songId)
                             } else {
@@ -206,7 +223,13 @@ class PlaylistViewModel(
                     if (isLikedPlaylist) {
                         repository.likeSong(songId, item.isContains).collect { result ->
                             result.onSuccess {
-                                // 操作成功
+                                val currentLiked = _likedSongIds.value.toMutableSet()
+                                if (item.isContains) {
+                                    currentLiked.add(songId)
+                                } else {
+                                    currentLiked.remove(songId)
+                                }
+                                _likedSongIds.value = currentLiked
                             }.onFailure { e ->
                                 _toastEvent.emit("更新喜欢状态失败: ${e.message}")
                             }
@@ -228,10 +251,11 @@ class PlaylistViewModel(
                 }
             }
             _toastEvent.emit("歌单收藏更新成功")
-            loadLikedSongIds()
             val successState = _uiState.value as? PlaylistUiState.Success
             if (successState != null) {
-                loadPlaylist(successState.playlist.id, isAlbumMode)
+                if (profile != null && successState.playlist.id == profile.uid) {
+                    loadPlaylist(successState.playlist.id, isAlbumMode)
+                }
             }
         }
     }
@@ -246,8 +270,6 @@ class PlaylistViewModel(
                                 onSuccess = {
                                     _toastEvent.emit("创建并加入歌单成功")
                                     prepareCollectDialog(songId)
-                                    // 同时刷新喜欢状态和当前歌单（以防新建的是当前歌单，或者新建歌单影响了当前UI状态）
-                                    loadLikedSongIds()
                                 },
                                 onFailure = { e ->
                                     _toastEvent.emit("加入新建歌单失败: ${e.message}")
@@ -296,7 +318,7 @@ class PlaylistViewModel(
                     currentRecIndex = 0
                     updateCurrentRecommendations()
                 }.onFailure { e ->
-                    // 静默失败，不弹出 Toast，隐藏底部的推荐板块
+                    // 静默失败
                     _recommendedSongs.value = emptyList()
                     allRecommendedTracks = emptyList()
                 }
@@ -431,6 +453,95 @@ class PlaylistViewModel(
                     _commentsState.value = currentState
                     _toastEvent.emit("操作失败: ${e.message}")
                 }
+            }
+        }
+    }
+
+    // 加载历史日推可用日期
+    fun loadHistoryDates() {
+        viewModelScope.launch {
+            _historyDatesLoading.value = true
+            repository.getHistoryRecommendDates().collect { result ->
+                result.onSuccess { dates ->
+                    _historyDates.value = dates
+                    if (dates.isNotEmpty() && _selectedDate.value == null) {
+                        loadHistoryDetail(dates.first())
+                    }
+                }.onFailure {
+                    _toastEvent.emit("历史日推需要黑胶会员")
+                }
+                _historyDatesLoading.value = false
+            }
+        }
+    }
+
+    // 加载指定日期的历史日推歌曲
+    fun loadHistoryDetail(date: String) {
+        viewModelScope.launch {
+            _selectedDate.value = date
+            _historySongsLoading.value = true
+            repository.getHistoryRecommendDetail(date).collect { result ->
+                result.onSuccess { songs ->
+                    _historySongs.value = songs
+                    val currentState = _uiState.value
+                    if (currentState is PlaylistUiState.Success && currentState.playlist.id == -1L) {
+                        val newTracks = songs.map { song ->
+                            Track(
+                                id = song.id,
+                                name = song.name,
+                                ar = song.ar,
+                                al = song.al,
+                                fee = song.fee
+                            )
+                        }
+                        val updatedPlaylist = currentState.playlist.copy(
+                            tracks = newTracks
+                        )
+                        _uiState.value = PlaylistUiState.Success(updatedPlaylist)
+                    }
+                }.onFailure {
+                    _toastEvent.emit("加载失败：${it.message}")
+                }
+                _historySongsLoading.value = false
+            }
+        }
+    }
+
+    fun playHistorySong(index: Int) {
+        val songs = _historySongs.value
+        if (songs.isEmpty()) return
+        val queueItems = songs.map { song ->
+            QueueItem(song.id, song.name, song.ar.joinToString { it.name }, song.al.picUrl)
+        }
+        playerManager.playQueue(queueItems, index.coerceIn(0, queueItems.size - 1), "历史日推")
+    }
+
+    fun toggleLikeSong(songId: Long, isLike: Boolean) {
+        viewModelScope.launch {
+            repository.likeSong(songId, isLike).collect { result ->
+                result.fold(
+                    onSuccess = {
+                        _toastEvent.emit(if (isLike) "已添加到我喜欢的音乐" else "已从我喜欢的音乐中移除")
+                        val currentLiked = _likedSongIds.value.toMutableSet()
+                        if (isLike) {
+                            currentLiked.add(songId)
+                        } else {
+                            currentLiked.remove(songId)
+                        }
+                        _likedSongIds.value = currentLiked
+
+                        val successState = _uiState.value as? PlaylistUiState.Success
+                        if (successState != null) {
+                            val profile = userPreferences.userProfile.first()
+                            if (profile != null && successState.playlist.id == profile.uid) {
+                                loadPlaylist(successState.playlist.id, isAlbumMode)
+                            }
+                        }
+                    },
+                    onFailure = { e ->
+                        _toastEvent.emit("操作失败: ${e.message}")
+                    }
+                )
             }
         }
     }
