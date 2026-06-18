@@ -496,7 +496,7 @@ class PlayerManager(
     }
 
     private fun saveQueueState() {
-        scope.launch {
+        scope.launch(Dispatchers.Default) {
             playbackPreferences.saveQueueState(originalQueue, _currentIndex.value, _playContext.value)
         }
     }

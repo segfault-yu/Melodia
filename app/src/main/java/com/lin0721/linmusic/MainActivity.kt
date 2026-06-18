@@ -85,6 +85,9 @@ enum class AppSidebarState {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 初始化日志与崩溃收集系统
+        com.lin0721.linmusic.core.log.AppLogger.init(this)
+        com.lin0721.linmusic.core.log.CrashHandler.init(this)
         enableEdgeToEdge()
         setContent {
             MelodiaTheme {
@@ -99,7 +102,8 @@ fun MelodiaApp() {
     val viewModel: HomeViewModel = koinViewModel()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
     val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
-    val currentPosition by viewModel.playerManager.currentPosition.collectAsStateWithLifecycle()
+    val currentPositionState = viewModel.playerManager.currentPosition.collectAsStateWithLifecycle()
+    val currentPositionProvider = { currentPositionState.value }
     val duration by viewModel.playerManager.duration.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
@@ -111,7 +115,7 @@ fun MelodiaApp() {
     // springJob 不用 mutableStateOf，避免写入时触发不必要的 recomposition
     val springJobRef = remember { arrayOfNulls<kotlinx.coroutines.Job>(1) }
 
-    // 统一控制播放界面展开和收起的弹簧动画
+    // 统一管理播放界面展开和收起的弹簧动画
     fun animatePlayerTo(open: Boolean, velocity: Float, initialOffset: Float = Float.NaN) {
         springJobRef[0]?.cancel()
         if (open) {
@@ -323,7 +327,7 @@ fun MelodiaApp() {
             }
         }
 
-        // 2. 主页面内容层 (支持平移动画，带圆角过渡和阴影)
+        // 2. 主页面内容层
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -338,7 +342,11 @@ fun MelodiaApp() {
                 }
                 .background(BackgroundDark)
         ) {
-            Box(modifier = Modifier.fillMaxSize().haze(hazeState)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (isPlayerOpen) Modifier.haze(hazeState) else Modifier)
+            ) {
                 AnimatedContent(
                     targetState = currentScreen,
                     transitionSpec = {
@@ -467,7 +475,7 @@ fun MelodiaApp() {
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
             ) {
-                // 0. 创建菜单弹出层 (当需要显示时展示，置于播放器卡片上方)
+                // 0. 创建菜单弹出层
                 AnimatedVisibility(
                     visible = showCreateSheet && !isLoginScreenVisible,
                     enter = slideInVertically(
@@ -493,7 +501,7 @@ fun MelodiaApp() {
                     }
                 }
 
-                // 1. 浮动播放卡片 (只有在有曲目且非登录状态下显示)
+                // 1. 浮动播放卡片
                 AnimatedVisibility(
                     visible = currentTrack != null && !isLoginScreenVisible,
                     enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
@@ -503,7 +511,7 @@ fun MelodiaApp() {
                         hazeState = hazeState,
                         currentTrack = currentTrack,
                         isPlaying = isPlaying,
-                        currentPosition = currentPosition,
+                        currentPositionProvider = currentPositionProvider,
                         duration = duration,
                         onTogglePlay = { viewModel.togglePlayPause() },
                         onNext = { viewModel.playerManager.playNext() },
@@ -568,7 +576,7 @@ fun MelodiaApp() {
                 FullPlayerScreen(
                     currentTrack = currentTrack,
                     isPlaying = isPlaying,
-                    currentPosition = currentPosition,
+                    currentPositionProvider = currentPositionProvider,
                     duration = duration,
                     onTogglePlay = { viewModel.togglePlayPause() },
                     onSeek = { viewModel.playerManager.seekTo(it) },

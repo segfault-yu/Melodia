@@ -300,8 +300,19 @@ private fun SearchSongRow(song: SearchSong, isActive: Boolean, onClick: () -> Un
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val context = LocalContext.current
+        val imageRequest = remember(song.al.picUrl) {
+            if (!song.al.picUrl.isNullOrBlank()) {
+                coil.request.ImageRequest.Builder(context)
+                    .data("${song.al.picUrl}?param=100y100")
+                    .crossfade(true)
+                    .build()
+            } else {
+                null
+            }
+        }
         AsyncImage(
-            model = "${song.al.picUrl}?param=100y100",
+            model = imageRequest,
             contentDescription = song.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))

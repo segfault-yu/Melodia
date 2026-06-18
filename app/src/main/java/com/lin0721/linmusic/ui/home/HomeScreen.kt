@@ -317,7 +317,14 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         items(playlists, key = { it.id }) { playlist ->
             Column(modifier = Modifier.width(150.dp).clickable { onClick(playlist) }) {
-                AsyncImage(model = "${playlist.picUrl}?param=200y200", contentDescription = null, modifier = Modifier.size(150.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
+                val context = LocalContext.current
+                val imageRequest = remember(playlist.picUrl) {
+                    coil.request.ImageRequest.Builder(context)
+                        .data("${playlist.picUrl}?param=200y200")
+                        .crossfade(true)
+                        .build()
+                }
+                AsyncImage(model = imageRequest, contentDescription = null, modifier = Modifier.size(150.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
@@ -331,7 +338,14 @@ fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.Rece
         items(items, key = { it.data.id }) { item ->
             val playlist = item.data
             Column(modifier = Modifier.width(150.dp).clickable { onClick(item) }) {
-                AsyncImage(model = "${playlist.picUrl}?param=300y300", contentDescription = null, modifier = Modifier.size(150.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
+                val context = LocalContext.current
+                val imageRequest = remember(playlist.picUrl) {
+                    coil.request.ImageRequest.Builder(context)
+                        .data("${playlist.picUrl}?param=300y300")
+                        .crossfade(true)
+                        .build()
+                }
+                AsyncImage(model = imageRequest, contentDescription = null, modifier = Modifier.size(150.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(2.dp))
@@ -496,8 +510,15 @@ fun ArtistCircleCard(artist: com.lin0721.linmusic.data.repository.ArtistInfo) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp).clickable { /* artist click */ }
     ) {
+        val context = LocalContext.current
+        val imageRequest = remember(artist.avatarUrl) {
+            coil.request.ImageRequest.Builder(context)
+                .data("${artist.avatarUrl}?param=200y200")
+                .crossfade(true)
+                .build()
+        }
         AsyncImage(
-            model = "${artist.avatarUrl}?param=200y200", 
+            model = imageRequest,
             contentDescription = artist.name,
             modifier = Modifier
                 .size(100.dp)
@@ -832,6 +853,30 @@ private fun ForYouCard(
     fallbackGradientColors: List<Color>,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    
+    // 固化清晰封面的加载请求
+    val coverRequest = remember(coverUrl) {
+        if (!coverUrl.isNullOrBlank()) {
+            coil.request.ImageRequest.Builder(context)
+                .data("$coverUrl?param=300y300")
+                .crossfade(true)
+                .build()
+        } else {
+            null
+        }
+    }
+    // 固化低清虚化背景的加载请求 (拉取 30x30 小图)
+    val blurBgRequest = remember(coverUrl) {
+        if (!coverUrl.isNullOrBlank()) {
+            coil.request.ImageRequest.Builder(context)
+                .data("$coverUrl?param=30y30")
+                .crossfade(true)
+                .build()
+        } else {
+            null
+        }
+    }
     val fallbackIcon = when (title) {
         "每日推荐" -> Icons.Rounded.DateRange
         "热歌榜" -> Icons.Rounded.Star
@@ -849,13 +894,13 @@ private fun ForYouCard(
             .clickable { onClick() }
     ) {
         // 底层模糊背景
-        if (!coverUrl.isNullOrBlank()) {
+        if (blurBgRequest != null) {
             AsyncImage(
-                model = "$coverUrl?param=100y100",
+                model = blurBgRequest,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(24.dp)
+                    .blur(8.dp) 
                     .graphicsLayer(alpha = 0.35f),
                 contentScale = ContentScale.Crop
             )
@@ -873,9 +918,9 @@ private fun ForYouCard(
                 .align(Alignment.TopCenter)
                 .size(150.dp)
         ) {
-            if (!coverUrl.isNullOrBlank()) {
+            if (coverRequest != null) {
                 AsyncImage(
-                    model = "$coverUrl?param=300y300",
+                    model = coverRequest,
                     contentDescription = title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

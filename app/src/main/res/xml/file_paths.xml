@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 指定允许分享的缓存目录子路径，对应 cacheDir 中的 logs 文件夹 -->
+    <cache-path name="app_logs" path="logs/" />
+</paths>

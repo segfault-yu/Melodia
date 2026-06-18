@@ -7,6 +7,7 @@ import com.lin0721.linmusic.data.remote.network.HeaderInterceptor
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import com.lin0721.linmusic.BuildConfig
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.dsl.module
 import retrofit2.Retrofit
@@ -53,7 +54,7 @@ val networkModule = module {
             .addInterceptor(get<CryptoInterceptor>())
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BODY
+                    level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
                 }
             )
             .connectTimeout(30, TimeUnit.SECONDS)

@@ -64,7 +64,7 @@ import java.util.Locale
 
 private val TOP_BAR_HEIGHT = 56.dp
 private val COVER_MAX_SIZE = 280.dp
-private val COVER_MIN_SIZE = 0.dp // 完全折叠收缩到 0
+private val COVER_MIN_SIZE = 0.dp
 
 @Composable
 fun ArtistScreen(
@@ -242,7 +242,7 @@ private fun ArtistContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // 1. 大图背景 (固定在顶部)
+        // 1. 大图背景
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1151,8 +1151,19 @@ private fun ArtistSongRow(
             textAlign = androidx.compose.ui.text.style.TextAlign.Start
         )
 
+        val context = LocalContext.current
+        val imageRequest = remember(track.al.picUrl) {
+            if (!track.al.picUrl.isNullOrBlank()) {
+                coil.request.ImageRequest.Builder(context)
+                    .data("${track.al.picUrl}?param=100y100")
+                    .crossfade(true)
+                    .build()
+            } else {
+                null
+            }
+        }
         AsyncImage(
-            model = "${track.al.picUrl}?param=100y100",
+            model = imageRequest,
             contentDescription = track.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier

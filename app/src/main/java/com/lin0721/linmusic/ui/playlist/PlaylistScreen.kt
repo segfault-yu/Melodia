@@ -60,6 +60,12 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Velocity
+import kotlinx.coroutines.launch
 
 // TopBar 操作区高度（不含状态栏）
 private val TOP_BAR_HEIGHT = 56.dp
@@ -448,12 +454,88 @@ private fun PlaylistContent(
     var collectSongId by remember { mutableStateOf<Long?>(null) }
     var activeSongMoreOptions by remember { mutableStateOf<Track?>(null) }
 
+    // 下拉阈值超过 40dp 触发弹出
+    val snapThresholdPx = with(density) { 40.dp.toPx() }
+    var pullAccumulator by remember { mutableFloatStateOf(0f) }
+    // 标记是否通过主动拖拽打开，防止 fling 误入 item 0 后被误判为已打开
+    var intentionallyOpened by remember { mutableStateOf(false) }
+
+    // 搜索栏二态吸附
+    val searchBarSnapConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (isDailyRecommend) return Offset.Zero
+
+                // 在 item 1 顶部边界
+                if (available.y > 0 && listState.firstVisibleItemIndex == 1
+                    && listState.firstVisibleItemScrollOffset == 0
+                ) {
+                    if (source == NestedScrollSource.UserInput) {
+                        pullAccumulator += available.y
+                        if (pullAccumulator >= snapThresholdPx) {
+                            pullAccumulator = 0f
+                            intentionallyOpened = true
+                            // 阈值达到，放行让后续拖拽自然滚到 item 0
+                            // gesture 持有 scroll mutex，此时不能调用 animateScrollToItem
+                            return Offset.Zero
+                        }
+                    }
+                    // 未达阈值的拖拽 或 fling：消耗全部，停在 item 1
+                    return available
+                }
+
+                if (available.y < 0) {
+                    pullAccumulator = 0f
+                    // 向上滑动收起搜索栏时重置标记
+                    if (listState.firstVisibleItemIndex >= 1) intentionallyOpened = false
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                pullAccumulator = 0f
+                // 手指已抬起，gesture 结束，mutex 已释放，此处调用动画安全
+                // 若已达阈值但 list 还没滚到 item 0，补充动画
+                if (intentionallyOpened && listState.firstVisibleItemIndex != 0) {
+                    listState.animateScrollToItem(0)
+                    return available // 消耗 fling 速度，由动画接管
+                }
+                return Velocity.Zero
+            }
+
+            // 如果 fling 仍然越过了边界进入 item 0，强制 snap 回 item 1
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                if (!isDailyRecommend && listState.firstVisibleItemIndex == 0 && !intentionallyOpened) {
+                    listState.animateScrollToItem(1)
+                }
+                return Velocity.Zero
+            }
+        }
+    }
+
+    // 慢速拖拽后的吸附：手势结束时若搜索栏处于中间态，自动就近吸附
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (!listState.isScrollInProgress && !isDailyRecommend
+            && listState.firstVisibleItemIndex == 0
+        ) {
+            val itemInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }
+            val itemHeight = itemInfo?.size ?: return@LaunchedEffect
+            if (listState.firstVisibleItemScrollOffset > itemHeight / 2) {
+                intentionallyOpened = false
+                listState.animateScrollToItem(1)
+            } else {
+                listState.animateScrollToItem(0)
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
 
         // ── 1. 滚动内容 ───────────────────────────────────────────────────
         LazyColumn(
             state          = listState,
-            contentPadding = PaddingValues(bottom = 180.dp)
+            contentPadding = PaddingValues(bottom = 180.dp),
+            modifier       = Modifier.nestedScroll(searchBarSnapConnection)
         ) {
             // Item 0：搜索栏（下拉可见）
             if (!isDailyRecommend) {
@@ -467,8 +549,8 @@ private fun PlaylistContent(
                 }
             }
 
-            // Item 1：全出血 Hero
-            // 封面从内容顶部延伸，视觉上与透明 overlay 无缝衔接
+            
+            // Item 1：全出血 Hero 
             item(key = "header") {
                 PlaylistHeaderItem(
                     playlist            = playlist,
@@ -606,7 +688,7 @@ private fun PlaylistContent(
                 .padding(top = statusBarHeight) // 内容区域被挤到状态栏下方
                 .zIndex(8f)
         ) {
-            // 返回键：始终可见（白色图标浮在封面/背景上）
+            // 返回键
             IconButton(
                 onClick  = onBack,
                 modifier = Modifier
@@ -634,7 +716,7 @@ private fun PlaylistContent(
             )
         }
 
-        // 折叠后吸附播放按钮（半挂 overlay 底部边缘，每日推荐歌单隐藏）
+        // 折叠后吸附播放按钮（每日推荐歌单隐藏）
         val fabScale = ((progress - 0.8f) / 0.2f).coerceIn(0f, 1f)
         if (!isDailyRecommend && fabScale > 0f) {
             FloatingActionButton(
@@ -1123,12 +1205,16 @@ private fun PlaylistHeaderItem(
                 .padding(top = statusBarHeight + 16.dp, bottom = 16.dp),
             contentAlignment = Alignment.Center
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
+            val context = LocalContext.current
+            val coverRequest = remember(playlist.coverImgUrl) {
+                ImageRequest.Builder(context)
                     .data("${playlist.coverImgUrl}?param=400y400")
-                    .allowHardware(false) // 禁用硬件位图
+                    .allowHardware(false)
                     .crossfade(true)
-                    .build(),
+                    .build()
+            }
+            AsyncImage(
+                model              = coverRequest,
                 contentDescription = playlist.name,
                 contentScale       = ContentScale.Crop,
                 onSuccess          = { state -> 
@@ -1256,8 +1342,19 @@ private fun BaseSongRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val context = LocalContext.current
+        val imageRequest = remember(track.al.picUrl) {
+            if (!track.al.picUrl.isNullOrBlank()) {
+                coil.request.ImageRequest.Builder(context)
+                    .data("${track.al.picUrl}?param=100y100")
+                    .crossfade(true)
+                    .build()
+            } else {
+                null
+            }
+        }
         AsyncImage(
-            model              = "${track.al.picUrl}?param=100y100",
+            model              = imageRequest,
             contentDescription = track.name,
             contentScale       = ContentScale.Crop,
             modifier           = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))

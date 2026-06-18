@@ -112,7 +112,7 @@ import com.lin0721.linmusic.ui.components.ToastManager
 fun FullPlayerScreen(
     currentTrack: MediaItem?,
     isPlaying: Boolean,
-    currentPosition: Long,
+    currentPositionProvider: () -> Long,
     duration: Long,
     onTogglePlay: () -> Unit,
     onSeek: (Long) -> Unit,
@@ -504,7 +504,7 @@ fun FullPlayerScreen(
             item(key = "progress") {
                 val displayDuration = if (duration > 0L) duration else (songDetail?.dt ?: 0L)
                 ProgressSection(
-                    currentPosition = currentPosition,
+                    currentPositionProvider = currentPositionProvider,
                     duration = displayDuration,
                     onSeek = onSeek
                 )
@@ -687,7 +687,7 @@ fun FullPlayerScreen(
                 hazeState = hazeState,
                 onClose = { isLyricsFullScreen = false },
                 isPlaying = isPlaying,
-                currentPosition = currentPosition,
+                currentPositionProvider = currentPositionProvider,
                 duration = duration,
                 onTogglePlay = onTogglePlay,
                 onPlayNext = viewModel.playerManager::playNext,

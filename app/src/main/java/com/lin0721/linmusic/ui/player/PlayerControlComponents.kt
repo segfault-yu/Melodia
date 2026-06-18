@@ -435,13 +435,14 @@ fun MiniLyricLine(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgressSection(
-    currentPosition: Long,
+    currentPositionProvider: () -> Long,
     duration: Long,
     onSeek: (Long) -> Unit
 ) {
     var isSeeking by remember { mutableStateOf(false) }
     var seekPosition by remember { mutableFloatStateOf(0f) }
 
+    val currentPosition = currentPositionProvider()
     val progress = if (duration > 0) {
         if (isSeeking) seekPosition else currentPosition.toFloat() / duration
     } else 0f

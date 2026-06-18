@@ -54,7 +54,7 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 fun MiniPlayerCard(
     currentTrack: MediaItem?,
     isPlaying: Boolean,
-    currentPosition: Long,
+    currentPositionProvider: () -> Long,
     duration: Long,
     onTogglePlay: () -> Unit,
     onNext: () -> Unit,
@@ -199,21 +199,35 @@ fun MiniPlayerCard(
             }
             
             // 底部进度条
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(Color.White.copy(alpha = 0.08f))
-            ) {
-                val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(progress.coerceIn(0f, 1f))
-                        .fillMaxHeight()
-                        .background(NeteaseRed)
-                )
-            }
+            MiniPlayerProgress(
+                currentPositionProvider = currentPositionProvider,
+                duration = duration
+            )
         }
+    }
+}
+
+// 进度条组件
+@Composable
+fun MiniPlayerProgress(
+    currentPositionProvider: () -> Long,
+    duration: Long,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(2.dp)
+            .background(Color.White.copy(alpha = 0.08f))
+    ) {
+        val currentPosition = currentPositionProvider()
+        val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .background(NeteaseRed)
+        )
     }
 }
 

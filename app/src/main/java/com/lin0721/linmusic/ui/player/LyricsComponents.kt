@@ -370,7 +370,7 @@ fun FullScreenLyricsView(
     hazeState: HazeState,
     onClose: () -> Unit,
     isPlaying: Boolean,
-    currentPosition: Long,
+    currentPositionProvider: () -> Long,
     duration: Long,
     onTogglePlay: () -> Unit,
     onPlayNext: () -> Unit,
@@ -814,7 +814,7 @@ fun FullScreenLyricsView(
                                 if (isCurrent && line.words.isNotEmpty()) {
                                     KaraokeLyricRow(
                                         line = line,
-                                        currentPositionMs = currentPosition,
+                                        currentPositionProvider = currentPositionProvider,
                                         inactiveColor = Color.White.copy(alpha = 0.35f),
                                         activeColor = Color.White,
                                         fontSize = 22.sp
@@ -856,7 +856,7 @@ fun FullScreenLyricsView(
 
             FullScreenControls(
                 isPlaying = isPlaying,
-                currentPosition = currentPosition,
+                currentPositionProvider = currentPositionProvider,
                 duration = duration,
                 onSeek = onSeek,
                 onTogglePlay = onTogglePlay,
@@ -937,7 +937,7 @@ private fun PlayCapsule(
 @Composable
 private fun FullScreenControls(
     isPlaying: Boolean,
-    currentPosition: Long,
+    currentPositionProvider: () -> Long,
     duration: Long,
     onSeek: (Long) -> Unit,
     onTogglePlay: () -> Unit,
@@ -951,6 +951,7 @@ private fun FullScreenControls(
     var isSeeking by remember { mutableStateOf(false) }
     var seekPosition by remember { mutableFloatStateOf(0f) }
 
+    val currentPosition = currentPositionProvider()
     val progress = if (duration > 0) {
         if (isSeeking) seekPosition else currentPosition.toFloat() / duration
     } else 0f
@@ -1134,13 +1135,13 @@ private class LyricLayoutInfo(
 @Composable
 fun KaraokeLyricRow(
     line: LyricLine,
-    currentPositionMs: Long,
+    currentPositionProvider: () -> Long,
     inactiveColor: Color,
     activeColor: Color,
     fontSize: TextUnit = 22.sp
 ) {
     var textLayoutResult by remember(line) { mutableStateOf<TextLayoutResult?>(null) }
-    val currentPositionState = rememberUpdatedState(currentPositionMs)
+    val currentPositionProviderState = rememberUpdatedState(currentPositionProvider)
     
     // 在排版结果解析后，仅计算并缓存一次每个字词与行的物理渲染坐标，彻底避免每帧重复调用 getBoundingBox 的 JNI 开销
     val lyricLayoutInfo = remember(line, textLayoutResult) {
@@ -1239,7 +1240,7 @@ fun KaraokeLyricRow(
                                 density: Density
                             ): Outline {
                                 val path = androidx.compose.ui.graphics.Path()
-                                val relativeProgress = currentPositionState.value - line.timeMs
+                                val relativeProgress = currentPositionProviderState.value() - line.timeMs
 
                                 info.lineLayouts.forEachIndexed { lineIndex, lineLayout ->
                                     val lastWordOnLine = info.wordLayouts.lastOrNull { it.lineIndex == lineIndex }

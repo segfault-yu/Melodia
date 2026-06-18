@@ -17,16 +17,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Context
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
+import com.lin0721.linmusic.ui.components.ToastManager
 import com.lin0721.linmusic.ui.theme.NeteaseRed
 import com.lin0721.linmusic.ui.theme.SurfaceLight
 import com.lin0721.linmusic.ui.theme.TextGray
 
 @Composable
 fun AboutSettingsView() {
+    val context = LocalContext.current
+
     // 渲染“关于”子设置项
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
@@ -39,7 +46,7 @@ fun AboutSettingsView() {
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text("Melodia Player", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("Version 1.0.4 (api-enhanced)", color = TextGray, fontSize = 13.sp)
+            Text("Version 1.0.0", color = TextGray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -47,7 +54,7 @@ fun AboutSettingsView() {
             SettingsGroupCard("应用说明与协议") {
                 Text(
                     text = "Melodia 是一款基于 Jetpack Compose 构建的第三方网易云音乐播放器。\n\n" +
-                            "本项目基于开源协议发布，底层借助 api-enhanced 引擎提供了多样化的音质定制通道。",
+                            "本项目基于开源协议发布。",
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Start,
@@ -71,5 +78,58 @@ fun AboutSettingsView() {
                 }
             }
         }
+
+        item {
+            SettingsGroupCard("诊断与日志") {
+                SettingsRow(
+                    title = "导出并分享日志",
+                    subtitle = "当应用发生故障时，可将本地运行日志导出",
+                    onClick = {
+                        exportAndShareLogs(context)
+                    }
+                )
+            }
+        }
+
+        item {
+            SettingsGroupCard("特别鸣谢") {
+                Text(
+                    text = "本项目的开发与运行离不开以下优秀开源项目的支持：\n\n" +
+                            "• NeteaseCloudMusicApiEnhanced (api-enhanced 引擎)\n" +
+                            "• Jetpack Compose & Media3\n" +
+                            "• Retrofit & OkHttp\n" +
+                            "• Koin\n" +
+                            "• Coil\n" +
+                            "• Haze",
+                    color = TextGray,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Start,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+            }
+        }
+    }
+}
+
+fun exportAndShareLogs(context: Context) {
+    val logFile = com.lin0721.linmusic.core.log.AppLogger.getLogFile()
+    if (logFile == null || !logFile.exists()) {
+        ToastManager.showToast("暂未产生诊断日志哦！")
+        return
+    }
+    try {
+        val authority = "${context.packageName}.fileprovider"
+        val fileUri = FileProvider.getUriForFile(context, authority, logFile)
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_STREAM, fileUri)
+            putExtra(Intent.EXTRA_SUBJECT, "Melodia 诊断日志反馈")
+            putExtra(Intent.EXTRA_TEXT, "这是来自用户的 Melodia 诊断日志文件。")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // 授权目标 App 读取该 URI
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "导出并提交日志"))
+    } catch (e: Exception) {
+        ToastManager.showToast("日志导出分享失败了...")
     }
 }
