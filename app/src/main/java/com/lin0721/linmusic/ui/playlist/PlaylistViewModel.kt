@@ -110,6 +110,13 @@ class PlaylistViewModel(
         _recommendedSongs.value = emptyList()
         allRecommendedTracks = emptyList()
         loadJob?.cancel() // 取消之前的加载任务
+        if (id == -2L) {
+            _selectedDate.value = "最近一周"
+            loadJob = viewModelScope.launch {
+                loadUserRecord(1)
+            }
+            return
+        }
         if (id == -1L) {
             _selectedDate.value = "今天"
             loadJob = viewModelScope.launch {
@@ -475,6 +482,11 @@ class PlaylistViewModel(
 
     // 加载指定日期的历史日推歌曲
     fun loadHistoryDetail(date: String) {
+        if (date == "weekly" || date == "all") {
+            val type = if (date == "weekly") 1 else 0
+            loadUserRecord(type)
+            return
+        }
         viewModelScope.launch {
             _selectedDate.value = date
             _historySongsLoading.value = true
@@ -501,6 +513,40 @@ class PlaylistViewModel(
                     _toastEvent.emit("加载失败：${it.message}")
                 }
                 _historySongsLoading.value = false
+            }
+        }
+    }
+
+    fun loadUserRecord(type: Int) {
+        viewModelScope.launch {
+            val dateLabel = if (type == 1) "最近一周" else "所有时间"
+            _selectedDate.value = dateLabel
+            _historySongsLoading.value = true
+            val profile = userPreferences.userProfile.first()
+            if (profile == null) {
+                _toastEvent.emit("请先登录")
+                _historySongsLoading.value = false
+                return@launch
+            }
+            repository.getUserRecord(profile.uid, type).collect { result ->
+                result.fold(
+                    onSuccess = { tracks ->
+                        val detail = PlaylistDetail(
+                            id = -2L,
+                            name = "听歌排行的歌单",
+                            coverImgUrl = tracks.firstOrNull()?.al?.picUrl ?: "",
+                            description = "根据您的听歌记录统计",
+                            playCount = 0L,
+                            tracks = tracks
+                        )
+                        _uiState.value = PlaylistUiState.Success(detail)
+                        _historySongsLoading.value = false
+                    },
+                    onFailure = { error ->
+                        _toastEvent.emit("获取听歌排行失败：${error.message}")
+                        _historySongsLoading.value = false
+                    }
+                )
             }
         }
     }

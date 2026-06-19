@@ -147,6 +147,11 @@ interface NeteaseApiService {
         @Body body: UserPlaylistRequest
     ): UserPlaylistResponse
 
+    @POST("/weapi/v1/play/record")
+    suspend fun getUserRecord(
+        @Body body: UserRecordRequest
+    ): UserRecordResponse
+
     // 获取收藏专辑
     @POST("/eapi/album/sublist")
     suspend fun getAlbumSublist(
@@ -869,6 +874,30 @@ data class HighQualityPlaylist(
     val coverImgUrl: String = "",
     val tags: List<String> = emptyList(),
     val playCount: Long = 0
+)
+
+// ======================= 听歌排行 DTOs =======================
+
+@Serializable
+data class UserRecordRequest(
+    val uid: Long,
+    val type: Int
+)
+
+@Serializable
+data class UserRecordResponse(
+    val code: Int = 0,
+    val weekData: List<UserRecordItem>? = null,
+    val allData: List<UserRecordItem>? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class UserRecordItem(
+    val playCount: Int = 0,
+    val score: Int = 0,
+    val song: Track
 )
 
 // ======================= 音乐库 (Library) DTOs =======================

@@ -129,6 +129,9 @@ interface MusicRepository {
     // 获取用户歌单
     fun getUserPlaylists(uid: Long, limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.data.remote.api.UserPlaylist>>>
 
+    // 获取听歌排行
+    fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>>
+
     // 获取收藏专辑
     fun getCollectedAlbums(limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.data.remote.api.AlbumSubItem>>>
 

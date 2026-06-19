@@ -168,6 +168,13 @@ fun PlaylistScreen(
                             viewModel.playSongInList(first, state.playlist.tracks)
                         }
                     },
+                    onShufflePlay = {
+                        val tracks = state.playlist.tracks
+                        if (tracks.isNotEmpty()) {
+                            val shuffled = tracks.shuffled()
+                            viewModel.playSongInList(shuffled.first(), shuffled)
+                        }
+                    },
                     onLikeClick = { songId ->
                         viewModel.prepareCollectDialog(songId)
                     },
@@ -389,6 +396,7 @@ private fun PlaylistContent(
     onPlaySong: (Track) -> Unit,
     onAddToPlayNext: (Track) -> Unit,
     onPlayAll: () -> Unit,
+    onShufflePlay: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
     onSaveNewCollection: (String, Long) -> Unit,
@@ -410,7 +418,7 @@ private fun PlaylistContent(
 ) {
     val density = LocalDensity.current
 
-    val isDailyRecommend = playlist.id == -1L
+    val isDailyRecommend = playlist.id == -1L || playlist.id == -2L
     // 初始显示 index=1（封面），搜索栏 index=0 藏于上方，下拉可见（每日推荐无搜索栏，初始显示 index=0）
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = if (isDailyRecommend) 0 else 1)
     var searchQuery by remember { mutableStateOf("") }
@@ -561,6 +569,7 @@ private fun PlaylistContent(
                     dominantColor       = dominantColor,
                     onColorCalculated   = { dominantColor = it },
                     onPlayAll           = onPlayAll,
+                    onShufflePlay       = onShufflePlay,
                     isSubscribed        = isSubscribed,
                     onSubscribeClick    = onSubscribeClick,
                     onCommentsClick     = onCommentsClick,
@@ -580,8 +589,8 @@ private fun PlaylistContent(
                             .fillMaxWidth()
                             .background(BackgroundDark)
                             .padding(vertical = 12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         this@LazyRow.items(allDates) { date ->
                             val isSelected = date == selectedHistoryDate
@@ -596,13 +605,7 @@ private fun PlaylistContent(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(
-                                        if (isSelected) NeteaseRed.copy(alpha = 0.15f)
-                                        else Color.White.copy(alpha = 0.05f)
-                                    )
-                                    .border(
-                                        width = 1.dp,
-                                        color = if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f),
-                                        shape = RoundedCornerShape(20.dp)
+                                        if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f)
                                     )
                                     .clickable {
                                         onSelectedHistoryDateChange(date)
@@ -612,14 +615,55 @@ private fun PlaylistContent(
                                             onLoadHistoryDetail(date)
                                         }
                                     }
-                                    .padding(vertical = 6.dp, horizontal = 16.dp),
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = displayText,
-                                    color = if (isSelected) NeteaseRed else Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    color = if (isSelected) Color.White else Color.LightGray,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (playlist.id == -2L) {
+                item(key = "user_record_filter") {
+                    val allFilters = listOf("最近一周", "所有时间")
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(BackgroundDark)
+                            .padding(vertical = 12.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(allFilters.size) { index ->
+                            val filter = allFilters[index]
+                            val isSelected = filter == selectedHistoryDate
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(
+                                        if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f)
+                                    )
+                                    .clickable {
+                                        onSelectedHistoryDateChange(filter)
+                                        if (filter == "最近一周") {
+                                            onLoadHistoryDetail("weekly")
+                                        } else {
+                                            onLoadHistoryDetail("all")
+                                        }
+                                    }
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = filter,
+                                    color = if (isSelected) Color.White else Color.LightGray,
+                                    fontSize = 14.sp
                                 )
                             }
                         }
@@ -1170,6 +1214,7 @@ private fun PlaylistHeaderItem(
     dominantColor: Color,
     onColorCalculated: (Color) -> Unit,
     onPlayAll: () -> Unit,
+    onShufflePlay: () -> Unit,
     isSubscribed: Boolean,
     onSubscribeClick: () -> Unit,
     onCommentsClick: () -> Unit,
@@ -1236,6 +1281,8 @@ private fun PlaylistHeaderItem(
                 Spacer(Modifier.height(6.dp))
                 if (playlist.id == -1L) {
                     Text(displayDateStr, color = TextGray, fontSize = 13.sp)
+                } else if (playlist.id == -2L) {
+                    Text("网易云个人听歌记录统计", color = TextGray, fontSize = 13.sp)
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (playlist.creator != null) {
@@ -1265,7 +1312,7 @@ private fun PlaylistHeaderItem(
                 Text("${playlist.tracks.size} 首歌曲$playCountText", color = TextGray, fontSize = 12.sp)
             }
 
-            if (playlist.id != -1L) {
+            if (playlist.id != -1L && playlist.id != -2L) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1301,7 +1348,7 @@ private fun PlaylistHeaderItem(
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
-                            onClick = { /* 随机播放 */ },
+                            onClick = onShufflePlay,
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(Icons.Default.Shuffle, "Shuffle", tint = NeteaseRed, modifier = Modifier.size(28.dp))

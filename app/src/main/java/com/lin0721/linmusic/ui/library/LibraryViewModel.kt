@@ -148,6 +148,23 @@ class LibraryViewModel(
                         playCount = playlist.playCount,
                         isLikedSongs = index == 0 && playlist.creator?.userId == profile.uid
                     )
+                }.toMutableList()
+
+                val recordPlaylist = LibraryItem(
+                    id = "-2",
+                    title = "听歌排行的歌单",
+                    subtitle = "歌单 · 听歌排行统计",
+                    coverUrl = "",
+                    type = LibraryItemType.PLAYLIST,
+                    updateTime = System.currentTimeMillis(),
+                    trackCount = 0,
+                    playCount = 0,
+                    isLikedSongs = false
+                )
+                if (mappedPlaylists.isNotEmpty()) {
+                    mappedPlaylists.add(1, recordPlaylist)
+                } else {
+                    mappedPlaylists.add(recordPlaylist)
                 }
 
                 val mappedArtists = artists.map { artist ->
@@ -233,8 +250,21 @@ class LibraryViewModel(
         
         val finalList = pinnedItems + sortedUnpinned
         
+        val listWithoutSpecial = finalList.filter { it.id != "-2" && !it.isLikedSongs }
+        val likedSongsItem = finalList.find { it.isLikedSongs }
+        val recordItem = finalList.find { it.id == "-2" }
+        
+        val finalListAdjusted = mutableListOf<LibraryItem>()
+        if (likedSongsItem != null) {
+            finalListAdjusted.add(likedSongsItem)
+        }
+        if (recordItem != null) {
+            finalListAdjusted.add(recordItem)
+        }
+        finalListAdjusted.addAll(listWithoutSpecial)
+        
         _uiState.update {
-            it.copy(filteredItems = finalList)
+            it.copy(filteredItems = finalListAdjusted)
         }
     }
 

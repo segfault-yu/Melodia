@@ -411,6 +411,26 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
+    override fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>> = flow {
+        val response = apiService.getUserRecord(UserRecordRequest(uid = uid, type = type))
+        if (response.isSuccess) {
+            val list = if (type == 1) {
+                response.weekData?.map { it.song } ?: emptyList()
+            } else {
+                response.allData?.map { it.song } ?: emptyList()
+            }
+            val blockedIds = userPreferences.blockedArtistIds.first()
+            val filteredTracks = list.filter { track ->
+                track.ar.none { artist -> blockedIds.contains(artist.id) }
+            }
+            emit(Result.success(filteredTracks))
+        } else {
+            emit(Result.failure(Exception("获取听歌排行失败: code ${response.code}")))
+        }
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
+
     override fun getCollectedAlbums(limit: Int): Flow<Result<List<com.lin0721.linmusic.data.remote.api.AlbumSubItem>>> = flow {
         val response = apiService.getAlbumSublist(com.lin0721.linmusic.data.remote.api.AlbumSublistRequest(limit = limit))
         if (response.isSuccess) {
