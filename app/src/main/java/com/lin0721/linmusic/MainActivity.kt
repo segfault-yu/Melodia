@@ -28,14 +28,11 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,11 +65,19 @@ import com.lin0721.linmusic.ui.home.HomeScreen
 import com.lin0721.linmusic.ui.home.HomeViewModel
 import com.lin0721.linmusic.ui.player.FullPlayerScreen
 import com.lin0721.linmusic.ui.theme.BackgroundDark
+import com.lin0721.linmusic.ui.theme.SurfaceDark
 import com.lin0721.linmusic.ui.theme.MelodiaTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import android.content.Intent
+import androidx.lifecycle.lifecycleScope
+import com.lin0721.linmusic.data.local.SettingsPreferences
+import com.lin0721.linmusic.player.FloatingLyricService
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
+import org.koin.android.ext.android.inject
 
 enum class Screen {
     Home, Playlist, Search, Library, Settings, Artist
@@ -82,21 +87,58 @@ enum class AppSidebarState {
     Closed, Open
 }
 
+
+
 class MainActivity : ComponentActivity() {
+
+    private val settingsPreferences: SettingsPreferences by inject()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 初始化日志与崩溃收集系统
         com.lin0721.linmusic.core.log.AppLogger.init(this)
         com.lin0721.linmusic.core.log.CrashHandler.init(this)
         enableEdgeToEdge()
+
+        // 监听悬浮歌词开关
+        lifecycleScope.launch {
+            settingsPreferences.showDesktopLrc.collectLatest { enabled ->
+                if (enabled) {
+                    if (android.provider.Settings.canDrawOverlays(this@MainActivity)) {
+                        startService(Intent(this@MainActivity, FloatingLyricService::class.java))
+                    } else {
+                        android.widget.Toast.makeText(this@MainActivity, "请开启悬浮窗权限以显示桌面歌词", android.widget.Toast.LENGTH_LONG).show()
+                        val intent = Intent(
+                            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            android.net.Uri.parse("package:$packageName")
+                        )
+                        startActivity(intent)
+                    }
+                } else {
+                    stopService(Intent(this@MainActivity, FloatingLyricService::class.java))
+                }
+            }
+        }
+
         setContent {
             MelodiaTheme {
                 MelodiaApp()
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            val enabled = settingsPreferences.showDesktopLrc.first()
+            if (enabled && android.provider.Settings.canDrawOverlays(this@MainActivity)) {
+                startService(Intent(this@MainActivity, FloatingLyricService::class.java))
+            }
+        }
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MelodiaApp() {
     val viewModel: HomeViewModel = koinViewModel()

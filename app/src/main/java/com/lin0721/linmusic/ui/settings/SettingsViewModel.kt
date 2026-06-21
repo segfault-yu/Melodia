@@ -35,6 +35,18 @@ class SettingsViewModel(
         initialValue = "standard"
     )
 
+    val useRealIp = settingsPreferences.useRealIp.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val realIpValue = settingsPreferences.realIpValue.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
+    )
+
     val defaultPlaylistPrivate = settingsPreferences.defaultPlaylistPrivate.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -51,6 +63,66 @@ class SettingsViewModel(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = 512 * 1024 * 1024L
+    )
+
+    val autoPlayNext = settingsPreferences.autoPlayNext.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val playMode = settingsPreferences.playMode.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = "loop"
+    )
+
+    val wifiOnlyPlay = settingsPreferences.wifiOnlyPlay.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val mobileAlert = settingsPreferences.mobileAlert.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val useProxy = settingsPreferences.useProxy.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val showDesktopLrc = settingsPreferences.showDesktopLrc.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val showLockscreen = settingsPreferences.showLockscreen.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val carMode = settingsPreferences.carMode.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val lyricTextSize = settingsPreferences.lyricTextSize.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 14
+    )
+
+    val lyricTextColor = settingsPreferences.lyricTextColor.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = "#FFFFFF"
     )
 
     // ─── 服务端拉取数据状态 ───
@@ -117,6 +189,18 @@ class SettingsViewModel(
         }
     }
 
+    fun updateUseRealIp(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveUseRealIp(enabled)
+        }
+    }
+
+    fun updateRealIpValue(ip: String) {
+        viewModelScope.launch {
+            settingsPreferences.saveRealIpValue(ip)
+        }
+    }
+
     fun updateDefaultPlaylistPrivate(private: Boolean) {
         viewModelScope.launch {
             settingsPreferences.saveDefaultPlaylistPrivate(private)
@@ -133,6 +217,66 @@ class SettingsViewModel(
         viewModelScope.launch {
             settingsPreferences.saveAudioCacheMaxSize(size)
             AudioCacheManager.recreateCache(context, size)
+        }
+    }
+
+    fun updateAutoPlayNext(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveAutoPlayNext(enabled)
+        }
+    }
+
+    fun updatePlayMode(mode: String) {
+        viewModelScope.launch {
+            settingsPreferences.savePlayMode(mode)
+        }
+    }
+
+    fun updateWifiOnlyPlay(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveWifiOnlyPlay(enabled)
+        }
+    }
+
+    fun updateMobileAlert(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveMobileAlert(enabled)
+        }
+    }
+
+    fun updateUseProxy(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveUseProxy(enabled)
+        }
+    }
+
+    fun updateShowDesktopLrc(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveShowDesktopLrc(enabled)
+        }
+    }
+
+    fun updateShowLockscreen(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveShowLockscreen(enabled)
+        }
+    }
+
+    fun updateCarMode(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsPreferences.saveCarMode(enabled)
+        }
+    }
+
+    fun updateLyricTextSize(size: Int) {
+        viewModelScope.launch {
+            settingsPreferences.saveLyricTextSize(size)
+        }
+    }
+
+    fun updateLyricTextColor(color: String) {
+        viewModelScope.launch {
+            settingsPreferences.saveLyricTextColor(color)
         }
     }
 

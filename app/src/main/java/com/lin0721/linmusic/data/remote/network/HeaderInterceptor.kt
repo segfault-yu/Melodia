@@ -1,13 +1,37 @@
 package com.lin0721.linmusic.data.remote.network
 
 import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.data.local.SettingsPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 
 // 网易云反风控拦截器。UA、Referer、海外 IP 伪装及用户 Cookie。
-class HeaderInterceptor(private val userPreferences: UserPreferences) : Interceptor {
+class HeaderInterceptor(
+    private val userPreferences: UserPreferences,
+    private val settingsPreferences: SettingsPreferences
+) : Interceptor {
+
+    // 严格的 IPv4 校验正则表达式
+    private val ipv4Pattern = Regex(
+        "^((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$"
+    )
+
+    // 单次会话锁定的随机国内 IP 地址
+    private val sessionIpAddress: String by lazy {
+        val ipPrefixes = listOf(
+            "116.25", "218.17", "113.88", "121.14", "119.137",
+            "58.60", "124.127", "223.73", "116.228", "180.168"
+        )
+        val prefix = ipPrefixes.random()
+        "$prefix.${(1..254).random()}.${(1..254).random()}"
+    }
+
+    private fun isValidIpv4(ip: String): Boolean {
+        return ipv4Pattern.matches(ip.trim())
+    }
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
         val url = originalRequest.url
@@ -15,6 +39,19 @@ class HeaderInterceptor(private val userPreferences: UserPreferences) : Intercep
         val newRequestBuilder = originalRequest.newBuilder()
 
         val storedCookies = runBlocking { userPreferences.cookies.first() }
+        val useRealIp = runBlocking { settingsPreferences.useRealIp.first() }
+        val realIpValue = runBlocking { settingsPreferences.realIpValue.first() }
+
+        // 域名白名单控制
+        if (useRealIp && url.host.contains("163.com")) {
+            val ipAddress = if (realIpValue.isNotBlank() && isValidIpv4(realIpValue)) {
+                realIpValue.trim()
+            } else {
+                sessionIpAddress
+            }
+            newRequestBuilder.header("X-Real-IP", ipAddress)
+            newRequestBuilder.header("X-Forwarded-For", ipAddress)
+        }
 
         if (urlString.contains("/eapi/")) {
             val newUrl = url.newBuilder()
@@ -22,7 +59,8 @@ class HeaderInterceptor(private val userPreferences: UserPreferences) : Intercep
                 .build()
             newRequestBuilder.url(newUrl)
 
-            newRequestBuilder.header("User-Agent", "NeteaseMusic 9.0.90/5038 (iPhone; iOS 16.2; zh_CN)")
+            val androidUA = "NeteaseMusic/9.0.90 (Linux; U; Android ${android.os.Build.VERSION.RELEASE}; zh_CN; ${android.os.Build.MODEL})"
+            newRequestBuilder.header("User-Agent", androidUA)
             newRequestBuilder.removeHeader("Referer")
             
             val requestCookies = originalRequest.headers("Cookie").toMutableList()
@@ -30,7 +68,7 @@ class HeaderInterceptor(private val userPreferences: UserPreferences) : Intercep
             
             val cookiesStr = requestCookies.joinToString("; ")
             val filteredCookies = cookiesStr.split("; ").filterNot { it.trim().startsWith("os=") }.joinToString("; ")
-            val mobileCookies = "os=ios; appver=9.0.90; osver=16.2"
+            val mobileCookies = "os=android; appver=9.0.90; osver=${android.os.Build.VERSION.RELEASE}"
             newRequestBuilder.header("Cookie", if (filteredCookies.isEmpty()) mobileCookies else "$filteredCookies; $mobileCookies")
         } else {
             newRequestBuilder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")

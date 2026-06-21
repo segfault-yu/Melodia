@@ -7,12 +7,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PushPin
@@ -57,7 +59,7 @@ import com.lin0721.linmusic.ui.components.ProfileSidebar
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.data.local.UserProfile
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     onPlaylistClick: (Long) -> Unit,
@@ -263,33 +265,7 @@ fun LibraryScreen(
                             fontWeight = FontWeight.Medium
                         )
 
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false },
-                            modifier = Modifier.background(SurfaceDark)
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("最近播放", color = Color.White) },
-                                onClick = {
-                                    viewModel.updateSortOrder(LibrarySortOrder.RECENTLY_PLAYED)
-                                    showSortMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("创建时间", color = Color.White) },
-                                onClick = {
-                                    viewModel.updateSortOrder(LibrarySortOrder.CREATE_TIME)
-                                    showSortMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("字母排序", color = Color.White) },
-                                onClick = {
-                                    viewModel.updateSortOrder(LibrarySortOrder.NAME)
-                                    showSortMenu = false
-                                }
-                            )
-                        }
+
                     }
 
                     IconButton(
@@ -384,63 +360,92 @@ fun LibraryScreen(
                 }
             }
 
-            // 创建歌单对话框
+        // 创建歌单对话框
         if (showCreateDialog) {
-            AlertDialog(
+            ModalBottomSheet(
                 onDismissRequest = { showCreateDialog = false },
-                title = { Text("新建歌单", color = Color.White, fontWeight = FontWeight.Bold) },
-                text = {
-                    Column {
-                        Text("请输入新歌单的名称：", color = TextGray, fontSize = 14.sp)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(BackgroundDark)
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.CenterStart
+                containerColor = SurfaceDark,
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                dragHandle = {
+                    Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                        Surface(
+                            modifier = Modifier.width(40.dp).height(4.dp),
+                            shape = RoundedCornerShape(2.dp),
+                            color = Color.White.copy(alpha = 0.3f)
+                        ) {}
+                    }
+                }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .imePadding()
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                ) {
+                    Text(
+                        text = "新建歌单",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Text(
+                        text = "请输入新歌单的名称：",
+                        color = TextGray,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(BackgroundDark)
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (playlistNameInput.isEmpty()) {
+                            Text("歌单名称", color = TextGray, fontSize = 14.sp)
+                        }
+                        BasicTextField(
+                            value = playlistNameInput,
+                            onValueChange = { playlistNameInput = it },
+                            textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+                            cursorBrush = SolidColor(NeteaseRed),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = { showCreateDialog = false }) {
+                            Text("取消", color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Button(
+                            onClick = {
+                                if (playlistNameInput.isNotBlank()) {
+                                    viewModel.createPlaylist(playlistNameInput) {
+                                        com.lin0721.linmusic.ui.components.ToastManager.showToast("歌单创建成功！")
+                                    }
+                                    showCreateDialog = false
+                                } else {
+                                    com.lin0721.linmusic.ui.components.ToastManager.showToast("名字不能为空哦！")
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            if (playlistNameInput.isEmpty()) {
-                                Text("歌单名称", color = TextGray, fontSize = 14.sp)
-                            }
-                            BasicTextField(
-                                value = playlistNameInput,
-                                onValueChange = { playlistNameInput = it },
-                                textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                                cursorBrush = SolidColor(NeteaseRed),
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true
-                            )
+                            Text("创建", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            if (playlistNameInput.isNotBlank()) {
-                                viewModel.createPlaylist(playlistNameInput) {
-                                    com.lin0721.linmusic.ui.components.ToastManager.showToast("歌单创建成功！")
-                                }
-                                showCreateDialog = false
-                            } else {
-                                com.lin0721.linmusic.ui.components.ToastManager.showToast("名字不能为空哦！")
-                            }
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = NeteaseRed)
-                    ) {
-                        Text("创建", fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showCreateDialog = false }) {
-                        Text("取消", color = Color.White)
-                    }
-                },
-                containerColor = SurfaceDark,
-                shape = RoundedCornerShape(10.dp)
-            )
+                }
+            }
         }
 
         // 登录管理底部面板与 WebView
@@ -463,6 +468,74 @@ fun LibraryScreen(
                     com.lin0721.linmusic.ui.components.ToastManager.showToast("登录成功，正在同步乐库...")
                 }
             )
+        }
+
+        if (showSortMenu) {
+            ModalBottomSheet(
+                onDismissRequest = { showSortMenu = false },
+                containerColor = SurfaceDark,
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                dragHandle = {
+                    Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                        Surface(
+                            modifier = Modifier.width(40.dp).height(4.dp),
+                            shape = RoundedCornerShape(2.dp),
+                            color = Color.White.copy(alpha = 0.3f)
+                        ) {}
+                    }
+                }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                ) {
+                    Text(
+                        text = "选择排序方式",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    val sortOptions = listOf(
+                        LibrarySortOrder.RECENTLY_PLAYED to "最近播放",
+                        LibrarySortOrder.CREATE_TIME to "创建时间",
+                        LibrarySortOrder.NAME to "字母排序"
+                    )
+
+                    sortOptions.forEach { (order, label) ->
+                        val isSelected = uiState.sortOrder == order
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.updateSortOrder(order)
+                                    showSortMenu = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (isSelected) NeteaseRed else Color.White,
+                                fontSize = 15.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "已选择",
+                                    tint = NeteaseRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -541,33 +614,40 @@ private fun FilterChipsRow(
     albumCount: Int,
     artistCount: Int
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    LazyRow(
+        modifier = Modifier.padding(top = 8.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FilterChipItem(
-            label = "全部",
-            isSelected = selectedFilter == LibraryFilter.ALL,
-            onClick = { onFilterSelected(LibraryFilter.ALL) }
-        )
-        FilterChipItem(
-            label = "歌单${if (playlistCount > 0) " $playlistCount" else ""}",
-            isSelected = selectedFilter == LibraryFilter.PLAYLIST,
-            onClick = { onFilterSelected(LibraryFilter.PLAYLIST) }
-        )
-        FilterChipItem(
-            label = "专辑${if (albumCount > 0) " $albumCount" else ""}",
-            isSelected = selectedFilter == LibraryFilter.ALBUM,
-            onClick = { onFilterSelected(LibraryFilter.ALBUM) }
-        )
-        FilterChipItem(
-            label = "歌手${if (artistCount > 0) " $artistCount" else ""}",
-            isSelected = selectedFilter == LibraryFilter.ARTIST,
-            onClick = { onFilterSelected(LibraryFilter.ARTIST) }
-        )
+        item {
+            FilterChipItem(
+                label = "全部",
+                isSelected = selectedFilter == LibraryFilter.ALL,
+                onClick = { onFilterSelected(LibraryFilter.ALL) }
+            )
+        }
+        item {
+            FilterChipItem(
+                label = "歌单${if (playlistCount > 0) " $playlistCount" else ""}",
+                isSelected = selectedFilter == LibraryFilter.PLAYLIST,
+                onClick = { onFilterSelected(LibraryFilter.PLAYLIST) }
+            )
+        }
+        item {
+            FilterChipItem(
+                label = "专辑${if (albumCount > 0) " $albumCount" else ""}",
+                isSelected = selectedFilter == LibraryFilter.ALBUM,
+                onClick = { onFilterSelected(LibraryFilter.ALBUM) }
+            )
+        }
+        item {
+            FilterChipItem(
+                label = "歌手${if (artistCount > 0) " $artistCount" else ""}",
+                isSelected = selectedFilter == LibraryFilter.ARTIST,
+                onClick = { onFilterSelected(LibraryFilter.ARTIST) }
+            )
+        }
     }
 }
 
@@ -577,28 +657,18 @@ private fun FilterChipItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) NeteaseRed else SurfaceDark,
-        label = "chip_bg"
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (isSelected) Color.White else TextGray,
-        label = "chip_content"
-    )
-
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(backgroundColor)
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            color = contentColor,
-            fontSize = 13.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            color = if (isSelected) Color.White else Color.LightGray,
+            fontSize = 14.sp
         )
     }
 }

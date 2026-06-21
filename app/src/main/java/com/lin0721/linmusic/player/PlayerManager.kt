@@ -28,10 +28,14 @@ import kotlin.coroutines.resume
 import coil.Coil
 import coil.request.ImageRequest
 
+import com.lin0721.linmusic.data.local.SettingsPreferences
+import kotlinx.coroutines.flow.collectLatest
+
 class PlayerManager(
     private val context: Context,
     private val playbackPreferences: PlaybackPreferences,
-    private val repository: MusicRepository
+    private val repository: MusicRepository,
+    private val settingsPreferences: SettingsPreferences
 ) : Player.Listener {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -106,7 +110,53 @@ class PlayerManager(
     private var backupQueue: List<QueueItem> = emptyList()
     private var backupIndex: Int = -1
 
+    private var lastWasWifi = false
+    private var lastRoamingTriggeredSongId = -1L
+
+    private val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+        override fun onCapabilitiesChanged(network: android.net.Network, capabilities: android.net.NetworkCapabilities) {
+            super.onCapabilitiesChanged(network, capabilities)
+            val isWifi = capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
+            val isMobile = capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR)
+
+            if (lastWasWifi && isMobile && !isWifi) {
+                scope.launch(Dispatchers.Main) {
+                    val alertEnabled = settingsPreferences.mobileAlert.first()
+                    val wifiOnly = settingsPreferences.wifiOnlyPlay.first()
+
+                    if (wifiOnly) {
+                        pause()
+                        android.widget.Toast.makeText(context, "已为暂停播放（开启了“仅Wi-Fi联网播放”）", android.widget.Toast.LENGTH_LONG).show()
+                    } else if (alertEnabled && _isPlaying.value) {
+                        android.widget.Toast.makeText(context, "已切换至移动网络播放", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+            if (isWifi) {
+                lastWasWifi = true
+            } else if (isMobile) {
+                lastWasWifi = false
+            }
+        }
+    }
+
+    private fun isMobileNetwork(): Boolean {
+        return kotlin.runCatching {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager ?: return false
+            val activeNetwork = cm.activeNetwork ?: return false
+            val capabilities = cm.getNetworkCapabilities(activeNetwork) ?: return false
+            capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR)
+        }.getOrDefault(false)
+    }
+
     init {
+        // 注册网络回调
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+        val request = android.net.NetworkRequest.Builder()
+            .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        cm?.registerNetworkCallback(request, networkCallback)
+
         scope.launch {
             _playMode.value = playbackPreferences.playMode.first()
             // 恢复队列
@@ -119,12 +169,40 @@ class PlayerManager(
                 _playContext.value = qs.playContext
             }
         }
+
+        // 监听 playMode 同步，newValue != oldValue 判定防止死循环写入
+        scope.launch {
+            playbackPreferences.playMode.collectLatest { newMode ->
+                if (_playMode.value != newMode) {
+                    val currentItem = playQueue.getOrNull(_currentIndex.value)
+                    applyMode(newMode, currentItem)
+                }
+            }
+        }
+
         scope.launch {
             while (true) {
                 // 只有当播放器处于就绪播放状态时，才去轮询更新当前进度，防止在切歌缓冲时读到残留或脏进度值
                 val isReady = controller?.playbackState == Player.STATE_READY
                 if (_isPlaying.value && isReady) {
-                    _currentPosition.value = controller?.currentPosition ?: 0L
+                    val curPos = controller?.currentPosition ?: 0L
+                    _currentPosition.value = curPos
+
+                    val dur = _duration.value
+                    val curTrack = _currentTrack.value
+                    val songId = curTrack?.mediaId?.toLongOrNull() ?: -1L
+                    if (dur > 0L && songId != -1L) {
+                        val remainingMs = dur - curPos
+                        val curIdx = _currentIndex.value
+                        if (curIdx == playQueue.size - 1 && remainingMs <= 15000L && lastRoamingTriggeredSongId != songId) {
+                            val autoPlay = settingsPreferences.autoPlayNext.first()
+                            if (autoPlay) {
+                                lastRoamingTriggeredSongId = songId
+                                _playContext.value = "similar_roaming"
+                                fetchAndAppendSimilarSongs(songId, curIdx)
+                            }
+                        }
+                    }
                 }
                 delay(_positionUpdateInterval.value)
             }
@@ -355,6 +433,16 @@ class PlayerManager(
         }
     }
 
+    fun rotatePlayMode() {
+        val currentItem = playQueue.getOrNull(_currentIndex.value)
+        val nextMode = when (_playMode.value) {
+            PlayMode.LIST_LOOP -> PlayMode.SHUFFLE
+            PlayMode.SHUFFLE -> PlayMode.SINGLE_LOOP
+            PlayMode.SINGLE_LOOP -> PlayMode.LIST_LOOP
+        }
+        applyMode(nextMode, currentItem)
+    }
+
     private fun applyMode(newMode: PlayMode, currentItem: QueueItem?) {
         _playMode.value = newMode
 
@@ -504,22 +592,30 @@ class PlayerManager(
     private fun fetchUrlAndPlay(index: Int, startPosition: Long = 0) {
         if (index < 0 || index >= playQueue.size) return
         val item = playQueue[index]
-        _currentIndex.value = index
-        saveQueueState()
-
-        // 立即重置当前进度与时长，避免上一首歌曲的数据在加载新歌期间残留导致进度条闪烁
-        _currentPosition.value = startPosition
-        _duration.value = 0L
 
         activePlayJob?.cancel()
         roamingJob?.cancel()
-        if (_playContext.value == "similar_roaming") {
-            roamingJob = scope.launch {
-                fetchAndAppendSimilarSongs(item.songId, index)
-            }
-        }
 
         activePlayJob = scope.launch {
+            val wifiOnly = settingsPreferences.wifiOnlyPlay.first()
+            if (wifiOnly && isMobileNetwork()) {
+                android.widget.Toast.makeText(context, "当前处于移动网络，已开启“仅Wi-Fi下联网播放”", android.widget.Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            _currentIndex.value = index
+            saveQueueState()
+
+            // 立即重置当前进度与时长，避免上一首歌曲的数据在加载新歌期间残留导致进度条闪烁
+            _currentPosition.value = startPosition
+            _duration.value = 0L
+
+            if (_playContext.value == "similar_roaming") {
+                roamingJob = scope.launch {
+                    fetchAndAppendSimilarSongs(item.songId, index)
+                }
+            }
+
             repository.getSongUrl(item.songId).collect { result ->
                 result.onSuccess { url ->
                     val mediaItem = item.toMediaItem(url, _playContext.value)
@@ -536,6 +632,14 @@ class PlayerManager(
                 }
             }
         }
+    }
+
+    fun release() {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+        kotlin.runCatching { cm?.unregisterNetworkCallback(networkCallback) }
+        sleepTimerJob?.cancel()
+        activePlayJob?.cancel()
+        roamingJob?.cancel()
     }
 
     private fun skipToNextOnError(failedIndex: Int) {

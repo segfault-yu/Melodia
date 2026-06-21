@@ -7,12 +7,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun PlaybackDownloadSettingsView(viewModel: SettingsViewModel) {
-    var autoPlayNext by remember { mutableStateOf(true) }
-    val streamCacheEnabled by viewModel.streamCacheEnabled.collectAsState()
-    var playMode by remember { mutableStateOf("列表循环") }
+    val autoPlayNext by viewModel.autoPlayNext.collectAsStateWithLifecycle()
+    val streamCacheEnabled by viewModel.streamCacheEnabled.collectAsStateWithLifecycle()
+    val playMode by viewModel.playMode.collectAsStateWithLifecycle()
+
+    val playModeDisplayName = if (playMode == "random") "随机播放" else "列表循环"
     
     // 渲染播放与下载的子设置项
     LazyColumn(
@@ -25,14 +28,14 @@ fun PlaybackDownloadSettingsView(viewModel: SettingsViewModel) {
                     title = "自动播放推荐新歌",
                     subtitle = "当前曲目播放完毕后自动接入相似推荐",
                     checked = autoPlayNext,
-                    onCheckedChange = { autoPlayNext = it }
+                    onCheckedChange = { viewModel.updateAutoPlayNext(it) }
                 )
                 HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
                 SettingsRow(
                     title = "默认播放顺序",
-                    subtitle = playMode,
+                    subtitle = playModeDisplayName,
                     onClick = {
-                        playMode = if (playMode == "列表循环") "随机播放" else "列表循环"
+                        viewModel.updatePlayMode(if (playMode == "loop") "random" else "loop")
                     }
                 )
             }

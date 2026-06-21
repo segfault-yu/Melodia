@@ -83,13 +83,23 @@ class CryptoInterceptor : Interceptor {
             org.json.JSONObject()
         }
         
+        val brand = android.os.Build.BRAND
+        val model = android.os.Build.MODEL
+        val deviceId = try {
+            val rawId = "${brand}_${model}_${android.os.Build.BOARD}"
+            val digest = java.security.MessageDigest.getInstance("MD5").digest(rawId.toByteArray())
+            digest.joinToString("") { "%02x".format(it) }
+        } catch (e: Exception) {
+            model
+        }
+
         val headerObj = org.json.JSONObject().apply {
-            put("osver", "16.2")
-            put("deviceId", "iPhone14,2")
-            put("os", "ios")
+            put("osver", android.os.Build.VERSION.RELEASE)
+            put("deviceId", deviceId)
+            put("os", "android")
             put("appver", "9.0.90")
             put("versioncode", "140")
-            put("mobilename", "")
+            put("mobilename", model)
             put("buildver", System.currentTimeMillis().toString().substring(0, 10))
             put("resolution", "1920x1080")
             put("requestId", "${System.currentTimeMillis()}_${(1000..9999).random()}")

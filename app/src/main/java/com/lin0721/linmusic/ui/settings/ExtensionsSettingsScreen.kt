@@ -8,11 +8,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 @Composable
-fun ExtensionsSettingsView() {
-    var showDesktopLrc by remember { mutableStateOf(false) }
-    var showLockscreen by remember { mutableStateOf(true) }
-    var carMode by remember { mutableStateOf(false) }
+fun ExtensionsSettingsView(viewModel: SettingsViewModel) {
+    val showLockscreen by viewModel.showLockscreen.collectAsStateWithLifecycle()
+    val carMode by viewModel.carMode.collectAsStateWithLifecycle()
 
     // 渲染扩展模块的子设置项
     LazyColumn(
@@ -22,17 +23,10 @@ fun ExtensionsSettingsView() {
         item {
             SettingsGroupCard("悬浮与桌面") {
                 SettingsSwitchRow(
-                    title = "启用桌面悬浮歌词",
-                    subtitle = "返回桌面时以悬浮窗形态展示当前播放词句",
-                    checked = showDesktopLrc,
-                    onCheckedChange = { showDesktopLrc = it }
-                )
-                HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
-                SettingsSwitchRow(
                     title = "启用系统锁屏显示",
                     subtitle = "在锁屏界面展示播放控制器与歌词面板",
                     checked = showLockscreen,
-                    onCheckedChange = { showLockscreen = it }
+                    onCheckedChange = { viewModel.updateShowLockscreen(it) }
                 )
             }
         }
@@ -43,7 +37,7 @@ fun ExtensionsSettingsView() {
                     title = "车载模式蓝牙自动启动",
                     subtitle = "连接车载蓝牙设备时自动恢复媒体播放",
                     checked = carMode,
-                    onCheckedChange = { carMode = it }
+                    onCheckedChange = { viewModel.updateCarMode(it) }
                 )
             }
         }

@@ -1,6 +1,7 @@
 package com.lin0721.linmusic.ui.settings
 
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
@@ -36,6 +37,7 @@ enum class SettingsSubMenu(val title: String) {
     STORAGE("储存空间"),
     NETWORK("网络设置"),
     EXTENSIONS("扩展"),
+    LYRICS("歌词设置"),
     ABOUT("关于")
 }
 
@@ -47,6 +49,10 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     var activeSubMenu by remember { mutableStateOf<SettingsSubMenu?>(null) }
+
+    BackHandler(enabled = activeSubMenu != null) {
+        activeSubMenu = null
+    }
     
     // 监听 Toast 提示消息
     LaunchedEffect(viewModel) {
@@ -233,8 +239,9 @@ private fun SubMenuContent(
             SettingsSubMenu.AUDIO_QUALITY -> AudioQualitySettingsView(viewModel)
             SettingsSubMenu.PRIVACY -> PrivacySettingsView(viewModel)
             SettingsSubMenu.STORAGE -> StorageSettingsView(viewModel, context)
-            SettingsSubMenu.NETWORK -> NetworkSettingsView()
-            SettingsSubMenu.EXTENSIONS -> ExtensionsSettingsView()
+            SettingsSubMenu.NETWORK -> NetworkSettingsView(viewModel)
+            SettingsSubMenu.EXTENSIONS -> ExtensionsSettingsView(viewModel)
+            SettingsSubMenu.LYRICS -> LyricsSettingsView(viewModel)
             SettingsSubMenu.ABOUT -> AboutSettingsView()
         }
     }

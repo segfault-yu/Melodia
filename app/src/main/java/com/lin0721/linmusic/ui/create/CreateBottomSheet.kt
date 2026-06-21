@@ -30,6 +30,7 @@ import com.lin0721.linmusic.ui.theme.SurfaceLight
 import com.lin0721.linmusic.ui.theme.TextGray
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePopupMenu(
     onDismiss: () -> Unit,
@@ -149,6 +150,7 @@ private fun CreateMenuItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreatePlaylistDialog(
     isCreating: Boolean,
@@ -158,85 +160,111 @@ private fun CreatePlaylistDialog(
     var name by remember { mutableStateOf("") }
     var isPrivate by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = { if (!isCreating) onDismiss() },
-        title = {
-            Text("新建歌单", color = Color.White, fontWeight = FontWeight.Bold)
-        },
-        text = {
-            Column {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(BackgroundDark)
-                        .padding(horizontal = 14.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    if (name.isEmpty()) {
-                        Text("我的新歌单", color = TextGray, fontSize = 15.sp)
-                    }
-                    BasicTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
-                        cursorBrush = SolidColor(NeteaseRed),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("设为隐私歌单", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                        Text("仅自己可见", color = TextGray, fontSize = 12.sp)
-                    }
-                    Switch(
-                        checked = isPrivate,
-                        onCheckedChange = { isPrivate = it },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = NeteaseRed,
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = SurfaceLight
-                        )
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(name, isPrivate) },
-                enabled = !isCreating && name.isNotBlank(),
-                colors = ButtonDefaults.textButtonColors(contentColor = NeteaseRed)
-            ) {
-                if (isCreating) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = NeteaseRed,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("创建", fontWeight = FontWeight.Bold)
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = !isCreating
-            ) {
-                Text("取消", color = Color.White)
-            }
-        },
         containerColor = SurfaceDark,
-        shape = RoundedCornerShape(16.dp)
-    )
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        dragHandle = {
+            Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                Surface(
+                    modifier = Modifier.width(40.dp).height(4.dp),
+                    shape = RoundedCornerShape(2.dp),
+                    color = Color.White.copy(alpha = 0.3f)
+                ) {}
+            }
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = "新建歌单",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(BackgroundDark)
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (name.isEmpty()) {
+                    Text("我的新歌单", color = TextGray, fontSize = 15.sp)
+                }
+                BasicTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                    cursorBrush = SolidColor(NeteaseRed),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text("设为隐私歌单", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Text("仅自己可见", color = TextGray, fontSize = 12.sp)
+                }
+                Switch(
+                    checked = isPrivate,
+                    onCheckedChange = { isPrivate = it },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = NeteaseRed,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = SurfaceLight
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = onDismiss,
+                    enabled = !isCreating
+                ) {
+                    Text("取消", color = Color.White)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Button(
+                    onClick = { onConfirm(name, isPrivate) },
+                    enabled = !isCreating && name.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    if (isCreating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("创建", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
 }

@@ -13,6 +13,11 @@ import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
+import com.lin0721.linmusic.data.local.SettingsPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 /**
  * Koin 网络层依赖注入模块
@@ -44,11 +49,34 @@ val networkModule = module {
     single { EmptyBodyInterceptor() }
 
     // ─── 请求头拦截器 ───
-    single { HeaderInterceptor(get()) }
+    single { HeaderInterceptor(get(), get()) }
 
     // ─── OkHttpClient ───
     single {
+        val settingsPreferences: SettingsPreferences = get()
+        val scope = CoroutineScope(Dispatchers.IO)
+        scope.launch {
+            settingsPreferences.useProxy.collectLatest { enabled ->
+                NetworkConfig.useProxy = enabled
+            }
+        }
+
+        val proxySelector = object : java.net.ProxySelector() {
+            override fun select(uri: java.net.URI?): MutableList<java.net.Proxy> {
+                return if (NetworkConfig.useProxy) {
+                    java.net.ProxySelector.getDefault()?.select(uri) ?: mutableListOf(java.net.Proxy.NO_PROXY)
+                } else {
+                    mutableListOf(java.net.Proxy.NO_PROXY)
+                }
+            }
+
+            override fun connectFailed(uri: java.net.URI?, sa: java.net.SocketAddress?, ioe: java.io.IOException?) {
+                java.net.ProxySelector.getDefault()?.connectFailed(uri, sa, ioe)
+            }
+        }
+
         OkHttpClient.Builder()
+            .proxySelector(proxySelector)
             .addInterceptor(get<EmptyBodyInterceptor>())
             .addInterceptor(get<HeaderInterceptor>())
             .addInterceptor(get<CryptoInterceptor>())
@@ -82,3 +110,8 @@ val networkModule = module {
 }
 
 private const val BASE_URL = "https://music.163.com"
+
+object NetworkConfig {
+    @Volatile
+    var useProxy: Boolean = false
+}

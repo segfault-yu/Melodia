@@ -23,7 +23,7 @@ import com.lin0721.linmusic.ui.theme.SurfaceDark
 fun AudioQualitySettingsView(viewModel: SettingsViewModel) {
     val wifiQuality by viewModel.wifiQuality.collectAsStateWithLifecycle()
     val mobileQuality by viewModel.mobileQuality.collectAsStateWithLifecycle()
-    var dolbyEnabled by remember { mutableStateOf(false) }
+
     
     var qualityDialogTarget by remember { mutableStateOf<String?>(null) }
 
@@ -47,16 +47,7 @@ fun AudioQualitySettingsView(viewModel: SettingsViewModel) {
                 )
             }
         }
-        item {
-            SettingsGroupCard("音效增强") {
-                SettingsSwitchRow(
-                    title = "杜比全景声",
-                    subtitle = "模拟环绕立体声场，带来更逼真的聆听体验",
-                    checked = dolbyEnabled,
-                    onCheckedChange = { dolbyEnabled = it }
-                )
-            }
-        }
+
     }
 
     // 音质单选选择弹窗
