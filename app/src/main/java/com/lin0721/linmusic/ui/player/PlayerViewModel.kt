@@ -25,8 +25,26 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.update
 import com.lin0721.linmusic.data.remote.api.CommentItem
-import com.lin0721.linmusic.ui.components.ToastManager
+
+// 当前播放歌曲的详情聚合状态：歌词/歌曲详情/歌手资料等异步分别到达，各自保留独立的 loading/nullable 语义
+data class PlayerSongDetailState(
+    val songDetail: Track? = null,
+    val lyrics: List<LyricLine> = emptyList(),
+    val isLyricsLoading: Boolean = false,
+    val songWiki: SongWikiData? = null,
+    val similarArtists: List<ArtistInfo> = emptyList(),
+    val isSimilarArtistsLoading: Boolean = false,
+    val artistDetail: ArtistDetailInfo? = null,
+    val artistFansCount: Long? = null,
+    val artistAlbums: List<ArtistAlbum> = emptyList(),
+    val isLiked: Boolean = false,
+    val isArtistFollowed: Boolean = false
+)
 
 class PlayerViewModel(
     private val context: Context,
@@ -82,49 +100,17 @@ class PlayerViewModel(
         }
     }
 
-    private val _lyrics = MutableStateFlow<List<LyricLine>>(emptyList())
-    val lyrics: StateFlow<List<LyricLine>> = _lyrics.asStateFlow()
-
     private val _currentLyricIndex = MutableStateFlow(-1)
     val currentLyricIndex: StateFlow<Int> = _currentLyricIndex.asStateFlow()
 
-    private val _isLyricsLoading = MutableStateFlow(false)
-    val isLyricsLoading: StateFlow<Boolean> = _isLyricsLoading.asStateFlow()
-
-    private val _isUserScrolling = MutableStateFlow(false)
-    val isUserScrolling: StateFlow<Boolean> = _isUserScrolling.asStateFlow()
-
-    private val _songDetail = MutableStateFlow<Track?>(null)
-    val songDetail: StateFlow<Track?> = _songDetail.asStateFlow()
-
-    private val _songWiki = MutableStateFlow<SongWikiData?>(null)
-    val songWiki: StateFlow<SongWikiData?> = _songWiki.asStateFlow()
-
-    private val _similarArtists = MutableStateFlow<List<ArtistInfo>>(emptyList())
-    val similarArtists: StateFlow<List<ArtistInfo>> = _similarArtists.asStateFlow()
-
-    private val _isSimilarArtistsLoading = MutableStateFlow(false)
-    val isSimilarArtistsLoading: StateFlow<Boolean> = _isSimilarArtistsLoading.asStateFlow()
-
-    private val _artistDetail = MutableStateFlow<ArtistDetailInfo?>(null)
-    val artistDetail: StateFlow<ArtistDetailInfo?> = _artistDetail.asStateFlow()
-
-    // 歌手粉丝数量
-    private val _artistFansCount = MutableStateFlow<Long?>(null)
-    val artistFansCount: StateFlow<Long?> = _artistFansCount.asStateFlow()
-
-    private val _artistAlbums = MutableStateFlow<List<ArtistAlbum>>(emptyList())
-    val artistAlbums: StateFlow<List<ArtistAlbum>> = _artistAlbums.asStateFlow()
-
-    private val _isLiked = MutableStateFlow(false)
-    val isLiked: StateFlow<Boolean> = _isLiked.asStateFlow()
-
-    // 歌手是否已关注的 Flow
-    private val _isArtistFollowed = MutableStateFlow(false)
-    val isArtistFollowed: StateFlow<Boolean> = _isArtistFollowed.asStateFlow()
+    private val _songDetailState = MutableStateFlow(PlayerSongDetailState())
+    val songDetailState: StateFlow<PlayerSongDetailState> = _songDetailState.asStateFlow()
 
     private val _commentsState = MutableStateFlow<CommentsState>(CommentsState.Loading)
     val commentsState: StateFlow<CommentsState> = _commentsState.asStateFlow()
+
+    private val _toastEvent = MutableSharedFlow<String>()
+    val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
     private val likedSongIds = mutableSetOf<Long>()
     private var likedListLoaded = false
@@ -146,7 +132,7 @@ class PlayerViewModel(
                     likedSongIds.addAll(ids)
                     likedListLoaded = true
                     if (currentSongId != -1L) {
-                        _isLiked.value = currentSongId in likedSongIds
+                        _songDetailState.update { it.copy(isLiked = currentSongId in likedSongIds) }
                     }
                 }
             }
@@ -157,8 +143,8 @@ class PlayerViewModel(
         val songId = currentSongId
         if (songId == -1L) return
 
-        val newLiked = !_isLiked.value
-        _isLiked.value = newLiked
+        val newLiked = !_songDetailState.value.isLiked
+        _songDetailState.update { it.copy(isLiked = newLiked) }
 
         viewModelScope.launch {
             repository.likeSong(songId, newLiked).collect { result ->
@@ -166,7 +152,7 @@ class PlayerViewModel(
                     if (newLiked) likedSongIds.add(songId) else likedSongIds.remove(songId)
                 }.onFailure {
                     // 回滚
-                    _isLiked.value = !newLiked
+                    _songDetailState.update { it.copy(isLiked = !newLiked) }
                 }
             }
         }
@@ -181,7 +167,7 @@ class PlayerViewModel(
                     if (songId != -1L && songId != currentSongId) {
                         currentSongId = songId
                         clearState()
-                        _isLiked.value = songId in likedSongIds
+                        _songDetailState.update { it.copy(isLiked = songId in likedSongIds) }
                         loadLyrics(songId)
                         loadSongDetail(songId)
                         loadSongWiki(songId)
@@ -192,24 +178,15 @@ class PlayerViewModel(
     }
 
     private fun clearState() {
-        _lyrics.value = emptyList()
+        _songDetailState.value = PlayerSongDetailState()
         _currentLyricIndex.value = -1
-        _songDetail.value = null
-        _songWiki.value = null
-        _similarArtists.value = emptyList()
-        _artistDetail.value = null
-        _artistFansCount.value = null
-        _artistAlbums.value = emptyList()
-        _isLiked.value = false
-        _isArtistFollowed.value = false
         _commentsState.value = CommentsState.Loading
-        _isUserScrolling.value = false
     }
 
     private fun observePosition() {
         viewModelScope.launch {
             playerManager.currentPosition.collectLatest { positionMs ->
-                val lines = _lyrics.value
+                val lines = _songDetailState.value.lyrics
                 if (lines.isEmpty()) return@collectLatest
                 _currentLyricIndex.value = findLyricIndex(lines, positionMs)
             }
@@ -218,15 +195,15 @@ class PlayerViewModel(
 
     private fun loadLyrics(songId: Long) {
         viewModelScope.launch {
-            _isLyricsLoading.value = true
+            _songDetailState.update { it.copy(isLyricsLoading = true) }
             repository.getLyrics(songId).collect { result ->
                 result.onSuccess { lines ->
-                    if (currentSongId == songId) _lyrics.value = lines
+                    if (currentSongId == songId) _songDetailState.update { it.copy(lyrics = lines) }
                 }.onFailure {
-                    if (currentSongId == songId) _lyrics.value = emptyList()
+                    if (currentSongId == songId) _songDetailState.update { it.copy(lyrics = emptyList()) }
                 }
             }
-            _isLyricsLoading.value = false
+            _songDetailState.update { it.copy(isLyricsLoading = false) }
         }
     }
 
@@ -235,7 +212,7 @@ class PlayerViewModel(
             repository.getSongDetail(songId).collect { result ->
                 result.onSuccess { track ->
                     if (currentSongId != songId) return@onSuccess
-                    _songDetail.value = track
+                    _songDetailState.update { it.copy(songDetail = track) }
                     val primaryArtistId = track.ar.firstOrNull()?.id
                     if (primaryArtistId != null && primaryArtistId > 0) {
                         loadSimilarArtists(primaryArtistId, songId)
@@ -252,7 +229,7 @@ class PlayerViewModel(
         viewModelScope.launch {
             repository.getSongWiki(songId).collect { result ->
                 if (currentSongId == songId) {
-                    _songWiki.value = result.getOrNull()
+                    _songDetailState.update { it.copy(songWiki = result.getOrNull()) }
                 }
             }
         }
@@ -260,16 +237,16 @@ class PlayerViewModel(
 
     private fun loadSimilarArtists(artistId: Long, forSongId: Long) {
         viewModelScope.launch {
-            _isSimilarArtistsLoading.value = true
+            _songDetailState.update { it.copy(isSimilarArtistsLoading = true) }
             repository.getSimilarArtists(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { artists ->
-                    _similarArtists.value = artists
+                    _songDetailState.update { it.copy(similarArtists = artists) }
                 }.onFailure {
-                    _similarArtists.value = emptyList()
+                    _songDetailState.update { it.copy(similarArtists = emptyList()) }
                 }
             }
-            _isSimilarArtistsLoading.value = false
+            _songDetailState.update { it.copy(isSimilarArtistsLoading = false) }
         }
     }
 
@@ -282,9 +259,9 @@ class PlayerViewModel(
             repository.getArtistDetail(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { detail ->
-                    _artistDetail.value = detail
+                    _songDetailState.update { it.copy(artistDetail = detail) }
                 }.onFailure {
-                    _artistDetail.value = null
+                    _songDetailState.update { it.copy(artistDetail = null) }
                 }
             }
         }
@@ -296,9 +273,9 @@ class PlayerViewModel(
             repository.checkArtistFollowed(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { followed ->
-                    _isArtistFollowed.value = followed
+                    _songDetailState.update { it.copy(isArtistFollowed = followed) }
                 }.onFailure {
-                    _isArtistFollowed.value = false
+                    _songDetailState.update { it.copy(isArtistFollowed = false) }
                 }
             }
         }
@@ -310,9 +287,9 @@ class PlayerViewModel(
             repository.getArtistFansCount(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { count ->
-                    _artistFansCount.value = count
+                    _songDetailState.update { it.copy(artistFansCount = count) }
                 }.onFailure {
-                    _artistFansCount.value = null
+                    _songDetailState.update { it.copy(artistFansCount = null) }
                 }
             }
         }
@@ -323,9 +300,9 @@ class PlayerViewModel(
             repository.getArtistAlbums(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { albums ->
-                    _artistAlbums.value = albums
+                    _songDetailState.update { it.copy(artistAlbums = albums) }
                 }.onFailure {
-                    _artistAlbums.value = emptyList()
+                    _songDetailState.update { it.copy(artistAlbums = emptyList()) }
                 }
             }
         }
@@ -376,7 +353,7 @@ class PlayerViewModel(
         viewModelScope.launch {
             val profile = userPreferences.userProfile.first()
             if (profile == null) {
-                ToastManager.showToast("请先登录账号")
+                _toastEvent.emit("请先登录账号")
                 return@launch
             }
 
@@ -412,7 +389,7 @@ class PlayerViewModel(
             repository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
                 result.onFailure { e ->
                     _commentsState.value = currentState
-                    ToastManager.showToast("操作失败: ${e.message}")
+                    _toastEvent.emit("操作失败: ${e.message}")
                 }
             }
         }
@@ -420,22 +397,18 @@ class PlayerViewModel(
 
     // 切换歌手的关注状态
     fun toggleArtistFollow() {
-        val songDetail = _songDetail.value ?: return
+        val songDetail = _songDetailState.value.songDetail ?: return
         val artistId = songDetail.ar.firstOrNull()?.id ?: return
         if (artistId <= 0) return
 
-        val targetFollow = !_isArtistFollowed.value
+        val targetFollow = !_songDetailState.value.isArtistFollowed
         viewModelScope.launch {
             repository.subscribeArtist(artistId, targetFollow).collect { result ->
                 result.onSuccess {
-                    _isArtistFollowed.value = targetFollow
+                    _songDetailState.update { it.copy(isArtistFollowed = targetFollow) }
                 }
             }
         }
-    }
-
-    fun setUserScrolling(scrolling: Boolean) {
-        _isUserScrolling.value = scrolling
     }
 
     fun seekToTime(timeMs: Long) {
@@ -465,12 +438,12 @@ class PlayerViewModel(
                         }
                         val roamingQueue = listOf(currentItem) + simiItems
                         playerManager.playQueue(roamingQueue, 0, playContext = "similar_roaming")
-                        ToastManager.showToast("已开启相似歌曲漫游")
+                        _toastEvent.emit("已开启相似歌曲漫游")
                     } else {
-                        ToastManager.showToast("未找到相关相似歌曲")
+                        _toastEvent.emit("未找到相关相似歌曲")
                     }
                 }.onFailure {
-                    ToastManager.showToast("漫游开启失败")
+                    _toastEvent.emit("漫游开启失败")
                 }
             }
         }
@@ -490,12 +463,12 @@ class PlayerViewModel(
                             coverUrl = firstSong.al.picUrl
                         )
                         playerManager.addToPlayNext(listOf(simiItem))
-                        ToastManager.showToast("已成功插播相似歌曲《${firstSong.name}》到下一首")
+                        _toastEvent.emit("已成功插播相似歌曲《${firstSong.name}》到下一首")
                     } else {
-                        ToastManager.showToast("暂无相似歌曲可插播")
+                        _toastEvent.emit("暂无相似歌曲可插播")
                     }
                 }.onFailure {
-                    ToastManager.showToast("插播失败，请稍后重试")
+                    _toastEvent.emit("插播失败，请稍后重试")
                 }
             }
         }

@@ -36,20 +36,17 @@ enum class LibrarySortOrder {
     RECENTLY_PLAYED, CREATE_TIME, NAME
 }
 
-data class LibraryUiState(
-    val isLoading: Boolean = false,
-    val userProfile: UserProfile? = null,
-    val allItems: List<LibraryItem> = emptyList(),
-    val filteredItems: List<LibraryItem> = emptyList(),
-    val artistCount: Int = 0,
-    val playlistCount: Int = 0,
-    val albumCount: Int = 0,
-    val error: String? = null,
-    val selectedFilter: LibraryFilter = LibraryFilter.ALL,
-    val sortOrder: LibrarySortOrder = LibrarySortOrder.RECENTLY_PLAYED,
-    val searchQuery: String = "",
-    val isGridView: Boolean = false
-)
+sealed interface LibraryUiState {
+    data object Loading : LibraryUiState
+    data class Success(
+        val allItems: List<LibraryItem>,
+        val filteredItems: List<LibraryItem>,
+        val artistCount: Int,
+        val playlistCount: Int,
+        val albumCount: Int
+    ) : LibraryUiState
+    data class Error(val message: String) : LibraryUiState
+}
 
 class LibraryViewModel(
     private val repository: MusicRepository,
@@ -61,28 +58,37 @@ class LibraryViewModel(
     private val sharedPrefs = context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE)
     private val _pinnedIds = MutableStateFlow<Set<String>>(getPinnedIdsFromPrefs())
 
-    private val _uiState = MutableStateFlow(LibraryUiState(isGridView = getGridViewFromPrefs()))
+    private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
+    val userProfile: StateFlow<UserProfile?> = userPreferences.userProfile.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    private val _selectedFilter = MutableStateFlow(LibraryFilter.ALL)
+    val selectedFilter: StateFlow<LibraryFilter> = _selectedFilter.asStateFlow()
+
+    private val _sortOrder = MutableStateFlow(LibrarySortOrder.RECENTLY_PLAYED)
+    val sortOrder: StateFlow<LibrarySortOrder> = _sortOrder.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _isGridView = MutableStateFlow(getGridViewFromPrefs())
+    val isGridView: StateFlow<Boolean> = _isGridView.asStateFlow()
+
     init {
         viewModelScope.launch {
             userPreferences.userProfile.collect { profile ->
-                _uiState.update { it.copy(userProfile = profile) }
                 if (profile != null) {
-                    loadLibraryData()
+                    loadLibraryData(profile)
                 } else {
-                    _uiState.update {
-                        it.copy(
-                            allItems = emptyList(),
-                            filteredItems = emptyList(),
-                            artistCount = 0,
-                            playlistCount = 0,
-                            albumCount = 0
-                        )
-                    }
+                    _uiState.value = LibraryUiState.Loading
                 }
             }
         }
@@ -102,16 +108,19 @@ class LibraryViewModel(
     }
 
     fun updateGridView(isGrid: Boolean) {
-        _uiState.update { it.copy(isGridView = isGrid) }
+        _isGridView.value = isGrid
         sharedPrefs.edit().putBoolean("is_grid_view", isGrid).apply()
     }
 
-    fun loadLibraryData() {
-        val profile = _uiState.value.userProfile ?: return
-        
+    fun loadLibraryData(profileOverride: UserProfile? = null) {
+        val profile = profileOverride ?: userProfile.value ?: return
+        val isRefresh = _uiState.value is LibraryUiState.Success
+
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-            
+            if (!isRefresh) {
+                _uiState.value = LibraryUiState.Loading
+            }
+
             try {
                 // 1. 并行获取歌单
                 val playlistsDeferred = async {
@@ -195,51 +204,56 @@ class LibraryViewModel(
                 val combinedItems = mappedPlaylists + mappedArtists + mappedAlbums
 
                 _uiState.update { state ->
-                    state.copy(
-                        isLoading = false,
+                    LibraryUiState.Success(
                         allItems = combinedItems,
+                        filteredItems = (state as? LibraryUiState.Success)?.filteredItems ?: emptyList(),
                         artistCount = subcount?.artistCount ?: artists.size,
                         playlistCount = subcount?.playlistCount ?: playlists.size,
                         albumCount = subcount?.albumCount ?: albums.size
                     )
                 }
-                
+
                 applyFilterAndSort()
-                
+
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(isLoading = false, error = e.localizedMessage ?: "获取音乐库数据失败")
+                if (isRefresh) {
+                    _toastEvent.emit(e.localizedMessage ?: "刷新音乐库失败")
+                } else {
+                    _uiState.value = LibraryUiState.Error(e.localizedMessage ?: "获取音乐库数据失败")
                 }
             }
         }
     }
 
     private fun applyFilterAndSort() {
-        val state = _uiState.value
+        val state = _uiState.value as? LibraryUiState.Success ?: return
         val pinned = _pinnedIds.value
-        
+        val filter = _selectedFilter.value
+        val sort = _sortOrder.value
+        val query = _searchQuery.value
+
         var list = state.allItems.map { item ->
             item.copy(isPinned = pinned.contains(item.id))
         }
-        
-        if (state.searchQuery.isNotBlank()) {
+
+        if (query.isNotBlank()) {
             list = list.filter {
-                it.title.contains(state.searchQuery, ignoreCase = true) ||
-                it.subtitle.contains(state.searchQuery, ignoreCase = true)
+                it.title.contains(query, ignoreCase = true) ||
+                it.subtitle.contains(query, ignoreCase = true)
             }
         }
-        
-        list = when (state.selectedFilter) {
+
+        list = when (filter) {
             LibraryFilter.ALL -> list
             LibraryFilter.PLAYLIST -> list.filter { it.type == LibraryItemType.PLAYLIST }
             LibraryFilter.ALBUM -> list.filter { it.type == LibraryItemType.ALBUM }
             LibraryFilter.ARTIST -> list.filter { it.type == LibraryItemType.ARTIST }
         }
-        
+
         val pinnedItems = list.filter { it.isPinned }
         val unpinnedItems = list.filter { !it.isPinned }
-        
-        val sortedUnpinned = when (state.sortOrder) {
+
+        val sortedUnpinned = when (sort) {
             LibrarySortOrder.RECENTLY_PLAYED -> {
                 unpinnedItems.sortedByDescending { it.updateTime }
             }
@@ -250,13 +264,13 @@ class LibraryViewModel(
                 unpinnedItems.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
             }
         }
-        
+
         val finalList = pinnedItems + sortedUnpinned
-        
+
         val listWithoutSpecial = finalList.filter { it.id != "-2" && !it.isLikedSongs }
         val likedSongsItem = finalList.find { it.isLikedSongs }
         val recordItem = finalList.find { it.id == "-2" }
-        
+
         val finalListAdjusted = mutableListOf<LibraryItem>()
         if (likedSongsItem != null) {
             finalListAdjusted.add(likedSongsItem)
@@ -265,9 +279,9 @@ class LibraryViewModel(
             finalListAdjusted.add(recordItem)
         }
         finalListAdjusted.addAll(listWithoutSpecial)
-        
-        _uiState.update {
-            it.copy(filteredItems = finalListAdjusted)
+
+        _uiState.update { current ->
+            if (current is LibraryUiState.Success) current.copy(filteredItems = finalListAdjusted) else current
         }
     }
 
@@ -283,7 +297,7 @@ class LibraryViewModel(
         savePinnedIdsToPrefs(currentPinned)
         applyFilterAndSort()
 
-        val title = _uiState.value.allItems.firstOrNull { it.id == itemId }?.title
+        val title = (_uiState.value as? LibraryUiState.Success)?.allItems?.firstOrNull { it.id == itemId }?.title
         if (title != null) {
             viewModelScope.launch {
                 _toastEvent.emit("已${if (willPin) "置顶" else "取消置顶"}: $title")
@@ -298,7 +312,6 @@ class LibraryViewModel(
                     loadLibraryData()
                     _toastEvent.emit("歌单创建成功！")
                 }.onFailure { e ->
-                    _uiState.update { it.copy(error = e.localizedMessage ?: "创建歌单失败") }
                     _toastEvent.emit(e.localizedMessage ?: "创建歌单失败")
                 }
             }
@@ -306,17 +319,17 @@ class LibraryViewModel(
     }
 
     fun updateFilter(filter: LibraryFilter) {
-        _uiState.update { it.copy(selectedFilter = filter) }
+        _selectedFilter.value = filter
         applyFilterAndSort()
     }
 
     fun updateSortOrder(order: LibrarySortOrder) {
-        _uiState.update { it.copy(sortOrder = order) }
+        _sortOrder.value = order
         applyFilterAndSort()
     }
 
     fun updateSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _searchQuery.value = query
         applyFilterAndSort()
     }
 
@@ -329,14 +342,13 @@ class LibraryViewModel(
                 if (response != null) {
                     val remoteProfile = response.profile
                     if (remoteProfile != null) {
-                        userPreferences.saveUserProfile(
-                            UserProfile(
-                                uid = remoteProfile.userId,
-                                nickname = remoteProfile.nickname,
-                                avatarUrl = remoteProfile.avatarUrl
-                            )
+                        val profile = UserProfile(
+                            uid = remoteProfile.userId,
+                            nickname = remoteProfile.nickname,
+                            avatarUrl = remoteProfile.avatarUrl
                         )
-                        loadLibraryData()
+                        userPreferences.saveUserProfile(profile)
+                        loadLibraryData(profile)
                     }
                 }
             }

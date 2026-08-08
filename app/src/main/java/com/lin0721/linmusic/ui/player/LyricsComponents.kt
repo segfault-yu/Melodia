@@ -364,8 +364,6 @@ fun FullScreenLyricsView(
     gradientEnd: Color,
     accentColor: Color,
     highlightColor: Color,
-    isUserScrolling: Boolean,
-    onUserScrollingChanged: (Boolean) -> Unit,
     onSeek: (Long) -> Unit,
     hazeState: HazeState,
     onClose: () -> Unit,
@@ -390,6 +388,8 @@ fun FullScreenLyricsView(
     var isScrollGestureActive by remember { mutableStateOf(false) }
     var isGestureStartedAtTop by remember { mutableStateOf(true) }
     var dragReleaseJob by remember { mutableStateOf<Job?>(null) }
+    // 歌词页手势拖动的纯 UI 交互态，不涉及业务数据，只在本组件内部使用
+    var isUserScrolling by remember { mutableStateOf(false) }
 
     fun handleDragRelease(velocity: Float = 0f) {
         dragReleaseJob?.cancel()
@@ -496,10 +496,16 @@ fun FullScreenLyricsView(
 
     val isPlayingState = rememberUpdatedState(isPlaying)
 
+    // 拖动/点击跳转播放进度后，同时结束用户滚动态，恢复自动跟随当前歌词行
+    val handleSeek: (Long) -> Unit = { timeMs ->
+        isUserScrolling = false
+        onSeek(timeMs)
+    }
+
     LaunchedEffect(isPlaying) {
         if (isPlaying) {
             if (isUserScrolling) {
-                onUserScrollingChanged(false)
+                isUserScrolling = false
             }
         } else {
             timerJob?.cancel()
@@ -512,13 +518,13 @@ fun FullScreenLyricsView(
                 val event = awaitPointerEvent()
                 if (event.type == PointerEventType.Press) {
                     timerJob?.cancel()
-                    onUserScrollingChanged(true)
+                    isUserScrolling = true
                 } else if (event.type == PointerEventType.Release) {
                     timerJob?.cancel()
                     if (isPlayingState.value) {
                         timerJob = scope.launch {
                             delay(5000)
-                            onUserScrollingChanged(false)
+                            isUserScrolling = false
                         }
                     }
                 }
@@ -806,8 +812,7 @@ fun FullScreenLyricsView(
                                     }
                                     .clickable {
                                         timerJob?.cancel()
-                                        onUserScrollingChanged(false)
-                                        onSeek(line.timeMs)
+                                        handleSeek(line.timeMs)
                                     },
                                 horizontalAlignment = Alignment.Start
                             ) {
@@ -846,7 +851,7 @@ fun FullScreenLyricsView(
                     PlayCapsule(
                         visible = isUserScrolling && centerLineIndex in lyrics.indices,
                         targetLine = lyrics.getOrNull(centerLineIndex),
-                        onSeek = onSeek,
+                        onSeek = handleSeek,
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .padding(end = MelodiaSpacing.md)
@@ -858,7 +863,7 @@ fun FullScreenLyricsView(
                 isPlaying = isPlaying,
                 currentPositionProvider = currentPositionProvider,
                 duration = duration,
-                onSeek = onSeek,
+                onSeek = handleSeek,
                 onTogglePlay = onTogglePlay,
                 onPlayNext = onPlayNext,
                 onPlayPrevious = onPlayPrevious,

@@ -70,6 +70,11 @@ fun LibraryScreen(
 ) {
     val viewModel: LibraryViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
+    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val isGridView by viewModel.isGridView.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var showLoginSheet by remember { mutableStateOf(false) }
@@ -94,13 +99,12 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
 
     val onAvatarClick: () -> Unit = {
-        if (uiState.userProfile != null) {
+        if (userProfile != null) {
             onOpenSidebar()
         } else {
             showLoginSheet = true
         }
     }
-    val isGridView = uiState.isGridView
 
     Box(
         modifier = Modifier
@@ -140,11 +144,11 @@ fun LibraryScreen(
                                 .padding(horizontal = MelodiaSpacing.md),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            if (uiState.searchQuery.isEmpty()) {
+                            if (searchQuery.isEmpty()) {
                                 Text("搜索您的收藏内容...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             }
                             BasicTextField(
-                                value = uiState.searchQuery,
+                                value = searchQuery,
                                 onValueChange = { viewModel.updateSearchQuery(it) },
                                 textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp),
                                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -153,7 +157,7 @@ fun LibraryScreen(
                             )
                         }
 
-                        if (uiState.searchQuery.isNotEmpty()) {
+                        if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { viewModel.updateSearchQuery("") }) {
                                 Icon(Icons.Default.Close, contentDescription = "清除", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -168,7 +172,7 @@ fun LibraryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // 用户头像
-                        val avatarUrl = uiState.userProfile?.avatarUrl
+                        val avatarUrl = userProfile?.avatarUrl
                         if (avatarUrl != null) {
                             AsyncImage(
                                 model = "$avatarUrl?param=100y100",
@@ -212,7 +216,7 @@ fun LibraryScreen(
                         }
 
                         IconButton(onClick = {
-                            if (uiState.userProfile != null) {
+                            if (userProfile != null) {
                                 playlistNameInput = ""
                                 showCreateDialog = true
                             } else {
@@ -227,20 +231,21 @@ fun LibraryScreen(
             }
 
             // 用户登录状态条件渲染
-            if (uiState.userProfile == null) {
+            if (userProfile == null) {
                 NotLoggedInView(
                     onLoginClick = { showLoginSheet = true }
                 )
             } else {
+                val successState = uiState as? LibraryUiState.Success
                 // 2. 分类过滤器横向滚动列表
                 FilterChipsRow(
                     items = listOf(
                         "全部",
-                        "歌单${if (uiState.playlistCount > 0) " ${uiState.playlistCount}" else ""}",
-                        "专辑${if (uiState.albumCount > 0) " ${uiState.albumCount}" else ""}",
-                        "歌手${if (uiState.artistCount > 0) " ${uiState.artistCount}" else ""}"
+                        "歌单${if ((successState?.playlistCount ?: 0) > 0) " ${successState?.playlistCount}" else ""}",
+                        "专辑${if ((successState?.albumCount ?: 0) > 0) " ${successState?.albumCount}" else ""}",
+                        "歌手${if ((successState?.artistCount ?: 0) > 0) " ${successState?.artistCount}" else ""}"
                     ),
-                    selectedIndex = uiState.selectedFilter.ordinal,
+                    selectedIndex = selectedFilter.ordinal,
                     onSelected = { index -> viewModel.updateFilter(LibraryFilter.entries[index]) }
                 )
 
@@ -264,7 +269,7 @@ fun LibraryScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = when (uiState.sortOrder) {
+                            text = when (sortOrder) {
                                 LibrarySortOrder.RECENTLY_PLAYED -> "最近播放"
                                 LibrarySortOrder.CREATE_TIME -> "创建时间"
                                 LibrarySortOrder.NAME -> "字母排序"
@@ -291,37 +296,88 @@ fun LibraryScreen(
                 }
 
                 // 4. 混合聚合列表
-                if (uiState.isLoading && uiState.allItems.isEmpty()) {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                when (val state = uiState) {
+                    is LibraryUiState.Loading -> {
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
                     }
-                } else if (uiState.filteredItems.isEmpty()) {
-                    Box(
-                        modifier = Modifier.weight(1f).fillMaxWidth().padding(MelodiaSpacing.xl),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (uiState.searchQuery.isNotEmpty()) "未找到相关收藏项" else "列表为空，快去添加吧！",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center
-                        )
+                    is LibraryUiState.Error -> {
+                        Box(
+                            modifier = Modifier.weight(1f).fillMaxWidth().padding(MelodiaSpacing.xl),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = state.message,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(MelodiaSpacing.md))
+                                Button(
+                                    onClick = { viewModel.loadLibraryData() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Text("重试", color = MaterialTheme.colorScheme.onPrimary)
+                                }
+                            }
+                        }
                     }
-                } else if (isGridView) {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 180.dp, top = MelodiaSpacing.xs, start = MelodiaSpacing.md, end = MelodiaSpacing.md)
-                    ) {
-                        val rows = uiState.filteredItems.chunked(3)
-                        items(rows, key = { row -> row.joinToString(separator = "_") { it.id } }) { row ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    is LibraryUiState.Success -> {
+                        if (state.filteredItems.isEmpty()) {
+                            Box(
+                                modifier = Modifier.weight(1f).fillMaxWidth().padding(MelodiaSpacing.xl),
+                                contentAlignment = Alignment.Center
                             ) {
-                                row.forEach { item ->
-                                    LibraryGridItem(
+                                Text(
+                                    text = if (searchQuery.isNotEmpty()) "未找到相关收藏项" else "列表为空，快去添加吧！",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else if (isGridView) {
+                            LazyColumn(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                contentPadding = PaddingValues(bottom = 180.dp, top = MelodiaSpacing.xs, start = MelodiaSpacing.md, end = MelodiaSpacing.md)
+                            ) {
+                                val rows = state.filteredItems.chunked(3)
+                                items(rows, key = { row -> row.joinToString(separator = "_") { it.id } }) { row ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        row.forEach { item ->
+                                            LibraryGridItem(
+                                                item = item,
+                                                modifier = Modifier.weight(1f),
+                                                onClick = {
+                                                    if (item.type == LibraryItemType.PLAYLIST) {
+                                                        onPlaylistClick(item.id.toLong())
+                                                    } else if (item.type == LibraryItemType.ARTIST) {
+                                                        onArtistClick(item.id.toLong())
+                                                    } else {
+                                                        com.lin0721.linmusic.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
+                                                    }
+                                                }
+                                            )
+                                        }
+                                        repeat(3 - row.size) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                contentPadding = PaddingValues(bottom = 180.dp, top = MelodiaSpacing.xs)
+                            ) {
+                                items(state.filteredItems, key = { "${it.type}_${it.id}" }) { item ->
+                                    LibraryItemRow(
                                         item = item,
-                                        modifier = Modifier.weight(1f),
                                         onClick = {
                                             if (item.type == LibraryItemType.PLAYLIST) {
                                                 onPlaylistClick(item.id.toLong())
@@ -330,37 +386,13 @@ fun LibraryScreen(
                                             } else {
                                                 com.lin0721.linmusic.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
                                             }
+                                        },
+                                        onLongClick = {
+                                            viewModel.togglePin(item.id)
                                         }
                                     )
                                 }
-                                repeat(3 - row.size) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 180.dp, top = MelodiaSpacing.xs)
-                    ) {
-                        items(uiState.filteredItems, key = { "${it.type}_${it.id}" }) { item ->
-                            LibraryItemRow(
-                                item = item,
-                                onClick = {
-                                    if (item.type == LibraryItemType.PLAYLIST) {
-                                        onPlaylistClick(item.id.toLong())
-                                    } else if (item.type == LibraryItemType.ARTIST) {
-                                        onArtistClick(item.id.toLong())
-                                    } else {
-                                        com.lin0721.linmusic.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
-                                    }
-                                },
-                                onLongClick = {
-                                    viewModel.togglePin(item.id)
-                                }
-                            )
                         }
                     }
                 }
@@ -493,7 +525,7 @@ fun LibraryScreen(
                     )
 
                     sortOptions.forEach { (order, label) ->
-                        val isSelected = uiState.sortOrder == order
+                        val isSelected = sortOrder == order
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

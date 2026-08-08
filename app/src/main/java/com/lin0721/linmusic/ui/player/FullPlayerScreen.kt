@@ -123,30 +123,37 @@ fun FullPlayerScreen(
     if (currentTrack == null) return
 
     val viewModel: PlayerViewModel = koinViewModel()
-    val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
+    val songDetailState by viewModel.songDetailState.collectAsStateWithLifecycle()
+    val lyrics = songDetailState.lyrics
+    val isLyricsLoading = songDetailState.isLyricsLoading
+    val songDetail = songDetailState.songDetail
+    val similarArtists = songDetailState.similarArtists
+    val isSimilarArtistsLoading = songDetailState.isSimilarArtistsLoading
+    val artistDetail = songDetailState.artistDetail
+    val artistFansCount = songDetailState.artistFansCount
+    val artistAlbums = songDetailState.artistAlbums
+    val isLiked = songDetailState.isLiked
+    val songWiki = songDetailState.songWiki
     val currentLyricIndex by viewModel.currentLyricIndex.collectAsStateWithLifecycle()
-    val isLyricsLoading by viewModel.isLyricsLoading.collectAsStateWithLifecycle()
-    val songDetail by viewModel.songDetail.collectAsStateWithLifecycle()
-    val similarArtists by viewModel.similarArtists.collectAsStateWithLifecycle()
-    val isSimilarArtistsLoading by viewModel.isSimilarArtistsLoading.collectAsStateWithLifecycle()
-    val artistDetail by viewModel.artistDetail.collectAsStateWithLifecycle()
-    val artistFansCount by viewModel.artistFansCount.collectAsStateWithLifecycle()
-    val artistAlbums by viewModel.artistAlbums.collectAsStateWithLifecycle()
     val playContext by viewModel.playerManager.playContext.collectAsStateWithLifecycle()
-    val isLiked by viewModel.isLiked.collectAsStateWithLifecycle()
     val sleepTimerRemaining by viewModel.sleepTimerRemaining.collectAsStateWithLifecycle()
     val commentsState by viewModel.commentsState.collectAsStateWithLifecycle()
     val activeQuality by viewModel.activeQuality.collectAsStateWithLifecycle()
     val playMode by viewModel.playerManager.playMode.collectAsStateWithLifecycle()
     val queue by viewModel.playerManager.queue.collectAsStateWithLifecycle()
     val currentQueueIndex by viewModel.playerManager.currentIndex.collectAsStateWithLifecycle()
-    val songWiki by viewModel.songWiki.collectAsStateWithLifecycle()
     var showQueueSheet by remember { mutableStateOf(false) }
     var isLyricsFullScreen by remember { mutableStateOf(false) }
     var showMoreOptionsSheet by remember { mutableStateOf(false) }
     var showTimerSheet by remember { mutableStateOf(false) }
     val timerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showCommentsSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.toastEvent.collect { message ->
+            com.lin0721.linmusic.ui.components.ToastManager.showToast(message)
+        }
+    }
 
     BackHandler(enabled = showQueueSheet) {
         showQueueSheet = false
@@ -565,7 +572,7 @@ fun FullPlayerScreen(
             }
 
             item(key = "about_artist") {
-                val isArtistFollowed by viewModel.isArtistFollowed.collectAsStateWithLifecycle()
+                val isArtistFollowed = songDetailState.isArtistFollowed
                 AboutArtistCard(
                     artistDetail = artistDetail,
                     fansCount = artistFansCount,
@@ -676,11 +683,8 @@ fun FullPlayerScreen(
                 gradientEnd = gradientEnd,
                 accentColor = accentColor,
                 highlightColor = lyricsHighlight,
-                isUserScrolling = viewModel.isUserScrolling.collectAsStateWithLifecycle().value,
-                onUserScrollingChanged = { viewModel.setUserScrolling(it) },
                 onSeek = { timeMs ->
                     viewModel.seekToTime(timeMs)
-                    viewModel.setUserScrolling(false)
                 },
                 hazeState = hazeState,
                 onClose = { isLyricsFullScreen = false },
