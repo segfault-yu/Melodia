@@ -38,22 +38,6 @@ class HomeViewModel(
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
-    // 历史日推状态
-    private val _historyDates = MutableStateFlow<List<String>>(emptyList())
-    val historyDates: StateFlow<List<String>> = _historyDates.asStateFlow()
-
-    private val _historyDatesLoading = MutableStateFlow(false)
-    val historyDatesLoading: StateFlow<Boolean> = _historyDatesLoading.asStateFlow()
-
-    private val _historySongs = MutableStateFlow<List<DailySong>>(emptyList())
-    val historySongs: StateFlow<List<DailySong>> = _historySongs.asStateFlow()
-
-    private val _selectedDate = MutableStateFlow<String?>(null)
-    val selectedDate: StateFlow<String?> = _selectedDate.asStateFlow()
-
-    private val _historySongsLoading = MutableStateFlow(false)
-    val historySongsLoading: StateFlow<Boolean> = _historySongsLoading.asStateFlow()
-
     init {
         loadHomeData()
         viewModelScope.launch {
@@ -174,50 +158,6 @@ class HomeViewModel(
             _toastEvent.emit("已退出登录")
             loadHomeData()
         }
-    }
-
-    // 加载历史日推可用日期
-    fun loadHistoryDates() {
-        viewModelScope.launch {
-            _historyDatesLoading.value = true
-            musicRepository.getHistoryRecommendDates().collect { result ->
-                result.onSuccess { dates ->
-                    _historyDates.value = dates
-                    // 自动加载第一个日期的详情
-                    if (dates.isNotEmpty() && _selectedDate.value == null) {
-                        loadHistoryDetail(dates.first())
-                    }
-                }.onFailure {
-                    _toastEvent.emit("历史日推需要黑胶会员")
-                }
-                _historyDatesLoading.value = false
-            }
-        }
-    }
-
-    // 加载指定日期的历史日推歌曲
-    fun loadHistoryDetail(date: String) {
-        viewModelScope.launch {
-            _selectedDate.value = date
-            _historySongsLoading.value = true
-            musicRepository.getHistoryRecommendDetail(date).collect { result ->
-                result.onSuccess { songs ->
-                    _historySongs.value = songs
-                }.onFailure {
-                    _toastEvent.emit("加载失败：${it.message}")
-                }
-                _historySongsLoading.value = false
-            }
-        }
-    }
-
-    fun playHistorySong(index: Int) {
-        val songs = _historySongs.value
-        if (songs.isEmpty()) return
-        val queueItems = songs.map { song ->
-            QueueItem(song.id, song.name, song.ar.joinToString { it.name }, song.al.picUrl)
-        }
-        playerManager.playQueue(queueItems, index.coerceIn(0, queueItems.size - 1), "历史日推")
     }
 
     // 开启相似歌曲漫游

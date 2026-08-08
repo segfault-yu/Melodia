@@ -39,9 +39,6 @@ class PlaylistViewModel(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
-    private val _recommendedSongs = MutableStateFlow<List<Track>>(emptyList())
-    val recommendedSongs: StateFlow<List<Track>> = _recommendedSongs.asStateFlow()
-
     private var allRecommendedTracks = listOf<Track>()
     private var currentRecIndex = 0
 
@@ -66,28 +63,12 @@ class PlaylistViewModel(
     private val _collectState = MutableStateFlow(PlaylistCollectState())
     val collectState: StateFlow<PlaylistCollectState> = _collectState.asStateFlow()
 
-    private val _isSubscribed = MutableStateFlow(false)
-    val isSubscribed: StateFlow<Boolean> = _isSubscribed.asStateFlow()
-
     private val _commentsState = MutableStateFlow<CommentsState>(CommentsState.Loading)
     val commentsState: StateFlow<CommentsState> = _commentsState.asStateFlow()
 
-    // 历史日推状态
-    private val _historyDates = MutableStateFlow<List<String>>(emptyList())
-    val historyDates: StateFlow<List<String>> = _historyDates.asStateFlow()
-
-    private val _historyDatesLoading = MutableStateFlow(false)
-    val historyDatesLoading: StateFlow<Boolean> = _historyDatesLoading.asStateFlow()
-
-    private val _historySongs = MutableStateFlow<List<DailySong>>(emptyList())
-    val historySongs: StateFlow<List<DailySong>> = _historySongs.asStateFlow()
-
-    private val _selectedDate = MutableStateFlow<String?>(null)
-    val selectedDate: StateFlow<String?> = _selectedDate.asStateFlow()
-
-    private val _historySongsLoading = MutableStateFlow(false)
-    val historySongsLoading: StateFlow<Boolean> = _historySongsLoading.asStateFlow()
-
+    // 历史日推（每日推荐/听歌排行）浏览状态
+    private val _historyRecommendState = MutableStateFlow(HistoryRecommendState())
+    val historyRecommendState: StateFlow<HistoryRecommendState> = _historyRecommendState.asStateFlow()
 
     init {
         loadLikedSongIds()
@@ -107,18 +88,17 @@ class PlaylistViewModel(
     fun loadPlaylist(id: Long, isAlbum: Boolean = false) {
         isAlbumMode = isAlbum
         _uiState.value = PlaylistUiState.Loading
-        _recommendedSongs.value = emptyList()
         allRecommendedTracks = emptyList()
         loadJob?.cancel() // 取消之前的加载任务
         if (id == -2L) {
-            _selectedDate.value = "最近一周"
+            _historyRecommendState.update { it.copy(selectedDate = "最近一周") }
             loadJob = viewModelScope.launch {
                 loadUserRecord(1)
             }
             return
         }
         if (id == -1L) {
-            _selectedDate.value = "今天"
+            _historyRecommendState.update { it.copy(selectedDate = "今天") }
             loadJob = viewModelScope.launch {
                 repository.getDailyRecommendSongs().collect { result ->
                     result.fold(
@@ -141,8 +121,6 @@ class PlaylistViewModel(
                                 tracks = tracks
                             )
                             _uiState.value = PlaylistUiState.Success(detail)
-                            _isSubscribed.value = false
-                            _recommendedSongs.value = emptyList()
                             allRecommendedTracks = emptyList()
                         },
                         onFailure = { error ->
@@ -158,14 +136,12 @@ class PlaylistViewModel(
             flow.collect { result ->
                 result.fold(
                     onSuccess = { detail ->
-                        _uiState.value = PlaylistUiState.Success(detail)
-                        _isSubscribed.value = detail.subscribed
+                        _uiState.value = PlaylistUiState.Success(detail, isSubscribed = detail.subscribed)
                         val baseSong = detail.tracks.firstOrNull()
 
                         if (baseSong != null && !isAlbum) {
                             loadRecommendations(detail.id, baseSong.id, detail.tracks)
                         } else {
-                            _recommendedSongs.value = emptyList()
                             allRecommendedTracks = emptyList()
                         }
                     },
@@ -342,16 +318,22 @@ class PlaylistViewModel(
                     updateCurrentRecommendations()
                 }.onFailure { e ->
                     // 静默失败
-                    _recommendedSongs.value = emptyList()
                     allRecommendedTracks = emptyList()
+                    setRecommendedSongs(emptyList())
                 }
             }
         }
     }
 
+    private fun setRecommendedSongs(songs: List<Track>) {
+        _uiState.update { state ->
+            if (state is PlaylistUiState.Success) state.copy(recommendedSongs = songs) else state
+        }
+    }
+
     private fun updateCurrentRecommendations() {
         if (allRecommendedTracks.isEmpty()) {
-            _recommendedSongs.value = emptyList()
+            setRecommendedSongs(emptyList())
             return
         }
         val size = allRecommendedTracks.size
@@ -365,7 +347,7 @@ class PlaylistViewModel(
             }
             if (list.size >= size) break
         }
-        _recommendedSongs.value = list
+        setRecommendedSongs(list)
     }
 
     fun refreshRecommendations() {
@@ -382,16 +364,16 @@ class PlaylistViewModel(
                     _toastEvent.emit("已添加到歌单")
                     allRecommendedTracks = allRecommendedTracks.filter { it.id != track.id }
                     updateCurrentRecommendations()
-                    
-                    val currentState = _uiState.value
-                    if (currentState is PlaylistUiState.Success) {
-                        val updatedTracks = currentState.playlist.tracks.toMutableList().apply {
-                            if (none { it.id == track.id }) {
-                                add(track)
+
+                    _uiState.update { state ->
+                        if (state is PlaylistUiState.Success) {
+                            val updatedTracks = state.playlist.tracks.toMutableList().apply {
+                                if (none { it.id == track.id }) {
+                                    add(track)
+                                }
                             }
-                        }
-                        val updatedPlaylist = currentState.playlist.copy(tracks = updatedTracks)
-                        _uiState.value = PlaylistUiState.Success(updatedPlaylist)
+                            state.copy(playlist = state.playlist.copy(tracks = updatedTracks))
+                        } else state
                     }
                 }.onFailure { e ->
                     _toastEvent.emit("添加失败: ${e.message}")
@@ -403,11 +385,13 @@ class PlaylistViewModel(
     fun toggleSubscribePlaylist() {
         val successState = _uiState.value as? PlaylistUiState.Success ?: return
         val playlistId = successState.playlist.id
-        val targetSubscribe = !_isSubscribed.value
+        val targetSubscribe = !successState.isSubscribed
         viewModelScope.launch {
             repository.subscribePlaylist(playlistId, targetSubscribe).collect { result ->
                 result.onSuccess {
-                    _isSubscribed.value = targetSubscribe
+                    _uiState.update { state ->
+                        if (state is PlaylistUiState.Success) state.copy(isSubscribed = targetSubscribe) else state
+                    }
                     _toastEvent.emit(if (targetSubscribe) "已收藏歌单" else "已取消收藏歌单")
                 }.onFailure { e ->
                     _toastEvent.emit("操作失败: ${e.message}")
@@ -483,14 +467,14 @@ class PlaylistViewModel(
     // 加载历史日推可用日期
     fun loadHistoryDates() {
         viewModelScope.launch {
-            _historyDatesLoading.value = true
+            _historyRecommendState.update { it.copy(datesLoading = true) }
             repository.getHistoryRecommendDates().collect { result ->
                 result.onSuccess { dates ->
-                    _historyDates.value = dates
+                    _historyRecommendState.update { it.copy(dates = dates) }
                 }.onFailure {
                     _toastEvent.emit("历史日推需要黑胶会员")
                 }
-                _historyDatesLoading.value = false
+                _historyRecommendState.update { it.copy(datesLoading = false) }
             }
         }
     }
@@ -503,31 +487,28 @@ class PlaylistViewModel(
             return
         }
         viewModelScope.launch {
-            _selectedDate.value = date
-            _historySongsLoading.value = true
+            _historyRecommendState.update { it.copy(selectedDate = date, songsLoading = true) }
             repository.getHistoryRecommendDetail(date).collect { result ->
                 result.onSuccess { songs ->
-                    _historySongs.value = songs
-                    val currentState = _uiState.value
-                    if (currentState is PlaylistUiState.Success && currentState.playlist.id == -1L) {
-                        val newTracks = songs.map { song ->
-                            Track(
-                                id = song.id,
-                                name = song.name,
-                                ar = song.ar,
-                                al = song.al,
-                                fee = song.fee
-                            )
-                        }
-                        val updatedPlaylist = currentState.playlist.copy(
-                            tracks = newTracks
-                        )
-                        _uiState.value = PlaylistUiState.Success(updatedPlaylist)
+                    _historyRecommendState.update { it.copy(songs = songs) }
+                    _uiState.update { state ->
+                        if (state is PlaylistUiState.Success && state.playlist.id == -1L) {
+                            val newTracks = songs.map { song ->
+                                Track(
+                                    id = song.id,
+                                    name = song.name,
+                                    ar = song.ar,
+                                    al = song.al,
+                                    fee = song.fee
+                                )
+                            }
+                            state.copy(playlist = state.playlist.copy(tracks = newTracks))
+                        } else state
                     }
                 }.onFailure {
                     _toastEvent.emit("加载失败：${it.message}")
                 }
-                _historySongsLoading.value = false
+                _historyRecommendState.update { it.copy(songsLoading = false) }
             }
         }
     }
@@ -535,12 +516,11 @@ class PlaylistViewModel(
     fun loadUserRecord(type: Int) {
         viewModelScope.launch {
             val dateLabel = if (type == 1) "最近一周" else "所有时间"
-            _selectedDate.value = dateLabel
-            _historySongsLoading.value = true
+            _historyRecommendState.update { it.copy(selectedDate = dateLabel, songsLoading = true) }
             val profile = userPreferences.userProfile.first()
             if (profile == null) {
                 _toastEvent.emit("请先登录")
-                _historySongsLoading.value = false
+                _historyRecommendState.update { it.copy(songsLoading = false) }
                 return@launch
             }
             repository.getUserRecord(profile.uid, type).collect { result ->
@@ -555,11 +535,11 @@ class PlaylistViewModel(
                             tracks = tracks
                         )
                         _uiState.value = PlaylistUiState.Success(detail)
-                        _historySongsLoading.value = false
+                        _historyRecommendState.update { it.copy(songsLoading = false) }
                     },
                     onFailure = { error ->
                         _toastEvent.emit("获取听歌排行失败：${error.message}")
-                        _historySongsLoading.value = false
+                        _historyRecommendState.update { it.copy(songsLoading = false) }
                     }
                 )
             }
@@ -567,7 +547,7 @@ class PlaylistViewModel(
     }
 
     fun playHistorySong(index: Int) {
-        val songs = _historySongs.value
+        val songs = _historyRecommendState.value.songs
         if (songs.isEmpty()) return
         val queueItems = songs.map { song ->
             QueueItem(song.id, song.name, song.ar.joinToString { it.name }, song.al.picUrl)

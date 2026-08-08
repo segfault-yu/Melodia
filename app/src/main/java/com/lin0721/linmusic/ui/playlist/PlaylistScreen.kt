@@ -30,7 +30,6 @@ import com.lin0721.linmusic.ui.components.SongRow
 import com.lin0721.linmusic.ui.components.SongRowData
 import com.lin0721.linmusic.ui.components.WebViewLoginScreen
 import com.lin0721.linmusic.ui.player.CommentsBottomSheet
-import com.lin0721.linmusic.ui.home.HistoryRecommendSheet
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,14 +88,8 @@ fun PlaylistScreen(
     val likedSongIds by viewModel.likedSongIds.collectAsStateWithLifecycle()
     val collectState by viewModel.collectState.collectAsStateWithLifecycle()
     val userProfile  by viewModel.userProfile.collectAsStateWithLifecycle()
-    val recommendedSongs by viewModel.recommendedSongs.collectAsStateWithLifecycle()
-    val isSubscribed by viewModel.isSubscribed.collectAsStateWithLifecycle()
     val commentsState by viewModel.commentsState.collectAsStateWithLifecycle()
-    val historyDates by viewModel.historyDates.collectAsStateWithLifecycle()
-    val historyDatesLoading by viewModel.historyDatesLoading.collectAsStateWithLifecycle()
-    val historySongs by viewModel.historySongs.collectAsStateWithLifecycle()
-    val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
-    val historySongsLoading by viewModel.historySongsLoading.collectAsStateWithLifecycle()
+    val historyRecommendState by viewModel.historyRecommendState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var showLoginSheet by remember { mutableStateOf(false) }
@@ -105,8 +98,8 @@ fun PlaylistScreen(
     var showMoreMenuSheet by remember { mutableStateOf(false) }
     var selectedHistoryDate by remember { mutableStateOf("今天") }
 
-    LaunchedEffect(selectedDate) {
-        selectedHistoryDate = selectedDate ?: "今天"
+    LaunchedEffect(historyRecommendState.selectedDate) {
+        selectedHistoryDate = historyRecommendState.selectedDate ?: "今天"
     }
 
     LaunchedEffect(viewModel) {
@@ -146,7 +139,7 @@ fun PlaylistScreen(
                     likedSongIds   = likedSongIds,
                     collectState   = collectState,
                     isLoggedIn     = userProfile != null,
-                    recommendedSongs = recommendedSongs,
+                    recommendedSongs = state.recommendedSongs,
                     onBack         = onBack,
                     onArtistClick  = onArtistClick,
                     onAlbumClick   = onAlbumClick,
@@ -187,7 +180,7 @@ fun PlaylistScreen(
                     onAddRecommendSong = { track ->
                         viewModel.addRecommendSongToPlaylist(state.playlist.id, track)
                     },
-                    isSubscribed = isSubscribed,
+                    isSubscribed = state.isSubscribed,
                     onSubscribeClick = {
                         if (userProfile == null) {
                             showLoginSheet = true
@@ -203,8 +196,8 @@ fun PlaylistScreen(
                         showMoreMenuSheet = true
                     },
                     onHistoryClick = {},
-                    historyDates = historyDates,
-                    historySongsLoading = historySongsLoading,
+                    historyDates = historyRecommendState.dates,
+                    historySongsLoading = historyRecommendState.songsLoading,
                     showHistoryDatePicker = true,
                     selectedHistoryDate = selectedHistoryDate,
                     onSelectedHistoryDateChange = { selectedHistoryDate = it },
@@ -273,8 +266,8 @@ fun PlaylistScreen(
                     
                     val menuItems = listOf(
                         PlaylistMenuItem(
-                            icon = if (isSubscribed) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            title = if (isSubscribed) "取消收藏歌单" else "收藏歌单",
+                            icon = if (successState.isSubscribed) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            title = if (successState.isSubscribed) "取消收藏歌单" else "收藏歌单",
                             subtitle = "收藏歌单到我的音乐库"
                         ) {
                             showMoreMenuSheet = false
