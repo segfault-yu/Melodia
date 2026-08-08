@@ -41,8 +41,11 @@ import com.lin0721.linmusic.data.remote.api.DailySong
 import com.lin0721.linmusic.data.repository.ToplistInfo
 import com.lin0721.linmusic.ui.theme.*
 import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.ui.components.FilterChipsRow
 import com.lin0721.linmusic.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.ui.components.ProfileSidebar
+import com.lin0721.linmusic.ui.components.SongRow
+import com.lin0721.linmusic.ui.components.SongRowData
 import com.lin0721.linmusic.ui.components.WebViewLoginScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -292,16 +295,12 @@ fun TopGreetingBar(
 
 @Composable
 fun FilterPills() {
-    val filters = listOf("全部", "音乐", "播客")
     var selectedIndex by remember { mutableStateOf(0) }
-    LazyRow(modifier = Modifier.padding(top = MelodiaSpacing.sm), contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(filters.size) { index ->
-            val isSelected = index == selectedIndex
-            Box(modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f)).clickable { selectedIndex = index }.padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm)) {
-                Text(text = filters[index], color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.LightGray, fontSize = 14.sp)
-            }
-        }
-    }
+    FilterChipsRow(
+        items = listOf("全部", "音乐", "播客"),
+        selectedIndex = selectedIndex,
+        onSelected = { selectedIndex = it }
+    )
 }
 
 @Composable
@@ -709,41 +708,17 @@ fun HistoryRecommendSheet(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(vertical = MelodiaSpacing.sm)
                             ) {
-                                itemsIndexed(songs) { index, song ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable { onPlaySong(index) }
-                                            .padding(horizontal = MelodiaSpacing.md, vertical = 9.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        AsyncImage(
-                                            model = "${song.al.picUrl}?param=100y100",
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .size(42.dp)
-                                                .clip(RoundedCornerShape(10.dp)),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = song.name,
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                            Text(
-                                                text = song.ar.joinToString(" / ") { it.name },
-                                                color = Color.Gray,
-                                                fontSize = 11.sp,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    }
+                                itemsIndexed(songs, key = { _, song -> song.id }) { index, song ->
+                                    SongRow(
+                                        data = SongRowData(
+                                            id = song.id,
+                                            title = song.name,
+                                            artist = song.ar.joinToString(" / ") { it.name },
+                                            coverUrl = song.al.picUrl
+                                        ),
+                                        compact = true,
+                                        onClick = { onPlaySong(index) }
+                                    )
                                     if (index < songs.lastIndex) {
                                         HorizontalDivider(
                                             modifier = Modifier.padding(start = 68.dp, end = MelodiaSpacing.md),

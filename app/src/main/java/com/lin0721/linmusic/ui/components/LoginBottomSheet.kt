@@ -30,19 +30,7 @@ fun LoginBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = SurfaceDark,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        dragHandle = {
-            // 顶部拖拽指示条
-            Box(
-                modifier = Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-            ) {
-                Surface(
-                    modifier = Modifier.width(40.dp).height(4.dp),
-                    shape = RoundedCornerShape(2.dp),
-                    color = Color.White.copy(alpha = 0.3f)
-                ) {}
-            }
-        }
+        dragHandle = { MelodiaDragHandle() }
     ) {
         Column(
             modifier = Modifier

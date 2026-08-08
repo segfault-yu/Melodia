@@ -23,7 +23,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.window.Dialog
+import com.lin0721.linmusic.ui.components.CreatePlaylistDialog
 import com.lin0721.linmusic.ui.components.LoginBottomSheet
+import com.lin0721.linmusic.ui.components.MelodiaDragHandle
+import com.lin0721.linmusic.ui.components.SongRow
+import com.lin0721.linmusic.ui.components.SongRowData
 import com.lin0721.linmusic.ui.components.WebViewLoginScreen
 import com.lin0721.linmusic.ui.player.CommentsBottomSheet
 import com.lin0721.linmusic.ui.home.HistoryRecommendSheet
@@ -52,7 +56,6 @@ import coil.request.ImageRequest
 import com.lin0721.linmusic.data.remote.api.PlaylistDetail
 import com.lin0721.linmusic.data.remote.api.Track
 import com.lin0721.linmusic.ui.theme.BottomSheetShape
-import com.lin0721.linmusic.ui.theme.DragHandleShape
 import com.lin0721.linmusic.ui.theme.MelodiaSpacing
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.ui.text.TextStyle
@@ -249,15 +252,7 @@ fun PlaylistScreen(
                 onDismissRequest = { showMoreMenuSheet = false },
                 containerColor = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                dragHandle = {
-                    Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
-                        Surface(
-                            modifier = Modifier.width(40.dp).height(4.dp),
-                            shape = DragHandleShape,
-                            color = Color.White.copy(alpha = 0.3f)
-                        ) {}
-                    }
-                }
+                dragHandle = { MelodiaDragHandle() }
             ) {
                 Column(
                     modifier = Modifier
@@ -676,12 +671,29 @@ private fun PlaylistContent(
                                }
                 items(filtered, key = { it.id }) { track ->
                     SongRow(
-                        track        = track,
-                        isActive     = currentTrackId == track.id.toString(),
-                        onClick      = { onPlaySong(track) },
-                        onArtistClick = onArtistClick,
-                        onMoreClick = {
-                            activeSongMoreOptions = track
+                        data = SongRowData(
+                            id = track.id,
+                            title = track.name,
+                            artist = track.ar.joinToString(" • ") { it.name },
+                            coverUrl = track.al.picUrl,
+                            isVip = track.fee == 1
+                        ),
+                        isActive = currentTrackId == track.id.toString(),
+                        onClick = { onPlaySong(track) },
+                        onArtistClick = { track.ar.firstOrNull()?.id?.let(onArtistClick) },
+                        trailingSlot = {
+                            IconButton(
+                                onClick = { activeSongMoreOptions = track },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "更多",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(Modifier.width(MelodiaSpacing.sm))
                         }
                     )
                 }
@@ -695,12 +707,33 @@ private fun PlaylistContent(
                     )
                 }
                 items(recommendedSongs, key = { "rec_${it.id}" }) { track ->
-                    RecommendSongRow(
-                        track = track,
+                    SongRow(
+                        data = SongRowData(
+                            id = track.id,
+                            title = track.name,
+                            artist = track.ar.joinToString(" • ") { it.name },
+                            coverUrl = track.al.picUrl,
+                            isVip = track.fee == 1
+                        ),
                         isActive = currentTrackId == track.id.toString(),
-                        onPlaySong = { onPlaySong(track) },
-                        onAddClick = { onAddRecommendSong(track) },
-                        onArtistClick = onArtistClick
+                        onClick = { onPlaySong(track) },
+                        onArtistClick = { track.ar.firstOrNull()?.id?.let(onArtistClick) },
+                        trailingSlot = {
+                            IconButton(
+                                onClick = { onAddRecommendSong(track) },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "添加歌曲到歌单",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                                        .padding(MelodiaSpacing.xxs)
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -776,15 +809,7 @@ private fun PlaylistContent(
             onDismissRequest = { collectSongId = null },
             containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
-            dragHandle = {
-                Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
-                    Surface(
-                        modifier = Modifier.width(40.dp).height(4.dp),
-                        shape = DragHandleShape,
-                        color = Color.White.copy(alpha = 0.3f)
-                    ) {}
-                }
-            }
+            dragHandle = { MelodiaDragHandle() }
         ) {
             Column(
                 modifier = Modifier
@@ -815,7 +840,6 @@ private fun PlaylistContent(
                         collectState.collectItems.map { it.copy() }.toMutableStateList()
                     }
                     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
-                    var newPlaylistNameInput by remember { mutableStateOf("") }
                     val context = LocalContext.current
 
                     LazyColumn(
@@ -829,7 +853,6 @@ private fun PlaylistContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        newPlaylistNameInput = ""
                                         showCreatePlaylistDialog = true
                                     }
                                     .padding(vertical = MelodiaSpacing.sm),
@@ -938,58 +961,9 @@ private fun PlaylistContent(
                     }
 
                     if (showCreatePlaylistDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showCreatePlaylistDialog = false },
-                            title = { Text("新建歌单并收藏", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) },
-                            text = {
-                                Column {
-                                    Text("请输入新歌单的名称：", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(44.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(MaterialTheme.colorScheme.background)
-                                            .padding(horizontal = 12.dp),
-                                        contentAlignment = Alignment.CenterStart
-                                    ) {
-                                        if (newPlaylistNameInput.isEmpty()) {
-                                            Text("歌单名称", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                                        }
-                                        androidx.compose.foundation.text.BasicTextField(
-                                            value = newPlaylistNameInput,
-                                            onValueChange = { newPlaylistNameInput = it },
-                                            textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp),
-                                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                            modifier = Modifier.fillMaxWidth(),
-                                            singleLine = true
-                                        )
-                                    }
-                                }
-                            },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        if (newPlaylistNameInput.isNotBlank()) {
-                                            onSaveNewCollection(newPlaylistNameInput, songId)
-                                            showCreatePlaylistDialog = false
-                                        } else {
-                                            com.lin0721.linmusic.ui.components.ToastManager.showToast("名字不能为空哦！")
-                                        }
-                                    },
-                                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                                ) {
-                                    Text("创建并收藏", fontWeight = FontWeight.Bold)
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showCreatePlaylistDialog = false }) {
-                                    Text("取消", color = MaterialTheme.colorScheme.onSurface)
-                                }
-                            },
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            shape = RoundedCornerShape(10.dp)
+                        CreatePlaylistDialog(
+                            onDismiss = { showCreatePlaylistDialog = false },
+                            onCreate = { name -> onSaveNewCollection(name, songId) }
                         )
                     }
                 }
@@ -1003,16 +977,7 @@ private fun PlaylistContent(
             onDismissRequest = { activeSongMoreOptions = null },
             containerColor = MaterialTheme.colorScheme.background,
             shape = BottomSheetShape,
-            dragHandle = {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(DragHandleShape)
-                        .background(Color.White.copy(alpha = 0.3f))
-                )
-            }
+            dragHandle = { MelodiaDragHandle() }
         ) {
             Column(
                 modifier = Modifier
@@ -1356,122 +1321,6 @@ private fun PlaylistHeaderItem(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 基础歌曲行组件
-// ────────────────────────────────────────────────────────────────────────────
-@Composable
-private fun BaseSongRow(
-    track: Track,
-    isActive: Boolean,
-    onClick: () -> Unit,
-    onArtistClick: (Long) -> Unit,
-    actionArea: @Composable RowScope.() -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .background(if (isActive) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent)
-            .padding(horizontal = MelodiaSpacing.md, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val context = LocalContext.current
-        val imageRequest = remember(track.al.picUrl) {
-            if (!track.al.picUrl.isNullOrBlank()) {
-                coil.request.ImageRequest.Builder(context)
-                    .data("${track.al.picUrl}?param=100y100")
-                    .crossfade(true)
-                    .build()
-            } else {
-                null
-            }
-        }
-        AsyncImage(
-            model              = imageRequest,
-            contentDescription = track.name,
-            contentScale       = ContentScale.Crop,
-            modifier           = Modifier.size(48.dp).clip(MaterialTheme.shapes.extraSmall)
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = track.name,
-                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 15.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (track.fee == 1) {
-                    Spacer(Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
-                            .border(BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(3.dp))
-                            .padding(horizontal = MelodiaSpacing.xs, vertical = 1.dp)
-                    ) {
-                        Text(
-                            text = "VIP",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = 10.sp
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(MelodiaSpacing.xxs))
-            Text(
-                text = track.ar.joinToString(" • ") { it.name },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 13.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable {
-                    track.ar.firstOrNull()?.id?.let { artistId ->
-                        onArtistClick(artistId)
-                    }
-                }
-            )
-        }
-        actionArea()
-    }
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// 歌曲行
-// ────────────────────────────────────────────────────────────────────────────
-@Composable
-private fun SongRow(
-    track: Track, 
-    isActive: Boolean, 
-    onClick: () -> Unit,
-    onArtistClick: (Long) -> Unit,
-    onMoreClick: () -> Unit = {}
-) {
-    BaseSongRow(
-        track = track,
-        isActive = isActive,
-        onClick = onClick,
-        onArtistClick = onArtistClick
-    ) {
-        IconButton(
-            onClick = onMoreClick,
-            modifier = Modifier.size(40.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "更多",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        Spacer(Modifier.width(MelodiaSpacing.sm))
-    }
-}
-
-// ────────────────────────────────────────────────────────────────────────────
 // 推荐板块头部
 // ────────────────────────────────────────────────────────────────────────────
 @Composable
@@ -1515,39 +1364,6 @@ private fun RecommendationHeader(onRefresh: () -> Unit) {
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// 推荐歌曲行
-// ────────────────────────────────────────────────────────────────────────────
-@Composable
-private fun RecommendSongRow(
-    track: Track,
-    isActive: Boolean,
-    onPlaySong: () -> Unit,
-    onAddClick: () -> Unit,
-    onArtistClick: (Long) -> Unit
-) {
-    BaseSongRow(
-        track = track,
-        isActive = isActive,
-        onClick = onPlaySong,
-        onArtistClick = onArtistClick
-    ) {
-        IconButton(
-            onClick = onAddClick,
-            modifier = Modifier.size(36.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "添加歌曲到歌单",
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .size(22.dp)
-                    .background(Color.White.copy(alpha = 0.1f), CircleShape)
-                    .padding(MelodiaSpacing.xxs)
-            )
-        }
-    }
-}
 
 private data class PlaylistMenuItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,

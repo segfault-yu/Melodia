@@ -44,10 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.ui.components.FilterChipsRow
 import com.lin0721.linmusic.ui.components.LoginBottomSheet
+import com.lin0721.linmusic.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.ui.components.WebViewLoginScreen
 import com.lin0721.linmusic.ui.theme.BottomSheetShape
-import com.lin0721.linmusic.ui.theme.DragHandleShape
 import com.lin0721.linmusic.ui.theme.MelodiaSpacing
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.foundation.gestures.*
@@ -233,11 +234,14 @@ fun LibraryScreen(
             } else {
                 // 2. 分类过滤器横向滚动列表
                 FilterChipsRow(
-                    selectedFilter = uiState.selectedFilter,
-                    onFilterSelected = { viewModel.updateFilter(it) },
-                    playlistCount = uiState.playlistCount,
-                    albumCount = uiState.albumCount,
-                    artistCount = uiState.artistCount
+                    items = listOf(
+                        "全部",
+                        "歌单${if (uiState.playlistCount > 0) " ${uiState.playlistCount}" else ""}",
+                        "专辑${if (uiState.albumCount > 0) " ${uiState.albumCount}" else ""}",
+                        "歌手${if (uiState.artistCount > 0) " ${uiState.artistCount}" else ""}"
+                    ),
+                    selectedIndex = uiState.selectedFilter.ordinal,
+                    onSelected = { index -> viewModel.updateFilter(LibraryFilter.entries[index]) }
                 )
 
                 // 3. 排序与视图展示状态栏
@@ -368,15 +372,7 @@ fun LibraryScreen(
                 onDismissRequest = { showCreateDialog = false },
                 containerColor = MaterialTheme.colorScheme.surface,
                 shape = BottomSheetShape,
-                dragHandle = {
-                    Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
-                        Surface(
-                            modifier = Modifier.width(40.dp).height(4.dp),
-                            shape = DragHandleShape,
-                            color = Color.White.copy(alpha = 0.3f)
-                        ) {}
-                    }
-                }
+                dragHandle = { MelodiaDragHandle() }
             ) {
                 Column(
                     modifier = Modifier
@@ -474,15 +470,7 @@ fun LibraryScreen(
                 onDismissRequest = { showSortMenu = false },
                 containerColor = MaterialTheme.colorScheme.surface,
                 shape = BottomSheetShape,
-                dragHandle = {
-                    Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
-                        Surface(
-                            modifier = Modifier.width(40.dp).height(4.dp),
-                            shape = DragHandleShape,
-                            color = Color.White.copy(alpha = 0.3f)
-                        ) {}
-                    }
-                }
+                dragHandle = { MelodiaDragHandle() }
             ) {
                 Column(
                     modifier = Modifier
@@ -601,74 +589,6 @@ private fun NotLoggedInView(onLoginClick: () -> Unit) {
                 fontWeight = FontWeight.Bold
             )
         }
-    }
-}
-
-// 顶部过滤芯片组件
-@Composable
-private fun FilterChipsRow(
-    selectedFilter: LibraryFilter,
-    onFilterSelected: (LibraryFilter) -> Unit,
-    playlistCount: Int,
-    albumCount: Int,
-    artistCount: Int
-) {
-    LazyRow(
-        modifier = Modifier.padding(top = MelodiaSpacing.sm),
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        item {
-            FilterChipItem(
-                label = "全部",
-                isSelected = selectedFilter == LibraryFilter.ALL,
-                onClick = { onFilterSelected(LibraryFilter.ALL) }
-            )
-        }
-        item {
-            FilterChipItem(
-                label = "歌单${if (playlistCount > 0) " $playlistCount" else ""}",
-                isSelected = selectedFilter == LibraryFilter.PLAYLIST,
-                onClick = { onFilterSelected(LibraryFilter.PLAYLIST) }
-            )
-        }
-        item {
-            FilterChipItem(
-                label = "专辑${if (albumCount > 0) " $albumCount" else ""}",
-                isSelected = selectedFilter == LibraryFilter.ALBUM,
-                onClick = { onFilterSelected(LibraryFilter.ALBUM) }
-            )
-        }
-        item {
-            FilterChipItem(
-                label = "歌手${if (artistCount > 0) " $artistCount" else ""}",
-                isSelected = selectedFilter == LibraryFilter.ARTIST,
-                onClick = { onFilterSelected(LibraryFilter.ARTIST) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun FilterChipItem(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.LightGray,
-            fontSize = 14.sp
-        )
     }
 }
 

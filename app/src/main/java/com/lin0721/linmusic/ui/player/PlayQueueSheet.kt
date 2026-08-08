@@ -36,6 +36,8 @@ import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.player.PlayMode
 import com.lin0721.linmusic.player.QueueItem
+import com.lin0721.linmusic.ui.components.DraggableSongRow
+import com.lin0721.linmusic.ui.components.SongRowData
 import com.lin0721.linmusic.ui.theme.BackgroundDark
 import com.lin0721.linmusic.ui.theme.NeteaseRed
 import com.lin0721.linmusic.ui.theme.SurfaceDark
@@ -174,8 +176,8 @@ fun PlayQueueSheet(
                             backgroundContent = { SwipeDeleteBackground() },
                             enableDismissFromStartToEnd = false
                         ) {
-                            QueueSongRow(
-                                item = item,
+                            DraggableSongRow(
+                                data = SongRowData(id = item.songId, title = item.title, artist = item.artist, coverUrl = item.coverUrl),
                                 isCurrent = false,
                                 isPlaying = false,
                                 isPlayed = true,
@@ -198,8 +200,8 @@ fun PlayQueueSheet(
                     item(key = "current_${queue[currentIndex].songId}") {
                         if (isRoaming) {
                             // 漫游模式下禁用侧滑删除
-                            QueueSongRow(
-                                item = queue[currentIndex],
+                            DraggableSongRow(
+                                data = SongRowData(id = queue[currentIndex].songId, title = queue[currentIndex].title, artist = queue[currentIndex].artist, coverUrl = queue[currentIndex].coverUrl),
                                 isCurrent = true,
                                 isPlaying = isPlaying,
                                 isPlayed = false,
@@ -224,8 +226,8 @@ fun PlayQueueSheet(
                                 backgroundContent = { SwipeDeleteBackground() },
                                 enableDismissFromStartToEnd = false
                             ) {
-                                QueueSongRow(
-                                    item = queue[currentIndex],
+                                DraggableSongRow(
+                                    data = SongRowData(id = queue[currentIndex].songId, title = queue[currentIndex].title, artist = queue[currentIndex].artist, coverUrl = queue[currentIndex].coverUrl),
                                     isCurrent = true,
                                     isPlaying = isPlaying,
                                     isPlayed = false,
@@ -270,8 +272,8 @@ fun PlayQueueSheet(
                                 backgroundContent = { SwipeDeleteBackground() },
                                 enableDismissFromStartToEnd = false
                             ) {
-                                QueueSongRow(
-                                    item = item,
+                                DraggableSongRow(
+                                    data = SongRowData(id = item.songId, title = item.title, artist = item.artist, coverUrl = item.coverUrl),
                                     isCurrent = false,
                                     isPlaying = false,
                                     isPlayed = false,
@@ -436,117 +438,6 @@ private fun SectionLabel(text: String) {
         fontSize = 12.sp,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
     )
-}
-
-@Composable
-private fun QueueSongRow(
-    item: QueueItem,
-    isCurrent: Boolean,
-    isPlaying: Boolean,
-    isPlayed: Boolean,
-    isDragging: Boolean,
-    dragOffsetY: Float,
-    onClick: () -> Unit,
-    onDragStart: () -> Unit,
-    onDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit
-) {
-    val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "drag_elev")
-    // 使用不透明背景颜色
-    val bgColor by animateColorAsState(
-        when {
-            isDragging -> SurfaceLight
-            isCurrent -> SurfaceDark
-            else -> BackgroundDark
-        },
-        label = "row_bg"
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(
-                if (isDragging) Modifier
-                    .zIndex(1f)
-                    .graphicsLayer { translationY = dragOffsetY }
-                    .shadow(elevation, RoundedCornerShape(8.dp))
-                else Modifier
-            )
-            .background(bgColor)
-            .clickable(onClick = onClick)
-            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
-            .then(if (isPlayed) Modifier.alpha(0.5f) else Modifier),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(modifier = Modifier.size(44.dp)) {
-            AsyncImage(
-                model = "${item.coverUrl}?param=100y100",
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(6.dp))
-            )
-            if (isCurrent) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black.copy(alpha = 0.4f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        if (isPlaying) Icons.Rounded.GraphicEq else Icons.Rounded.PlayArrow,
-                        contentDescription = null,
-                        tint = NeteaseRed,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                item.title,
-                color = if (isCurrent) NeteaseRed else Color.White,
-                fontSize = 14.sp,
-                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                item.artist,
-                color = TextGray,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        // 拖拽手柄（长按拖动排序）
-        Icon(
-            Icons.Default.Menu,
-            contentDescription = null,
-            tint = TextGray,
-            modifier = Modifier
-                .size(36.dp)
-                .padding(8.dp)
-                .pointerInput(Unit) {
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = { onDragStart() },
-                        onDrag = { change, offset ->
-                            change.consume()
-                            onDrag(offset.y)
-                        },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragEnd() }
-                    )
-                }
-        )
-    }
 }
 
 @Composable

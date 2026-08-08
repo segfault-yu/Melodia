@@ -37,6 +37,8 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.data.remote.api.SearchSong
 import com.lin0721.linmusic.data.repository.HotSearch
 import com.lin0721.linmusic.data.repository.PlaylistTag
+import com.lin0721.linmusic.ui.components.SongRow
+import com.lin0721.linmusic.ui.components.SongRowData
 import com.lin0721.linmusic.ui.theme.BackgroundDark
 import com.lin0721.linmusic.ui.theme.NeteaseRed
 import com.lin0721.linmusic.ui.theme.SurfaceDark
@@ -274,7 +276,23 @@ private fun SearchResultsList(
 
         items(results, key = { it.id }) { song ->
             val isActive = currentTrackId == song.id.toString()
-            SearchSongRow(song = song, isActive = isActive, onClick = { onSongClick(song) })
+            SongRow(
+                data = SongRowData(
+                    id = song.id,
+                    title = song.name,
+                    artist = song.ar.joinToString(" / ") { it.name },
+                    coverUrl = song.al.picUrl,
+                    durationText = if (song.dt > 0) {
+                        val minutes = song.dt / 1000 / 60
+                        val seconds = song.dt / 1000 % 60
+                        "${minutes}:%02d".format(seconds)
+                    } else {
+                        null
+                    }
+                ),
+                isActive = isActive,
+                onClick = { onSongClick(song) }
+            )
         }
 
         if (isLoading && results.isNotEmpty()) {
@@ -286,65 +304,6 @@ private fun SearchResultsList(
                     CircularProgressIndicator(color = NeteaseRed, modifier = Modifier.size(24.dp))
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SearchSongRow(song: SearchSong, isActive: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .background(if (isActive) SurfaceDark else Color.Transparent)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val context = LocalContext.current
-        val imageRequest = remember(song.al.picUrl) {
-            if (!song.al.picUrl.isNullOrBlank()) {
-                coil.request.ImageRequest.Builder(context)
-                    .data("${song.al.picUrl}?param=100y100")
-                    .crossfade(true)
-                    .build()
-            } else {
-                null
-            }
-        }
-        AsyncImage(
-            model = imageRequest,
-            contentDescription = song.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                song.name,
-                color = if (isActive) NeteaseRed else Color.White,
-                fontWeight = FontWeight.Medium,
-                fontSize = 15.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                song.ar.joinToString(" / ") { it.name },
-                color = TextGray,
-                fontSize = 13.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        if (song.dt > 0) {
-            val minutes = song.dt / 1000 / 60
-            val seconds = song.dt / 1000 % 60
-            Text(
-                "${minutes}:%02d".format(seconds),
-                color = TextGray,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(start = 8.dp)
-            )
         }
     }
 }
