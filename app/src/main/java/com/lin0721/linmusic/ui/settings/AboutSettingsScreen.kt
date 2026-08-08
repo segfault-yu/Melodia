@@ -1,18 +1,19 @@
 package com.lin0721.linmusic.ui.settings
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -21,8 +22,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
+import com.lin0721.linmusic.R
 import com.lin0721.linmusic.ui.components.ToastManager
-import com.lin0721.linmusic.ui.theme.NeteaseRed
 import com.lin0721.linmusic.ui.theme.SurfaceLight
 import com.lin0721.linmusic.ui.theme.TextGray
 
@@ -38,12 +39,22 @@ fun AboutSettingsView() {
     ) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                tint = NeteaseRed,
-                modifier = Modifier.size(56.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_background),
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize()
+                )
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
             Text("Melodia Player", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text("Version 1.0.0", color = TextGray, fontSize = 13.sp)
