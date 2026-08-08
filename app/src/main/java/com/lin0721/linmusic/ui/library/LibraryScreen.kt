@@ -46,10 +46,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.ui.components.WebViewLoginScreen
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.ui.theme.DragHandleShape
+import com.lin0721.linmusic.ui.theme.MelodiaSpacing
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.foundation.gestures.*
 import androidx.compose.animation.core.*
@@ -80,6 +79,12 @@ fun LibraryScreen(
         onLoginScreenVisibilityChanged(showWebViewLogin)
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.toastEvent.collect { message ->
+            com.lin0721.linmusic.ui.components.ToastManager.showToast(message)
+        }
+    }
+
     var showCreateDialog by remember { mutableStateOf(false) }
     var playlistNameInput by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -99,7 +104,7 @@ fun LibraryScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundDark)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             // 1. 顶部栏 (支持搜索展开)
@@ -115,33 +120,33 @@ fun LibraryScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(64.dp)
-                            .padding(horizontal = 16.dp),
+                            .padding(horizontal = MelodiaSpacing.md),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = {
                             isSearchActive = false
                             viewModel.updateSearchQuery("")
                         }) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "返回", tint = Color.White)
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "返回", tint = MaterialTheme.colorScheme.onSurface)
                         }
-                        
+
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(40.dp)
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(SurfaceDark)
-                                .padding(horizontal = 16.dp),
+                                .background(MaterialTheme.colorScheme.surface)
+                                .padding(horizontal = MelodiaSpacing.md),
                             contentAlignment = Alignment.CenterStart
                         ) {
                             if (uiState.searchQuery.isEmpty()) {
-                                Text("搜索您的收藏内容...", color = TextGray, fontSize = 14.sp)
+                                Text("搜索您的收藏内容...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             }
                             BasicTextField(
                                 value = uiState.searchQuery,
                                 onValueChange = { viewModel.updateSearchQuery(it) },
-                                textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                                cursorBrush = SolidColor(NeteaseRed),
+                                textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
@@ -149,7 +154,7 @@ fun LibraryScreen(
 
                         if (uiState.searchQuery.isNotEmpty()) {
                             IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "清除", tint = TextGray)
+                                Icon(Icons.Default.Close, contentDescription = "清除", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -158,7 +163,7 @@ fun LibraryScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(64.dp)
-                            .padding(horizontal = 16.dp),
+                            .padding(horizontal = MelodiaSpacing.md),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // 用户头像
@@ -178,14 +183,14 @@ fun LibraryScreen(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(SurfaceDark)
+                                    .background(MaterialTheme.colorScheme.surface)
                                     .clickable { onAvatarClick() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.LibraryMusic,
                                     contentDescription = null,
-                                    tint = TextGray,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -195,14 +200,14 @@ fun LibraryScreen(
 
                         Text(
                             text = "音乐库",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f)
                         )
 
                         IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "搜索", tint = Color.White)
+                            Icon(Icons.Default.Search, contentDescription = "搜索", tint = MaterialTheme.colorScheme.onSurface)
                         }
 
                         IconButton(onClick = {
@@ -214,7 +219,7 @@ fun LibraryScreen(
                                 showLoginSheet = true
                             }
                         }) {
-                            Icon(Icons.Default.Add, contentDescription = "创建歌单", tint = Color.White)
+                            Icon(Icons.Default.Add, contentDescription = "创建歌单", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -239,7 +244,7 @@ fun LibraryScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -250,7 +255,7 @@ fun LibraryScreen(
                         Icon(
                             imageVector = Icons.Rounded.SwapVert,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -260,7 +265,7 @@ fun LibraryScreen(
                                 LibrarySortOrder.CREATE_TIME -> "创建时间"
                                 LibrarySortOrder.NAME -> "字母排序"
                             },
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -275,7 +280,7 @@ fun LibraryScreen(
                         Icon(
                             imageVector = if (isGridView) Icons.AutoMirrored.Rounded.List else Icons.Rounded.GridView,
                             contentDescription = "切换视图",
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -284,16 +289,16 @@ fun LibraryScreen(
                 // 4. 混合聚合列表
                 if (uiState.isLoading && uiState.allItems.isEmpty()) {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = NeteaseRed)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 } else if (uiState.filteredItems.isEmpty()) {
                     Box(
-                        modifier = Modifier.weight(1f).fillMaxWidth().padding(32.dp),
+                        modifier = Modifier.weight(1f).fillMaxWidth().padding(MelodiaSpacing.xl),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = if (uiState.searchQuery.isNotEmpty()) "未找到相关收藏项" else "列表为空，快去添加吧！",
-                            color = TextGray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center
                         )
@@ -301,11 +306,10 @@ fun LibraryScreen(
                 } else if (isGridView) {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 180.dp, top = 4.dp, start = 16.dp, end = 16.dp)
+                        contentPadding = PaddingValues(bottom = 180.dp, top = MelodiaSpacing.xs, start = MelodiaSpacing.md, end = MelodiaSpacing.md)
                     ) {
                         val rows = uiState.filteredItems.chunked(3)
-                        items(rows.size, key = { "grid_row_$it" }) { rowIndex ->
-                            val row = rows[rowIndex]
+                        items(rows, key = { row -> row.joinToString(separator = "_") { it.id } }) { row ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -335,7 +339,7 @@ fun LibraryScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = 180.dp, top = 4.dp)
+                        contentPadding = PaddingValues(bottom = 180.dp, top = MelodiaSpacing.xs)
                     ) {
                         items(uiState.filteredItems, key = { "${it.type}_${it.id}" }) { item ->
                             LibraryItemRow(
@@ -351,8 +355,6 @@ fun LibraryScreen(
                                 },
                                 onLongClick = {
                                     viewModel.togglePin(item.id)
-                                    val action = if (item.isPinned) "取消置顶" else "置顶"
-                                    com.lin0721.linmusic.ui.components.ToastManager.showToast("已$action: ${item.title}")
                                 }
                             )
                         }
@@ -364,13 +366,13 @@ fun LibraryScreen(
         if (showCreateDialog) {
             ModalBottomSheet(
                 onDismissRequest = { showCreateDialog = false },
-                containerColor = SurfaceDark,
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                shape = BottomSheetShape,
                 dragHandle = {
-                    Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                    Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
                         Surface(
                             modifier = Modifier.width(40.dp).height(4.dp),
-                            shape = RoundedCornerShape(2.dp),
+                            shape = DragHandleShape,
                             color = Color.White.copy(alpha = 0.3f)
                         ) {}
                     }
@@ -381,18 +383,18 @@ fun LibraryScreen(
                         .fillMaxWidth()
                         .navigationBarsPadding()
                         .imePadding()
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .padding(horizontal = MelodiaSpacing.lg, vertical = MelodiaSpacing.md)
                 ) {
                     Text(
                         text = "新建歌单",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = MelodiaSpacing.md)
                     )
                     Text(
                         text = "请输入新歌单的名称：",
-                        color = TextGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
@@ -401,47 +403,45 @@ fun LibraryScreen(
                             .fillMaxWidth()
                             .height(48.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(BackgroundDark)
-                            .padding(horizontal = 16.dp),
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(horizontal = MelodiaSpacing.md),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         if (playlistNameInput.isEmpty()) {
-                            Text("歌单名称", color = TextGray, fontSize = 14.sp)
+                            Text("歌单名称", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                         }
                         BasicTextField(
                             value = playlistNameInput,
                             onValueChange = { playlistNameInput = it },
-                            textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                            cursorBrush = SolidColor(NeteaseRed),
+                            textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(MelodiaSpacing.lg))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(onClick = { showCreateDialog = false }) {
-                            Text("取消", color = Color.White)
+                            Text("取消", color = MaterialTheme.colorScheme.onSurface)
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(MelodiaSpacing.md))
                         Button(
                             onClick = {
                                 if (playlistNameInput.isNotBlank()) {
-                                    viewModel.createPlaylist(playlistNameInput) {
-                                        com.lin0721.linmusic.ui.components.ToastManager.showToast("歌单创建成功！")
-                                    }
+                                    viewModel.createPlaylist(playlistNameInput)
                                     showCreateDialog = false
                                 } else {
                                     com.lin0721.linmusic.ui.components.ToastManager.showToast("名字不能为空哦！")
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("创建", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("创建", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -465,7 +465,6 @@ fun LibraryScreen(
                 onLoginSuccess = { cookies ->
                     showWebViewLogin = false
                     viewModel.handleLoginSuccess(cookies)
-                    com.lin0721.linmusic.ui.components.ToastManager.showToast("登录成功，正在同步乐库...")
                 }
             )
         }
@@ -473,13 +472,13 @@ fun LibraryScreen(
         if (showSortMenu) {
             ModalBottomSheet(
                 onDismissRequest = { showSortMenu = false },
-                containerColor = SurfaceDark,
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                shape = BottomSheetShape,
                 dragHandle = {
-                    Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                    Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
                         Surface(
                             modifier = Modifier.width(40.dp).height(4.dp),
-                            shape = RoundedCornerShape(2.dp),
+                            shape = DragHandleShape,
                             color = Color.White.copy(alpha = 0.3f)
                         ) {}
                     }
@@ -489,14 +488,14 @@ fun LibraryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .padding(horizontal = MelodiaSpacing.lg, vertical = MelodiaSpacing.md)
                 ) {
                     Text(
                         text = "选择排序方式",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = MelodiaSpacing.md)
                     )
 
                     val sortOptions = listOf(
@@ -520,7 +519,7 @@ fun LibraryScreen(
                         ) {
                             Text(
                                 text = label,
-                                color = if (isSelected) NeteaseRed else Color.White,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 fontSize = 15.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
@@ -528,7 +527,7 @@ fun LibraryScreen(
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = "已选择",
-                                    tint = NeteaseRed,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -547,7 +546,7 @@ private fun NotLoggedInView(onLoginClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(MelodiaSpacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -555,22 +554,22 @@ private fun NotLoggedInView(onLoginClick: () -> Unit) {
             modifier = Modifier
                 .size(96.dp)
                 .clip(CircleShape)
-                .background(SurfaceDark),
+                .background(MaterialTheme.colorScheme.surface),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Rounded.Lock,
                 contentDescription = null,
-                tint = NeteaseRed,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(48.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(MelodiaSpacing.lg))
 
         Text(
             text = "开启您的专属乐库",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
@@ -580,24 +579,24 @@ private fun NotLoggedInView(onLoginClick: () -> Unit) {
 
         Text(
             text = "登录后即可同步您的歌单、收藏的歌手与专辑。",
-            color = TextGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
             lineHeight = 18.sp,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = MelodiaSpacing.md)
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(MelodiaSpacing.xl))
 
         Button(
             onClick = onLoginClick,
-            colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(10.dp),
             contentPadding = PaddingValues(horizontal = 48.dp, vertical = 12.dp)
         ) {
             Text(
                 text = "立即登录",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -615,7 +614,7 @@ private fun FilterChipsRow(
     artistCount: Int
 ) {
     LazyRow(
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier.padding(top = MelodiaSpacing.sm),
         contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -660,14 +659,14 @@ private fun FilterChipItem(
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f))
+            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f))
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            color = if (isSelected) Color.White else Color.LightGray,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.LightGray,
             fontSize = 14.sp
         )
     }
@@ -688,7 +687,7 @@ private fun LibraryItemRow(
                 onClick = onClick,
                 onLongClick = onLongClick
             )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 左侧封面图（针对歌手做圆图，歌单/专辑方图，已点赞歌曲做定制心形渐变图）
@@ -711,7 +710,7 @@ private fun LibraryItemRow(
                 Icon(
                     imageVector = Icons.Default.Favorite,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -733,13 +732,13 @@ private fun LibraryItemRow(
                 Icon(
                     imageVector = Icons.Default.TrendingUp,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp)
                 )
             }
         } else {
             val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(10.dp)
-            
+
             AsyncImage(
                 model = "${item.coverUrl}?param=150y150",
                 contentDescription = item.title,
@@ -750,20 +749,20 @@ private fun LibraryItemRow(
             )
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(MelodiaSpacing.md))
 
         // 右侧文字内容
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            
-            Spacer(modifier = Modifier.height(4.dp))
+
+            Spacer(modifier = Modifier.height(MelodiaSpacing.xs))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // 如果是置顶条目，显示绿色的置顶图标
@@ -774,7 +773,7 @@ private fun LibraryItemRow(
                         tint = Color(0xFF10B981), // Emerald 绿，高档耐看
                         modifier = Modifier
                             .size(13.dp)
-                            .padding(end = 4.dp)
+                            .padding(end = MelodiaSpacing.xs)
                     )
                 }
 
@@ -785,7 +784,7 @@ private fun LibraryItemRow(
                         }
                         else -> item.subtitle
                     },
-                    color = TextGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -827,7 +826,7 @@ private fun LibraryGridItem(
                 Icon(
                     imageVector = Icons.Default.Favorite,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -850,7 +849,7 @@ private fun LibraryGridItem(
                 Icon(
                     imageVector = Icons.Default.TrendingUp,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -868,7 +867,7 @@ private fun LibraryGridItem(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = item.title,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
@@ -877,7 +876,7 @@ private fun LibraryGridItem(
         )
         Text(
             text = item.subtitle,
-            color = TextGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

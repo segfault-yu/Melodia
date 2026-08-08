@@ -91,7 +91,7 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1C1C1E))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         LazyColumn(
                 modifier = Modifier
@@ -99,12 +99,12 @@ fun HomeScreen(
                     .statusBarsPadding(),
                 contentPadding = PaddingValues(bottom = 180.dp)
             ) {
-                item { 
+                item {
                     TopGreetingBar(
-                        userProfile = userProfile, 
+                        userProfile = userProfile,
                         onLoginClick = onAvatarClick,
                         onSearchClick = onSearchClick
-                    ) 
+                    )
                 }
 
                 item { FilterPills() }
@@ -148,19 +148,19 @@ fun HomeScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(start = 20.dp, end = 8.dp, top = 36.dp, bottom = 12.dp),
+                                            .padding(start = 20.dp, end = MelodiaSpacing.sm, top = 36.dp, bottom = 12.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
                                             Icons.Rounded.History,
                                             contentDescription = null,
-                                            tint = Color.White,
+                                            tint = MaterialTheme.colorScheme.onSurface,
                                             modifier = Modifier.size(24.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(MelodiaSpacing.sm))
                                         Text(
                                             text = "最近播放",
-                                            color = Color.White,
+                                            color = MaterialTheme.colorScheme.onSurface,
                                             fontSize = 22.sp,
                                             fontWeight = FontWeight.Bold,
                                             modifier = Modifier.weight(1f)
@@ -169,7 +169,7 @@ fun HomeScreen(
                                             Icon(
                                                 imageVector = if (recentViewIsGrid) Icons.AutoMirrored.Rounded.List else Icons.Rounded.GridView,
                                                 contentDescription = "切换视图",
-                                                tint = Color.White
+                                                tint = MaterialTheme.colorScheme.onSurface
                                             )
                                         }
                                     }
@@ -213,7 +213,7 @@ fun HomeScreen(
                 },
             )
         }
-        
+
         if (showWebViewLogin) {
             WebViewLoginScreen(
                 onClose = { showWebViewLogin = false },
@@ -239,7 +239,7 @@ private fun getGreetingText(): String {
 
 @Composable
 fun TopGreetingBar(
-    userProfile: UserProfile?, 
+    userProfile: UserProfile?,
     onLoginClick: () -> Unit,
     onSearchClick: () -> Unit = {}
 ) {
@@ -248,7 +248,7 @@ fun TopGreetingBar(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (userProfile == null) Modifier.clickable { onLoginClick() } else Modifier)
-            .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 0.dp),
+            .padding(start = 20.dp, end = 20.dp, top = MelodiaSpacing.lg, bottom = 0.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (userProfile != null) {
@@ -260,16 +260,16 @@ fun TopGreetingBar(
             )
         } else {
             Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Person, null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(22.dp))
+                Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
             }
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             if (userProfile != null) {
                 Text(text = "$greeting，", fontSize = 12.sp, color = Color.LightGray)
-                Text(text = userProfile.nickname, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(text = userProfile.nickname, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             } else {
-                Text(text = "未登录", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(text = "未登录", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text(text = "点击登录", fontSize = 12.sp, color = Color.LightGray)
             }
         }
@@ -279,10 +279,10 @@ fun TopGreetingBar(
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.1f))
-                    .clickable { onSearchClick() }, 
+                    .clickable { onSearchClick() },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Rounded.Search, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -294,11 +294,11 @@ fun TopGreetingBar(
 fun FilterPills() {
     val filters = listOf("全部", "音乐", "播客")
     var selectedIndex by remember { mutableStateOf(0) }
-    LazyRow(modifier = Modifier.padding(top = 8.dp), contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyRow(modifier = Modifier.padding(top = MelodiaSpacing.sm), contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(filters.size) { index ->
             val isSelected = index == selectedIndex
-            Box(modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f)).clickable { selectedIndex = index }.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Text(text = filters[index], color = if (isSelected) Color.White else Color.LightGray, fontSize = 14.sp)
+            Box(modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f)).clickable { selectedIndex = index }.padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm)) {
+                Text(text = filters[index], color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.LightGray, fontSize = 14.sp)
             }
         }
     }
@@ -307,14 +307,14 @@ fun FilterPills() {
 @Composable
 fun SectionHeader(title: String, showAction: Boolean = true) {
     Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 36.dp, bottom = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(text = title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(text = title, color = MaterialTheme.colorScheme.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         if (showAction) { Text(text = "显示全部", color = Color.Gray, fontSize = 12.sp) }
     }
 }
 
 @Composable
 fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (PersonalizedPlaylist) -> Unit) {
-    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)) {
         items(playlists, key = { it.id }) { playlist ->
             Column(modifier = Modifier.width(150.dp).clickable { onClick(playlist) }) {
                 val context = LocalContext.current
@@ -326,7 +326,7 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
                 }
                 AsyncImage(model = imageRequest, contentDescription = null, modifier = Modifier.size(150.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(text = playlist.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -334,7 +334,7 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
 
 @Composable
 fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>, onClick: (com.lin0721.linmusic.data.remote.api.RecentPlayItem) -> Unit) {
-    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)) {
         items(items, key = { it.data.id }) { item ->
             val playlist = item.data
             Column(modifier = Modifier.width(150.dp).clickable { onClick(item) }) {
@@ -347,8 +347,8 @@ fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.Rece
                 }
                 AsyncImage(model = imageRequest, contentDescription = null, modifier = Modifier.size(150.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop)
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(text = playlist.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(modifier = Modifier.height(2.dp))
+                Text(text = playlist.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(modifier = Modifier.height(MelodiaSpacing.xxs))
                 Text(text = "歌单 · ${playlist.creator?.nickname ?: "网易云音乐"}", color = Color.Gray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
@@ -393,7 +393,7 @@ fun RecentPlaylistGrid(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = playlist.name,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
@@ -413,7 +413,7 @@ fun RecentPlaylistGrid(
 fun ToplistCarousel(toplists: List<ToplistInfo>) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)
     ) {
         items(items = toplists, key = { it.id }) { item ->
             ToplistCard(item = item)
@@ -462,23 +462,23 @@ private fun ToplistCard(item: ToplistInfo) {
             if (item.updateDesc.isNotBlank()) {
                 Text(
                     text = item.updateDesc,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(8.dp)
+                        .padding(MelodiaSpacing.sm)
                         .background(
                             Color.Black.copy(alpha = 0.45f),
-                            RoundedCornerShape(4.dp)
+                            MaterialTheme.shapes.extraSmall
                         )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .padding(horizontal = 6.dp, vertical = MelodiaSpacing.xxs)
                 )
             }
         }
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 text = item.name,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -495,7 +495,7 @@ fun FavoriteArtistsSection(artists: List<com.lin0721.linmusic.data.repository.Ar
         SectionHeader(title = "你最爱的艺人", showAction = false)
         LazyRow(
             contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)
         ) {
             items(artists, key = { it.id }) { artist ->
                 ArtistCircleCard(artist)
@@ -525,11 +525,11 @@ fun ArtistCircleCard(artist: com.lin0721.linmusic.data.repository.ArtistInfo) {
                 .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(MelodiaSpacing.sm))
         Text(
             text = artist.name,
             fontSize = 13.sp,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -538,15 +538,15 @@ fun ArtistCircleCard(artist: com.lin0721.linmusic.data.repository.ArtistInfo) {
 
 @Composable
 fun LoadingIndicator() {
-    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = NeteaseRed) }
+    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) }
 }
 
 @Composable
 private fun ErrorContent(message: String, onRetry: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("哎呀，获取数据失败了哦！", color = Color.White, fontSize = 16.sp)
-        Text(message, color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
-        Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed)) { Text("重试") }
+    Column(modifier = Modifier.fillMaxWidth().padding(MelodiaSpacing.xl), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("哎呀，获取数据失败了哦！", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
+        Text(message, color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(top = MelodiaSpacing.sm))
+        Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("重试") }
     }
 }
 
@@ -567,7 +567,7 @@ fun HistoryRecommendSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = BackgroundDark,
+        containerColor = MaterialTheme.colorScheme.background,
         dragHandle = null,
         shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
     ) {
@@ -576,7 +576,7 @@ fun HistoryRecommendSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                    .padding(horizontal = 20.dp, vertical = MelodiaSpacing.md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -593,14 +593,14 @@ fun HistoryRecommendSheet(
                     Icon(
                         Icons.Default.History,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = "历史每日推荐",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
@@ -617,7 +617,7 @@ fun HistoryRecommendSheet(
                     modifier = Modifier.fillMaxWidth().height(300.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = NeteaseRed, modifier = Modifier.size(32.dp))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                 }
             } else if (dates.isEmpty()) {
                 Box(
@@ -644,9 +644,9 @@ fun HistoryRecommendSheet(
                     LazyRow(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(SurfaceDark)
+                            .background(MaterialTheme.colorScheme.surface)
                             .padding(vertical = 12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        contentPadding = PaddingValues(horizontal = MelodiaSpacing.md),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(dates) { date ->
@@ -654,34 +654,34 @@ fun HistoryRecommendSheet(
                             val parts = date.split("-")
                             val monthDay = if (parts.size == 3) "${parts[1]}/${parts[2]}" else date
                             val year = parts.firstOrNull() ?: ""
-                            
+
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(MaterialTheme.shapes.small)
                                     .background(
-                                        if (isSelected) NeteaseRed.copy(alpha = 0.15f)
+                                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                                         else Color.White.copy(alpha = 0.03f)
                                     )
                                     .border(
                                         width = 1.dp,
-                                        color = if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.08f),
-                                        shape = RoundedCornerShape(8.dp)
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.08f),
+                                        shape = MaterialTheme.shapes.small
                                     )
                                     .clickable { onDateSelected(date) }
-                                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                                    .padding(vertical = MelodiaSpacing.sm, horizontal = MelodiaSpacing.md),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = monthDay,
-                                        color = if (isSelected) NeteaseRed else Color.White,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                         fontSize = 14.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(MelodiaSpacing.xxs))
                                     Text(
                                         text = year,
-                                        color = if (isSelected) NeteaseRed.copy(alpha = 0.7f) else Color.Gray,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.7f) else Color.Gray,
                                         fontSize = 10.sp
                                     )
                                 }
@@ -702,19 +702,19 @@ fun HistoryRecommendSheet(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                CircularProgressIndicator(color = NeteaseRed, modifier = Modifier.size(28.dp))
+                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                             }
                         } else {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(vertical = 8.dp)
+                                contentPadding = PaddingValues(vertical = MelodiaSpacing.sm)
                             ) {
                                 itemsIndexed(songs) { index, song ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable { onPlaySong(index) }
-                                            .padding(horizontal = 16.dp, vertical = 9.dp),
+                                            .padding(horizontal = MelodiaSpacing.md, vertical = 9.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         AsyncImage(
@@ -729,7 +729,7 @@ fun HistoryRecommendSheet(
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = song.name,
-                                                color = Color.White,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 maxLines = 1,
@@ -746,7 +746,7 @@ fun HistoryRecommendSheet(
                                     }
                                     if (index < songs.lastIndex) {
                                         HorizontalDivider(
-                                            modifier = Modifier.padding(start = 68.dp, end = 16.dp),
+                                            modifier = Modifier.padding(start = 68.dp, end = MelodiaSpacing.md),
                                             color = Color.White.copy(alpha = 0.05f),
                                             thickness = 0.5.dp
                                         )
@@ -758,7 +758,7 @@ fun HistoryRecommendSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(MelodiaSpacing.xl))
         }
     }
 }
@@ -777,17 +777,17 @@ fun ForYouModule(
     val hotlist = remember(toplists) {
         toplists.firstOrNull { it.name.contains("热") } ?: toplists.firstOrNull()
     }
-    
+
     val radarPlaylist = remember(recommendPlaylists) {
         recommendPlaylists.firstOrNull { it.name.contains("雷达") } ?: recommendPlaylists.firstOrNull()
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         SectionHeader(title = "为你推荐", showAction = false)
-        
+
         LazyRow(
             contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)
         ) {
             item {
                 val coverUrl = dailySongs.firstOrNull()?.al?.picUrl
@@ -799,7 +799,7 @@ fun ForYouModule(
                     onClick = onDailyRecommendClick
                 )
             }
-            
+
             item {
                 ForYouCard(
                     title = "热歌榜",
@@ -809,7 +809,7 @@ fun ForYouModule(
                     onClick = { hotlist?.let { onHotlistClick(it.id) } }
                 )
             }
-            
+
             item {
                 val coverUrl = recommendPlaylists.getOrNull(2)?.picUrl
                 ForYouCard(
@@ -820,7 +820,7 @@ fun ForYouModule(
                     onClick = onIntelligenceClick
                 )
             }
-            
+
             item {
                 ForYouCard(
                     title = "私人雷达",
@@ -830,7 +830,7 @@ fun ForYouModule(
                     onClick = { radarPlaylist?.let { onRadarClick(it.id) } }
                 )
             }
-            
+
             item {
                 val coverUrl = recommendPlaylists.getOrNull(1)?.picUrl
                 ForYouCard(
@@ -854,7 +854,7 @@ private fun ForYouCard(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     // 固化清晰封面的加载请求
     val coverRequest = remember(coverUrl) {
         if (!coverUrl.isNullOrBlank()) {
@@ -900,7 +900,7 @@ private fun ForYouCard(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(8.dp) 
+                    .blur(8.dp)
                     .graphicsLayer(alpha = 0.35f),
                 contentScale = ContentScale.Crop
             )
@@ -956,7 +956,7 @@ private fun ForYouCard(
             ) {
                 Text(
                     text = title,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -977,7 +977,7 @@ private fun ForYouCard(
         ) {
             Text(
                 text = subtitle,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
@@ -986,4 +986,3 @@ private fun ForYouCard(
         }
     }
 }
-

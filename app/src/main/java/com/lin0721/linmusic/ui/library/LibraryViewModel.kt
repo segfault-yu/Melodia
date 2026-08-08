@@ -64,6 +64,9 @@ class LibraryViewModel(
     private val _uiState = MutableStateFlow(LibraryUiState(isGridView = getGridViewFromPrefs()))
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
+    private val _toastEvent = MutableSharedFlow<String>()
+    val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
+
     init {
         viewModelScope.launch {
             userPreferences.userProfile.collect { profile ->
@@ -270,24 +273,33 @@ class LibraryViewModel(
 
     fun togglePin(itemId: String) {
         val currentPinned = _pinnedIds.value.toMutableSet()
-        if (currentPinned.contains(itemId)) {
-            currentPinned.remove(itemId)
-        } else {
+        val willPin = !currentPinned.contains(itemId)
+        if (willPin) {
             currentPinned.add(itemId)
+        } else {
+            currentPinned.remove(itemId)
         }
         _pinnedIds.value = currentPinned
         savePinnedIdsToPrefs(currentPinned)
         applyFilterAndSort()
+
+        val title = _uiState.value.allItems.firstOrNull { it.id == itemId }?.title
+        if (title != null) {
+            viewModelScope.launch {
+                _toastEvent.emit("已${if (willPin) "置顶" else "取消置顶"}: $title")
+            }
+        }
     }
 
-    fun createPlaylist(name: String, onSuccess: () -> Unit = {}) {
+    fun createPlaylist(name: String) {
         viewModelScope.launch {
             repository.createPlaylist(name).collect { result ->
                 result.onSuccess {
                     loadLibraryData()
-                    onSuccess()
+                    _toastEvent.emit("歌单创建成功！")
                 }.onFailure { e ->
                     _uiState.update { it.copy(error = e.localizedMessage ?: "创建歌单失败") }
+                    _toastEvent.emit(e.localizedMessage ?: "创建歌单失败")
                 }
             }
         }
@@ -310,6 +322,7 @@ class LibraryViewModel(
 
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
+            _toastEvent.emit("登录成功，正在同步乐库...")
             userPreferences.saveCookies(cookies)
             repository.getAccountInfo().collect { result ->
                 val response = result.getOrNull()

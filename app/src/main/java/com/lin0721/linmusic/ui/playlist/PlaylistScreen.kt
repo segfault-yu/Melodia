@@ -51,11 +51,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.data.remote.api.PlaylistDetail
 import com.lin0721.linmusic.data.remote.api.Track
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.SurfaceLight
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.ui.theme.DragHandleShape
+import com.lin0721.linmusic.ui.theme.MelodiaSpacing
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.SolidColor
@@ -118,24 +116,24 @@ fun PlaylistScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(BackgroundDark)) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         when (val state = uiState) {
             is PlaylistUiState.Loading ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = NeteaseRed)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             is PlaylistUiState.Error ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("加载失败", color = Color.White, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(8.dp))
-                        Text(state.message, color = TextGray, fontSize = 13.sp)
-                        Spacer(Modifier.height(16.dp))
+                        Text("加载失败", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(MelodiaSpacing.sm))
+                        Text(state.message, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                        Spacer(Modifier.height(MelodiaSpacing.md))
                         Button(onClick = { viewModel.loadPlaylist(playlistId, isAlbum) },
-                            colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed)) {
-                            Text("重试", color = Color.White)
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                            Text("重试", color = MaterialTheme.colorScheme.onPrimary)
                         }
-                        TextButton(onClick = onBack) { Text("返回", color = TextGray) }
+                        TextButton(onClick = onBack) { Text("返回", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
             is PlaylistUiState.Success ->
@@ -154,14 +152,7 @@ fun PlaylistScreen(
                         viewModel.playSongInList(track, state.playlist.tracks)
                     },
                     onAddToPlayNext = { track ->
-                        val queueItem = com.lin0721.linmusic.player.QueueItem(
-                            track.id,
-                            track.name,
-                            track.ar.joinToString("/") { it.name },
-                            track.al.picUrl
-                        )
-                        viewModel.playerManager.addToPlayNext(listOf(queueItem))
-                        com.lin0721.linmusic.ui.components.ToastManager.showToast("已添加至下一首播放")
+                        viewModel.addTrackToPlayNext(track)
                     },
                     onPlayAll = {
                         state.playlist.tracks.firstOrNull()?.let { first ->
@@ -236,7 +227,6 @@ fun PlaylistScreen(
                         onLoginSuccess = { cookies ->
                             showWebViewLogin = false
                             viewModel.handleLoginSuccess(cookies)
-                            com.lin0721.linmusic.ui.components.ToastManager.showToast("登录成功，正在同步数据...")
                         }
                     )
         }
@@ -257,13 +247,13 @@ fun PlaylistScreen(
             val playlist = successState.playlist
             ModalBottomSheet(
                 onDismissRequest = { showMoreMenuSheet = false },
-                containerColor = SurfaceDark,
+                containerColor = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
                 dragHandle = {
-                    Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                    Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
                         Surface(
                             modifier = Modifier.width(40.dp).height(4.dp),
-                            shape = RoundedCornerShape(2.dp),
+                            shape = DragHandleShape,
                             color = Color.White.copy(alpha = 0.3f)
                         ) {}
                     }
@@ -273,14 +263,14 @@ fun PlaylistScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .padding(horizontal = MelodiaSpacing.lg, vertical = MelodiaSpacing.md)
                 ) {
                     Text(
                         text = "歌单操作",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = MelodiaSpacing.md)
                     )
                     
                     val firstArtist = playlist.tracks.firstOrNull()?.ar?.firstOrNull()
@@ -317,11 +307,7 @@ fun PlaylistScreen(
                             subtitle = "添加 ${playlist.tracks.size} 首歌曲至播放队列"
                         ) {
                             showMoreMenuSheet = false
-                            val queueItems = playlist.tracks.map { t ->
-                                com.lin0721.linmusic.player.QueueItem(t.id, t.name, t.ar.joinToString("/") { it.name }, t.al.picUrl)
-                            }
-                            viewModel.playerManager.addToPlayNext(queueItems)
-                            com.lin0721.linmusic.ui.components.ToastManager.showToast("已添加 ${queueItems.size} 首歌曲至播放队列")
+                            viewModel.addTracksToPlayNext(playlist.tracks)
                         },
                         PlaylistMenuItem(
                             icon = Icons.AutoMirrored.Filled.PlaylistAdd,
@@ -337,12 +323,12 @@ fun PlaylistScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(menuItems) { item ->
+                        items(menuItems, key = { it.title }) { item ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable(onClick = item.onClick)
-                                    .padding(vertical = 8.dp),
+                                    .padding(vertical = MelodiaSpacing.sm),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -351,18 +337,18 @@ fun PlaylistScreen(
                                     tint = Color.White.copy(alpha = 0.8f),
                                     modifier = Modifier.size(24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Spacer(modifier = Modifier.width(MelodiaSpacing.md))
                                 Column {
                                     Text(
                                         text = item.title,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                     if (item.subtitle != null) {
                                         Text(
                                             text = item.subtitle,
-                                            color = TextGray,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 12.sp
                                         )
                                     }
@@ -587,12 +573,12 @@ private fun PlaylistContent(
                     LazyRow(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(BackgroundDark)
+                            .background(MaterialTheme.colorScheme.background)
                             .padding(vertical = 12.dp),
                         contentPadding = PaddingValues(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        this@LazyRow.items(allDates) { date ->
+                        this@LazyRow.items(allDates, key = { it }) { date ->
                             val isSelected = date == selectedHistoryDate
                             val displayText = if (date == "今天") {
                                 "今天"
@@ -605,7 +591,7 @@ private fun PlaylistContent(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(
-                                        if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f)
+                                        if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f)
                                     )
                                     .clickable {
                                         onSelectedHistoryDateChange(date)
@@ -615,12 +601,12 @@ private fun PlaylistContent(
                                             onLoadHistoryDetail(date)
                                         }
                                     }
-                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                                    .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = displayText,
-                                    color = if (isSelected) Color.White else Color.LightGray,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.LightGray,
                                     fontSize = 14.sp
                                 )
                             }
@@ -635,19 +621,18 @@ private fun PlaylistContent(
                     LazyRow(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(BackgroundDark)
+                            .background(MaterialTheme.colorScheme.background)
                             .padding(vertical = 12.dp),
                         contentPadding = PaddingValues(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(allFilters.size) { index ->
-                            val filter = allFilters[index]
+                        items(allFilters, key = { it }) { filter ->
                             val isSelected = filter == selectedHistoryDate
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(
-                                        if (isSelected) NeteaseRed else Color.White.copy(alpha = 0.1f)
+                                        if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f)
                                     )
                                     .clickable {
                                         onSelectedHistoryDateChange(filter)
@@ -657,12 +642,12 @@ private fun PlaylistContent(
                                             onLoadHistoryDetail("all")
                                         }
                                     }
-                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                                    .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = filter,
-                                    color = if (isSelected) Color.White else Color.LightGray,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.LightGray,
                                     fontSize = 14.sp
                                 )
                             }
@@ -679,7 +664,7 @@ private fun PlaylistContent(
                             .height(200.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = NeteaseRed)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
             } else {
@@ -737,17 +722,17 @@ private fun PlaylistContent(
                 onClick  = onBack,
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(start = 4.dp)
+                    .padding(start = MelodiaSpacing.xs)
             ) {
                 Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, "Back",
-                    tint = Color.White, modifier = Modifier.size(32.dp))
+                    tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(32.dp))
             }
             // 歌单名称：随着滚动淡入及向上微移
             val titleAlpha = ((progress - 0.6f) / 0.4f).coerceIn(0f, 1f)
             val titleOffsetY = lerp(8.dp, 0.dp, titleAlpha)
             Text(
                 text       = playlist.name,
-                color      = Color.White,
+                color      = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize   = 17.sp,
                 maxLines   = 1,
@@ -765,11 +750,11 @@ private fun PlaylistContent(
         if (!isDailyRecommend && fabScale > 0f) {
             FloatingActionButton(
                 onClick        = onPlayAll,
-                containerColor = NeteaseRed,
+                containerColor = MaterialTheme.colorScheme.primary,
                 shape          = CircleShape,
                 modifier       = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(end = 16.dp)
+                    .padding(end = MelodiaSpacing.md)
                     .offset(y = overlayHeight - 28.dp)
                     .size(56.dp)
                     .zIndex(10f)
@@ -780,7 +765,7 @@ private fun PlaylistContent(
                     )
                     .shadow(8.dp * fabScale, CircleShape)
             ) {
-                Icon(Icons.Default.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
             }
         }
     }
@@ -789,13 +774,13 @@ private fun PlaylistContent(
         val songId = collectSongId!!
         ModalBottomSheet(
             onDismissRequest = { collectSongId = null },
-            containerColor = SurfaceDark,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
             dragHandle = {
-                Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
                     Surface(
                         modifier = Modifier.width(40.dp).height(4.dp),
-                        shape = RoundedCornerShape(2.dp),
+                        shape = DragHandleShape,
                         color = Color.White.copy(alpha = 0.3f)
                     ) {}
                 }
@@ -804,16 +789,16 @@ private fun PlaylistContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = MelodiaSpacing.lg)
                     .navigationBarsPadding()
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = MelodiaSpacing.lg)
             ) {
                 Text(
                     text = "收藏到歌单",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = MelodiaSpacing.md)
                 )
 
                 if (collectState.isLoading) {
@@ -823,7 +808,7 @@ private fun PlaylistContent(
                             .height(150.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = NeteaseRed)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 } else {
                     val localItems = remember(collectState.collectItems) {
@@ -837,7 +822,7 @@ private fun PlaylistContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
                     ) {
                         item(key = "create_new_playlist_item") {
                             Row(
@@ -847,27 +832,27 @@ private fun PlaylistContent(
                                         newPlaylistNameInput = ""
                                         showCreatePlaylistDialog = true
                                     }
-                                    .padding(vertical = 8.dp),
+                                    .padding(vertical = MelodiaSpacing.sm),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(NeteaseRed.copy(alpha = 0.15f)),
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = "新建歌单",
-                                        tint = NeteaseRed,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = "新建歌单",
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -879,21 +864,21 @@ private fun PlaylistContent(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 24.dp),
+                                        .padding(vertical = MelodiaSpacing.lg),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("暂无其他可用歌单", color = TextGray, fontSize = 13.sp)
+                                    Text("暂无其他可用歌单", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                                 }
                             }
                         } else {
-                            itemsIndexed(localItems) { index, item ->
+                            itemsIndexed(localItems, key = { _, item -> item.playlistId }) { index, item ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
                                             localItems[index] = item.copy(isContains = !item.isContains)
                                         }
-                                        .padding(vertical = 8.dp),
+                                        .padding(vertical = MelodiaSpacing.sm),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -912,7 +897,7 @@ private fun PlaylistContent(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Text(
                                             text = item.playlistName,
-                                            color = Color.White,
+                                            color = MaterialTheme.colorScheme.onSurface,
                                             fontSize = 14.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
@@ -923,60 +908,60 @@ private fun PlaylistContent(
                                         onCheckedChange = { checked ->
                                             localItems[index] = item.copy(isContains = checked)
                                         },
-                                        colors = CheckboxDefaults.colors(checkedColor = NeteaseRed)
+                                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                                     )
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(MelodiaSpacing.lg))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(onClick = { collectSongId = null }) {
-                            Text("取消", color = TextGray)
+                            Text("取消", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(MelodiaSpacing.sm))
                         Button(
                             onClick = {
                                 onSaveCollection(songId, localItems)
                                 collectSongId = null
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("确定", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("确定", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                         }
                     }
 
                     if (showCreatePlaylistDialog) {
                         AlertDialog(
                             onDismissRequest = { showCreatePlaylistDialog = false },
-                            title = { Text("新建歌单并收藏", color = Color.White, fontWeight = FontWeight.Bold) },
+                            title = { Text("新建歌单并收藏", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) },
                             text = {
                                 Column {
-                                    Text("请输入新歌单的名称：", color = TextGray, fontSize = 14.sp)
+                                    Text("请输入新歌单的名称：", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(44.dp)
                                             .clip(RoundedCornerShape(10.dp))
-                                            .background(BackgroundDark)
+                                            .background(MaterialTheme.colorScheme.background)
                                             .padding(horizontal = 12.dp),
                                         contentAlignment = Alignment.CenterStart
                                     ) {
                                         if (newPlaylistNameInput.isEmpty()) {
-                                            Text("歌单名称", color = TextGray, fontSize = 14.sp)
+                                            Text("歌单名称", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                         }
                                         androidx.compose.foundation.text.BasicTextField(
                                             value = newPlaylistNameInput,
                                             onValueChange = { newPlaylistNameInput = it },
-                                            textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                                            cursorBrush = SolidColor(NeteaseRed),
+                                            textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp),
+                                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                             modifier = Modifier.fillMaxWidth(),
                                             singleLine = true
                                         )
@@ -993,17 +978,17 @@ private fun PlaylistContent(
                                             com.lin0721.linmusic.ui.components.ToastManager.showToast("名字不能为空哦！")
                                         }
                                     },
-                                    colors = ButtonDefaults.textButtonColors(contentColor = NeteaseRed)
+                                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                                 ) {
                                     Text("创建并收藏", fontWeight = FontWeight.Bold)
                                 }
                             },
                             dismissButton = {
                                 TextButton(onClick = { showCreatePlaylistDialog = false }) {
-                                    Text("取消", color = Color.White)
+                                    Text("取消", color = MaterialTheme.colorScheme.onSurface)
                                 }
                             },
-                            containerColor = SurfaceDark,
+                            containerColor = MaterialTheme.colorScheme.surface,
                             shape = RoundedCornerShape(10.dp)
                         )
                     }
@@ -1016,15 +1001,15 @@ private fun PlaylistContent(
         val track = activeSongMoreOptions!!
         ModalBottomSheet(
             onDismissRequest = { activeSongMoreOptions = null },
-            containerColor = BackgroundDark,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            containerColor = MaterialTheme.colorScheme.background,
+            shape = BottomSheetShape,
             dragHandle = {
                 Box(
                     modifier = Modifier
-                        .padding(top = 12.dp, bottom = 4.dp)
+                        .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                         .width(36.dp)
                         .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
+                        .clip(DragHandleShape)
                         .background(Color.White.copy(alpha = 0.3f))
                 )
             }
@@ -1033,7 +1018,7 @@ private fun PlaylistContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = MelodiaSpacing.md)
             ) {
                 Row(
                     modifier = Modifier
@@ -1047,22 +1032,22 @@ private fun PlaylistContent(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(54.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(MaterialTheme.shapes.small)
                     )
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(MelodiaSpacing.md))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = track.name,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(MelodiaSpacing.xs))
                         Text(
                             text = track.ar.joinToString(" • ") { it.name },
-                            color = TextGray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -1072,7 +1057,7 @@ private fun PlaylistContent(
 
                 HorizontalDivider(
                     color = Color.White.copy(alpha = 0.08f),
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm)
                 )
 
                 Column(
@@ -1089,7 +1074,7 @@ private fun PlaylistContent(
 
                     val isLiked = track.id in likedSongIds
                     val likeIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
-                    val likeIconTint = if (isLiked) NeteaseRed else Color.White.copy(alpha = 0.7f)
+                    val likeIconTint = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     val likeText = if (isLiked) "取消喜欢" else "喜欢"
 
                     OptionRow(
@@ -1162,31 +1147,31 @@ private fun SearchBarItem(query: String, onQueryChange: (String) -> Unit, topPad
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = MelodiaSpacing.md, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(SurfaceDark),
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.surface),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Spacer(Modifier.width(10.dp))
-                Icon(Icons.Default.Search, null, tint = TextGray, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
+                Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(MelodiaSpacing.sm))
                 androidx.compose.foundation.text.BasicTextField(
                     value         = query,
                     onValueChange = onQueryChange,
                     singleLine    = true,
                     textStyle     = androidx.compose.ui.text.TextStyle(
-                        color    = Color.White,
+                        color    = MaterialTheme.colorScheme.onSurface,
                         fontSize = 14.sp
                     ),
                     decorationBox = { inner ->
                         Box(contentAlignment = Alignment.CenterStart) {
-                            if (query.isEmpty()) Text("在此页面上查找", color = TextGray, fontSize = 14.sp)
+                            if (query.isEmpty()) Text("在此页面上查找", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             inner()
                         }
                     },
@@ -1195,7 +1180,7 @@ private fun SearchBarItem(query: String, onQueryChange: (String) -> Unit, topPad
                 Spacer(Modifier.width(10.dp))
             }
             Spacer(Modifier.width(12.dp))
-            Text("排序", color = TextGray, fontSize = 13.sp)
+            Text("排序", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
         }
     }
 }
@@ -1241,13 +1226,13 @@ private fun PlaylistHeaderItem(
         modifier = Modifier
             .fillMaxWidth()
             // 使用从封面提取的主色调渐变到背景黑
-            .background(Brush.verticalGradient(listOf(dominantColor, BackgroundDark)))
+            .background(Brush.verticalGradient(listOf(dominantColor, MaterialTheme.colorScheme.background)))
     ) {
         // 封面：与操作区的返回键水平对齐
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = statusBarHeight + 16.dp, bottom = 16.dp),
+                .padding(top = statusBarHeight + MelodiaSpacing.md, bottom = MelodiaSpacing.md),
             contentAlignment = Alignment.Center
         ) {
             val context = LocalContext.current
@@ -1275,14 +1260,14 @@ private fun PlaylistHeaderItem(
 
         // 歌单信息与操作行：折叠后隐藏
         if (!isCollapsed) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold,
+            Column(modifier = Modifier.padding(horizontal = MelodiaSpacing.md)) {
+                Text(playlist.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold,
                     fontSize = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(6.dp))
                 if (playlist.id == -1L) {
-                    Text(displayDateStr, color = TextGray, fontSize = 13.sp)
+                    Text(displayDateStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 } else if (playlist.id == -2L) {
-                    Text("网易云个人听歌记录统计", color = TextGray, fontSize = 13.sp)
+                    Text("网易云个人听歌记录统计", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (playlist.creator != null) {
@@ -1294,38 +1279,38 @@ private fun PlaylistHeaderItem(
                                     .clip(CircleShape)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text(playlist.creator.nickname, color = TextGray, fontSize = 13.sp)
+                            Text(playlist.creator.nickname, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                         } else {
-                            Icon(Icons.Default.CheckCircle, null, tint = NeteaseRed, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("为你打造", color = TextGray, fontSize = 13.sp)
+                            Text("为你打造", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                         }
                     }
                     if (!playlist.description.isNullOrBlank()) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(playlist.description, color = TextGray, fontSize = 12.sp,
+                        Spacer(Modifier.height(MelodiaSpacing.xs))
+                        Text(playlist.description, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp,
                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(MelodiaSpacing.xs))
                 val playCountText = if (playlist.playCount > 0) " • 播放 ${formatPlayCount(playlist.playCount)} 次" else ""
-                Text("${playlist.tracks.size} 首歌曲$playCountText", color = TextGray, fontSize = 12.sp)
+                Text("${playlist.tracks.size} 首歌曲$playCountText", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
 
             if (playlist.id != -1L && playlist.id != -2L) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                        .padding(horizontal = MelodiaSpacing.md, vertical = 14.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onSubscribeClick) {
                             Icon(
                                 imageVector = if (isSubscribed) Icons.Default.Check else Icons.Default.Add,
                                 contentDescription = if (isSubscribed) "已收藏" else "收藏",
-                                tint = if (isSubscribed) NeteaseRed else TextGray,
+                                tint = if (isSubscribed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -1333,7 +1318,7 @@ private fun PlaylistHeaderItem(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.Comment,
                                 contentDescription = "评论",
-                                tint = TextGray,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -1341,27 +1326,27 @@ private fun PlaylistHeaderItem(
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "更多",
-                                tint = TextGray,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = onShufflePlay,
                             modifier = Modifier.size(48.dp)
                         ) {
-                            Icon(Icons.Default.Shuffle, "Shuffle", tint = NeteaseRed, modifier = Modifier.size(28.dp))
+                            Icon(Icons.Default.Shuffle, "Shuffle", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                         }
                         FloatingActionButton(
                             onClick        = onPlayAll,
-                            containerColor = NeteaseRed,
+                            containerColor = MaterialTheme.colorScheme.primary,
                             shape          = CircleShape,
                             modifier       = Modifier
                                 .size(56.dp)
                                 .shadow(6.dp, CircleShape)
                         ) {
-                            Icon(Icons.Default.PlayArrow, "Play", tint = Color.White, modifier = Modifier.size(32.dp))
+                            Icon(Icons.Default.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
                         }
                     }
                 }
@@ -1385,8 +1370,8 @@ private fun BaseSongRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .background(if (isActive) SurfaceLight else Color.Transparent)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .background(if (isActive) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent)
+            .padding(horizontal = MelodiaSpacing.md, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val context = LocalContext.current
@@ -1404,14 +1389,14 @@ private fun BaseSongRow(
             model              = imageRequest,
             contentDescription = track.name,
             contentScale       = ContentScale.Crop,
-            modifier           = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))
+            modifier           = Modifier.size(48.dp).clip(MaterialTheme.shapes.extraSmall)
         )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = track.name,
-                    color = if (isActive) NeteaseRed else Color.White,
+                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium,
                     fontSize = 15.sp,
                     maxLines = 1,
@@ -1422,13 +1407,13 @@ private fun BaseSongRow(
                     Spacer(Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .background(NeteaseRed.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
-                            .border(BorderStroke(0.5.dp, NeteaseRed), RoundedCornerShape(3.dp))
-                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
+                            .border(BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(3.dp))
+                            .padding(horizontal = MelodiaSpacing.xs, vertical = 1.dp)
                     ) {
                         Text(
                             text = "VIP",
-                            color = NeteaseRed,
+                            color = MaterialTheme.colorScheme.primary,
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
                             lineHeight = 10.sp
@@ -1436,10 +1421,10 @@ private fun BaseSongRow(
                     }
                 }
             }
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(MelodiaSpacing.xxs))
             Text(
                 text = track.ar.joinToString(" • ") { it.name },
-                color = TextGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1478,11 +1463,11 @@ private fun SongRow(
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = "更多",
-                tint = TextGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(MelodiaSpacing.sm))
     }
 }
 
@@ -1494,13 +1479,13 @@ private fun RecommendationHeader(onRefresh: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.md),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "推荐歌曲",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
@@ -1509,20 +1494,20 @@ private fun RecommendationHeader(onRefresh: () -> Unit) {
             modifier = Modifier
                 .clip(RoundedCornerShape(10.dp))
                 .clickable(onClick = onRefresh)
-                .background(SurfaceDark)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Refresh,
                 contentDescription = "刷新推荐",
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(16.dp)
             )
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(MelodiaSpacing.xs))
             Text(
                 text = "刷新",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -1554,11 +1539,11 @@ private fun RecommendSongRow(
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "添加歌曲到歌单",
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .size(22.dp)
                     .background(Color.White.copy(alpha = 0.1f), CircleShape)
-                    .padding(2.dp)
+                    .padding(MelodiaSpacing.xxs)
             )
         }
     }
@@ -1575,7 +1560,7 @@ private data class PlaylistMenuItem(
 private fun OptionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
-    iconTint: Color = Color.White.copy(alpha = 0.7f),
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     onClick: () -> Unit
 ) {
     Row(
@@ -1591,10 +1576,10 @@ private fun OptionRow(
             tint = iconTint,
             modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(MelodiaSpacing.md))
         Text(
             text = text,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 15.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

@@ -91,13 +91,11 @@ import com.lin0721.linmusic.data.remote.api.CommentItem
 import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.data.repository.LyricLine
 import com.lin0721.linmusic.data.repository.SongWikiData
-import com.lin0721.linmusic.ui.theme.BackgroundDark
+import com.lin0721.linmusic.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.ui.theme.ColorPalette
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.SurfaceLight
+import com.lin0721.linmusic.ui.theme.DragHandleShape
+import com.lin0721.linmusic.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.ui.theme.PaletteMemoryCache
-import com.lin0721.linmusic.ui.theme.TextGray
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
@@ -197,7 +195,7 @@ fun FullPlayerScreen(
         label = "bg_secondary"
     )
 
-    val tintedCardColor = animatedDominant.copy(alpha = 0.08f).compositeOver(SurfaceDark)
+    val tintedCardColor = animatedDominant.copy(alpha = 0.08f).compositeOver(MaterialTheme.colorScheme.surface)
 
     val gradientStart = remember(animatedDominant) {
         val hsv = FloatArray(3)
@@ -427,7 +425,7 @@ fun FullPlayerScreen(
                 translationY = offsetY
             }
             .clip(RoundedCornerShape(topStart = topCornerRadius, topEnd = topCornerRadius))
-            .background(BackgroundDark)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Box(
             modifier = Modifier
@@ -556,14 +554,14 @@ fun FullPlayerScreen(
             item(key = "comments_preview") {
                 CommentsPreviewCard(
                     commentsState = commentsState,
-                    cardColor = SurfaceDark,
+                    cardColor = MaterialTheme.colorScheme.surface,
                     onClick = { showCommentsSheet = true },
                     onRetry = viewModel::retryComments
                 )
             }
 
             item(key = "song_detail") {
-                SongDetailCard(songWiki = songWiki, songDetail = songDetail, cardColor = SurfaceDark)
+                SongDetailCard(songWiki = songWiki, songDetail = songDetail, cardColor = MaterialTheme.colorScheme.surface)
             }
 
             item(key = "about_artist") {
@@ -573,7 +571,7 @@ fun FullPlayerScreen(
                     fansCount = artistFansCount,
                     isFollowed = isArtistFollowed,
                     onFollowClick = { viewModel.toggleArtistFollow() },
-                    cardColor = SurfaceDark,
+                    cardColor = MaterialTheme.colorScheme.surface,
                     onClick = {
                         artistDetail?.id?.let { id ->
                             onArtistClick(id)
@@ -586,7 +584,7 @@ fun FullPlayerScreen(
                 SimilarArtistsCard(
                     artists = similarArtists,
                     isLoading = isSimilarArtistsLoading,
-                    cardColor = SurfaceDark,
+                    cardColor = MaterialTheme.colorScheme.surface,
                     onArtistClick = onArtistClick
                 )
             }
@@ -595,7 +593,7 @@ fun FullPlayerScreen(
                 ArtistAlbumsCard(
                     albums = artistAlbums,
                     artistName = artistDetail?.name,
-                    cardColor = SurfaceDark
+                    cardColor = MaterialTheme.colorScheme.surface
                 )
             }
         }
@@ -749,15 +747,15 @@ fun FullPlayerScreen(
             ModalBottomSheet(
                 onDismissRequest = { showTimerSheet = false },
                 sheetState = timerSheetState,
-                containerColor = BackgroundDark,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                containerColor = MaterialTheme.colorScheme.background,
+                shape = BottomSheetShape,
                 dragHandle = {
                     Box(
                         modifier = Modifier
-                            .padding(top = 12.dp, bottom = 4.dp)
+                            .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                             .width(36.dp)
                             .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
+                            .clip(DragHandleShape)
                             .background(Color.White.copy(alpha = 0.3f))
                     )
                 }
@@ -767,15 +765,15 @@ fun FullPlayerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+                        .padding(start = MelodiaSpacing.lg, end = MelodiaSpacing.lg, bottom = MelodiaSpacing.lg)
                 ) {
                     if (!isCustomMode) {
                         Text(
                             text = "定时关闭",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            modifier = Modifier.padding(bottom = MelodiaSpacing.md)
                         )
 
                         val options = listOf(
@@ -799,7 +797,7 @@ fun FullPlayerScreen(
                             ) {
                                 Text(
                                     text = label,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     modifier = Modifier.weight(1f)
                                 )
@@ -812,7 +810,7 @@ fun FullPlayerScreen(
                                     Icon(
                                         imageVector = Icons.Rounded.Check,
                                         contentDescription = null,
-                                        tint = NeteaseRed,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -836,7 +834,7 @@ fun FullPlayerScreen(
                         ) {
                             Text(
                                 text = "自定义时间...",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 15.sp,
                                 modifier = Modifier.weight(1f)
                             )
@@ -856,7 +854,7 @@ fun FullPlayerScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 16.dp),
+                                .padding(bottom = MelodiaSpacing.md),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(
@@ -866,13 +864,13 @@ fun FullPlayerScreen(
                                 Icon(
                                     imageVector = Icons.Rounded.ChevronLeft,
                                     contentDescription = "返回",
-                                    tint = Color.White
+                                    tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(MelodiaSpacing.sm))
                             Text(
                                 text = "自定义定时关闭",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -897,15 +895,15 @@ fun FullPlayerScreen(
                                     range = 0..23,
                                     onValueChange = { customHours = it }
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(MelodiaSpacing.sm))
                                 Text(
                                     text = "时",
                                     color = Color.White.copy(alpha = 0.5f),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 4.dp)
+                                    modifier = Modifier.padding(bottom = MelodiaSpacing.xs)
                                 )
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Spacer(modifier = Modifier.width(MelodiaSpacing.md))
                             }
 
                             Text(
@@ -922,19 +920,19 @@ fun FullPlayerScreen(
                                 horizontalArrangement = Arrangement.Start,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Spacer(modifier = Modifier.width(MelodiaSpacing.md))
                                 TimeWheelPicker(
                                     value = customMinutes,
                                     range = 0..59,
                                     onValueChange = { customMinutes = it }
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(MelodiaSpacing.sm))
                                 Text(
                                     text = "分",
                                     color = Color.White.copy(alpha = 0.5f),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 4.dp)
+                                    modifier = Modifier.padding(bottom = MelodiaSpacing.xs)
                                 )
                             }
                         }
@@ -944,12 +942,12 @@ fun FullPlayerScreen(
                         // 快捷加减胶囊按钮
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
                         ) {
                             // 分钟调整
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
                             ) {
                                 val quickMinOptions = listOf(
                                     "-15分" to -15,
@@ -988,7 +986,7 @@ fun FullPlayerScreen(
                             // 小时与重置调整
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
                             ) {
                                 val quickHourOptions = listOf(
                                     "-1时" to -60,
@@ -1002,7 +1000,7 @@ fun FullPlayerScreen(
                                             .height(36.dp)
                                             .clip(RoundedCornerShape(18.dp))
                                             .background(
-                                                if (label == "重置") NeteaseRed.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
+                                                if (label == "重置") MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
                                             )
                                             .clickable {
                                                 if (label == "重置") {
@@ -1023,7 +1021,7 @@ fun FullPlayerScreen(
                                     ) {
                                         Text(
                                             text = label,
-                                            color = if (label == "重置") NeteaseRed else Color.White.copy(alpha = 0.8f),
+                                            color = if (label == "重置") MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.8f),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -1057,7 +1055,7 @@ fun FullPlayerScreen(
                                     brush = if (totalTargetMinutes > 0) {
                                         Brush.horizontalGradient(
                                             colors = listOf(
-                                                NeteaseRed,
+                                                MaterialTheme.colorScheme.primary,
                                                 Color(0xFFFF5252)
                                             )
                                         )
@@ -1074,7 +1072,7 @@ fun FullPlayerScreen(
                         ) {
                             Text(
                                 text = if (totalTargetMinutes > 0) "开启定时关闭 (${customHours}时${customMinutes}分)" else "请选择时间",
-                                color = if (totalTargetMinutes > 0) Color.White else Color.White.copy(alpha = 0.3f),
+                                color = if (totalTargetMinutes > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -1176,7 +1174,7 @@ private fun TimeWheelPicker(
         ) {
             itemsIndexed(list) { index, item ->
                 val isSelected = currentSelection.value == index
-                val textColor = if (isSelected) Color.White else Color.White.copy(alpha = 0.25f)
+                val textColor = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 val fontSize = if (isSelected) 36.sp else 24.sp
                 val fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                 

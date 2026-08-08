@@ -35,7 +35,6 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.data.local.UserProfile
 import com.lin0721.linmusic.ui.theme.BackgroundDark
 import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SpotifyGreen
 import com.lin0721.linmusic.ui.theme.SurfaceDark
 import com.lin0721.linmusic.ui.theme.SurfaceLight
 import com.lin0721.linmusic.ui.theme.TextGray

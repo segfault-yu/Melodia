@@ -42,3 +42,5 @@ Thumbs.db
 # 测试文件夹（包含单元测试与设备测试）
 **/src/test/
 **/src/androidTest/
+CLAUDE.md
+ui_cross_module_refactor_plan.md

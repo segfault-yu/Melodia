@@ -186,6 +186,20 @@ class PlaylistViewModel(
         playerManager.playQueue(queueItems, startIndex, playlistName)
     }
 
+    fun addTrackToPlayNext(track: Track) {
+        val queueItem = QueueItem(track.id, track.name, track.ar.joinToString("/") { it.name }, track.al.picUrl)
+        playerManager.addToPlayNext(listOf(queueItem))
+        viewModelScope.launch { _toastEvent.emit("已添加至下一首播放") }
+    }
+
+    fun addTracksToPlayNext(tracks: List<Track>) {
+        val queueItems = tracks.map { t ->
+            QueueItem(t.id, t.name, t.ar.joinToString("/") { it.name }, t.al.picUrl)
+        }
+        playerManager.addToPlayNext(queueItems)
+        viewModelScope.launch { _toastEvent.emit("已添加 ${queueItems.size} 首歌曲至播放队列") }
+    }
+
     fun prepareCollectDialog(songId: Long) {
         viewModelScope.launch {
             val profile = userPreferences.userProfile.first() ?: return@launch
@@ -295,6 +309,7 @@ class PlaylistViewModel(
 
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
+            _toastEvent.emit("登录成功，正在同步数据...")
             userPreferences.saveCookies(cookies)
             repository.getAccountInfo().collect { result ->
                 val response = result.getOrNull()

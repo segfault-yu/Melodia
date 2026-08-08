@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Slider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import com.lin0721.linmusic.player.PlayMode
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -73,8 +74,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.data.repository.LyricLine
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.ui.theme.MelodiaSpacing
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
@@ -160,9 +160,9 @@ fun LyricsCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
             .height(cardHeight)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.medium)
             .drawBehind {
                 val baseSize = size.minDimension
                 // 1. 填充基底
@@ -207,23 +207,23 @@ fun LyricsCard(
             ) {
                 Text(
                     "歌词",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Icon(
                     Icons.Rounded.OpenInFull,
                     contentDescription = null,
-                    tint = TextGray,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
                         .clickable { onOpenFullScreen() }
-                        .padding(4.dp)
+                        .padding(MelodiaSpacing.xs)
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(MelodiaSpacing.md))
 
             if (isLoading) {
                 Box(
@@ -231,7 +231,7 @@ fun LyricsCard(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = NeteaseRed,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
                         strokeWidth = 2.dp
                     )
@@ -293,7 +293,7 @@ fun LyricsPreview(
         userScrollEnabled   = false,
         contentPadding = PaddingValues(top = 0.dp, bottom = with(density) { (cardHeightPx / 2).toDp() })
     ) {
-        itemsIndexed(items = lyrics, key = { i, _ -> i }) { index, line ->
+        itemsIndexed(items = lyrics, key = { _, line -> line.timeMs }) { index, line ->
             val isCurrent = index == currentIndex
             val distance  = kotlin.math.abs(index - currentIndex).coerceAtMost(4)
 
@@ -339,7 +339,7 @@ fun LyricsPreview(
                     modifier   = Modifier.fillMaxWidth()
                 )
                 if (line.translation != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(MelodiaSpacing.xs))
                     Text(
                         text      = line.translation,
                         fontSize  = 15.sp,
@@ -679,8 +679,8 @@ fun FullScreenLyricsView(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 8.dp, end = 6.dp)
-                    .padding(vertical = 16.dp)
+                    .padding(start = MelodiaSpacing.sm, end = 6.dp)
+                    .padding(vertical = MelodiaSpacing.md)
                     .draggable(
                         orientation = Orientation.Vertical,
                         state = rememberDraggableState { delta ->
@@ -699,7 +699,7 @@ fun FullScreenLyricsView(
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = "折叠歌词",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -707,7 +707,7 @@ fun FullScreenLyricsView(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -715,7 +715,7 @@ fun FullScreenLyricsView(
                     )
                     Text(
                         text = artist,
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -726,7 +726,7 @@ fun FullScreenLyricsView(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "更多选项",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -739,13 +739,13 @@ fun FullScreenLyricsView(
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        color = NeteaseRed,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(32.dp).align(Alignment.Center)
                     )
                 } else if (lyrics.isEmpty()) {
                     Text(
                         text = "暂无歌词",
-                        color = Color.White.copy(alpha = 0.5f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 18.sp,
                         modifier = Modifier.align(Alignment.Center)
                     )
@@ -764,14 +764,14 @@ fun FullScreenLyricsView(
                             .fillMaxSize()
                             .then(gestureModifier)
                             .onSizeChanged { viewportHeightPx = it.height.toFloat() },
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.lg),
                         contentPadding = PaddingValues(
                             top = 0.dp,
                             bottom = with(density) { (viewportHeightPx / 2f).toDp() }
                         ),
                         horizontalAlignment = Alignment.Start
                     ) {
-                        itemsIndexed(items = lyrics, key = { i, _ -> i }) { index, line ->
+                        itemsIndexed(items = lyrics, key = { _, line -> line.timeMs }) { index, line ->
                             val isCurrent = index == currentIndex
                             val isCenterTarget = index == centerLineIndex && isUserScrolling
                             val distance = kotlin.math.abs(index - currentIndex).coerceAtMost(5)
@@ -797,7 +797,7 @@ fun FullScreenLyricsView(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth(0.85f)
-                                    .padding(start = 16.dp)
+                                    .padding(start = MelodiaSpacing.md)
                                     .graphicsLayer {
                                         scaleX = animatedScale
                                         scaleY = animatedScale
@@ -834,7 +834,7 @@ fun FullScreenLyricsView(
                                     Text(
                                         text = line.translation,
                                         fontSize = 17.sp,
-                                        color = Color.White.copy(alpha = 0.65f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = TextAlign.Start,
                                         modifier = Modifier.fillMaxWidth()
                                     )
@@ -849,7 +849,7 @@ fun FullScreenLyricsView(
                         onSeek = onSeek,
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .padding(end = 16.dp)
+                            .padding(end = MelodiaSpacing.md)
                     )
                 }
             }
@@ -912,18 +912,18 @@ private fun PlayCapsule(
                     .clickable {
                         onSeek(targetLine.timeMs)
                     }
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(horizontal = 14.dp, vertical = MelodiaSpacing.sm)
             ) {
                 Icon(
                     imageVector = Icons.Filled.PlayArrow,
                     contentDescription = "跳转到此处播放",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(16.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(MelodiaSpacing.xs))
                 Text(
                     text = formatTime(targetLine.timeMs),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -966,7 +966,7 @@ private fun FullScreenControls(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = MelodiaSpacing.md)
             .padding(bottom = 28.dp)
     ) {
         Slider(
@@ -1015,20 +1015,20 @@ private fun FullScreenControls(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = MelodiaSpacing.sm),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             val displayPosition = if (isSeeking) (seekPosition * duration).toLong() else currentPosition
-            Text(formatTime(displayPosition), color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
-            Text(formatTime(duration), color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
+            Text(formatTime(displayPosition), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            Text(formatTime(duration), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(MelodiaSpacing.md))
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp, start = 8.dp, end = 8.dp),
+                .padding(top = MelodiaSpacing.xs, start = MelodiaSpacing.sm, end = MelodiaSpacing.sm),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1044,7 +1044,7 @@ private fun FullScreenControls(
                 Icon(
                     imageVector = Icons.Default.Shuffle,
                     contentDescription = null,
-                    tint = if (playMode == PlayMode.SHUFFLE) Color.White else Color.White.copy(alpha = 0.5f),
+                    tint = if (playMode == PlayMode.SHUFFLE) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -1057,7 +1057,7 @@ private fun FullScreenControls(
                     Icon(
                         imageVector = Icons.Rounded.SkipPrevious,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(46.dp)
                     )
                 }
@@ -1085,7 +1085,7 @@ private fun FullScreenControls(
                     Icon(
                         imageVector = Icons.Rounded.SkipNext,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(46.dp)
                     )
                 }
@@ -1102,7 +1102,7 @@ private fun FullScreenControls(
                 Icon(
                     imageVector = if (playMode == PlayMode.SINGLE_LOOP) Icons.Default.RepeatOne else Icons.Default.Repeat,
                     contentDescription = null,
-                    tint = if (playMode == PlayMode.SINGLE_LOOP) Color.White else Color.White.copy(alpha = 0.5f),
+                    tint = if (playMode == PlayMode.SINGLE_LOOP) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(28.dp)
                 )
             }
