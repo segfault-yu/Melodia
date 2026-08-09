@@ -149,56 +149,6 @@ class MusicRepositoryImpl(
         }
     }
 
-    override fun getUserPlaylists(uid: Long, limit: Int): Flow<Result<List<com.lin0721.linmusic.core.api.UserPlaylist>>> = flow {
-        val response = apiService.getUserPlaylists(com.lin0721.linmusic.core.api.UserPlaylistRequest(uid = uid, limit = limit))
-        if (response.isSuccess) {
-            emit(Result.success(response.playlist))
-        } else {
-            emit(Result.failure(Exception("Failed to load user playlists: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>> = flow {
-        val response = apiService.getUserRecord(UserRecordRequest(uid = uid, type = type))
-        if (response.isSuccess) {
-            val list = if (type == 1) {
-                response.weekData?.map { it.song } ?: emptyList()
-            } else {
-                response.allData?.map { it.song } ?: emptyList()
-            }
-            val filteredTracks = contentFilter.filterBlockedArtists(list) { it.ar.map { a -> a.id } }
-            emit(Result.success(filteredTracks))
-        } else {
-            emit(Result.failure(Exception("获取听歌排行失败: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun getCollectedAlbums(limit: Int): Flow<Result<List<com.lin0721.linmusic.core.api.AlbumSubItem>>> = flow {
-        val response = apiService.getAlbumSublist(com.lin0721.linmusic.core.api.AlbumSublistRequest(limit = limit))
-        if (response.isSuccess) {
-            emit(Result.success(response.data))
-        } else {
-            emit(Result.failure(Exception("Failed to load collected albums: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun getUserSubcount(): Flow<Result<com.lin0721.linmusic.core.api.UserSubcountResponse>> = flow {
-        val response = apiService.getUserSubcount()
-        if (response.isSuccess) {
-            emit(Result.success(response))
-        } else {
-            emit(Result.failure(Exception("Failed to load user subcount: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
     override fun createPlaylist(name: String, privacy: Int): Flow<Result<PlaylistDetail>> = flow {
         val response = apiService.createPlaylist(com.lin0721.linmusic.core.api.PlaylistCreateRequest(name = name, privacy = privacy))
         if (response.isSuccess && response.playlist != null) {

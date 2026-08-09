@@ -6,6 +6,8 @@ import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.data.repository.MusicRepositoryImpl
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepositoryImpl
+import com.lin0721.linmusic.feature.library.data.LibraryRepository
+import com.lin0721.linmusic.feature.library.data.LibraryRepositoryImpl
 import com.lin0721.linmusic.feature.search.data.SearchRepository
 import com.lin0721.linmusic.feature.search.data.SearchRepositoryImpl
 import org.koin.core.module.dsl.bind
@@ -28,5 +30,8 @@ val repositoryModule = module {
 
     // 搜索数据仓储（feature/search）
     singleOf(::SearchRepositoryImpl) { bind<SearchRepository>() }
+
+    // 音乐库数据仓储（feature/library）
+    singleOf(::LibraryRepositoryImpl) { bind<LibraryRepository>() }
 
 }

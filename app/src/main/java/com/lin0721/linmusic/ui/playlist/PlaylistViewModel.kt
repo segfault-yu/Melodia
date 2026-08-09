@@ -9,6 +9,7 @@ import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
+import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
 import kotlinx.coroutines.async
@@ -38,6 +39,7 @@ data class PlaylistCollectState(
 class PlaylistViewModel(
     private val repository: MusicRepository,
     private val homeRepository: HomeRepository,
+    private val libraryRepository: LibraryRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -185,7 +187,7 @@ class PlaylistViewModel(
             val profile = userPreferences.userProfile.first() ?: return@launch
             _collectState.update { it.copy(songId = songId, isLoading = true, collectItems = emptyList()) }
 
-            repository.getUserPlaylists(profile.uid).collect { result ->
+            libraryRepository.getUserPlaylists(profile.uid).collect { result ->
                 result.onSuccess { playlists ->
                     val myPlaylists = playlists.filter { it.userId == profile.uid }
 
@@ -527,7 +529,7 @@ class PlaylistViewModel(
                 _historyRecommendState.update { it.copy(songsLoading = false) }
                 return@launch
             }
-            repository.getUserRecord(profile.uid, type).collect { result ->
+            libraryRepository.getUserRecord(profile.uid, type).collect { result ->
                 result.fold(
                     onSuccess = { tracks ->
                         val detail = PlaylistDetail(

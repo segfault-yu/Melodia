@@ -48,19 +48,6 @@ interface MusicRepository {
     // 获取最爱的歌手（优先已关注，兜底热门）
     fun getFavoriteArtists(): Flow<Result<List<ArtistInfo>>>
 
-    // ================== 音乐库 ==================
-    // 获取用户歌单
-    fun getUserPlaylists(uid: Long, limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.core.api.UserPlaylist>>>
-
-    // 获取听歌排行
-    fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>>
-
-    // 获取收藏专辑
-    fun getCollectedAlbums(limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.core.api.AlbumSubItem>>>
-
-    // 获取各分类收藏数
-    fun getUserSubcount(): Flow<Result<com.lin0721.linmusic.core.api.UserSubcountResponse>>
-
     // 创建歌单
     fun createPlaylist(name: String, privacy: Int = 0): Flow<Result<PlaylistDetail>>
 

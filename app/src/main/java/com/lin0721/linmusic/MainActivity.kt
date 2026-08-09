@@ -455,7 +455,7 @@ fun MelodiaApp() {
                             )
                         }
                         Screen.Library -> {
-                            com.lin0721.linmusic.ui.library.LibraryScreen(
+                            com.lin0721.linmusic.feature.library.ui.LibraryScreen(
                                 onPlaylistClick = { id ->
                                     activePlaylistId = id
                                     activePlaylistIsAlbum = false

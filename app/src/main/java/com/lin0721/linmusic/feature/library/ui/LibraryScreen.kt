@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.library
+package com.lin0721.linmusic.feature.library.ui
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi

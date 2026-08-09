@@ -9,6 +9,7 @@ import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
 import com.lin0721.linmusic.ui.playlist.PlaylistCollectState
@@ -33,6 +34,7 @@ sealed class ArtistUiState {
 
 class ArtistViewModel(
     private val repository: MusicRepository,
+    private val libraryRepository: LibraryRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -163,7 +165,7 @@ class ArtistViewModel(
             val profile = userPreferences.userProfile.first() ?: return@launch
             _collectState.update { it.copy(songId = songId, isLoading = true, collectItems = emptyList()) }
 
-            repository.getUserPlaylists(profile.uid).collect { result ->
+            libraryRepository.getUserPlaylists(profile.uid).collect { result ->
                 result.onSuccess { playlists ->
                     val myPlaylists = playlists.filter { it.userId == profile.uid }
 

@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.library
+package com.lin0721.linmusic.feature.library.ui
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -7,6 +7,7 @@ import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.player.PlayerManager
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
@@ -51,6 +52,7 @@ sealed interface LibraryUiState {
 
 class LibraryViewModel(
     private val repository: MusicRepository,
+    private val libraryRepository: LibraryRepository,
     private val userPreferences: UserPreferences,
     val playerManager: PlayerManager,
     private val context: Context,
@@ -126,22 +128,22 @@ class LibraryViewModel(
             try {
                 // 1. 并行获取歌单
                 val playlistsDeferred = async {
-                    repository.getUserPlaylists(profile.uid).firstOrNull()?.getOrNull() ?: emptyList()
+                    libraryRepository.getUserPlaylists(profile.uid).firstOrNull()?.getOrNull() ?: emptyList()
                 }
-                
+
                 // 2. 并行获取歌手
                 val artistsDeferred = async {
                     repository.getFavoriteArtists().firstOrNull()?.getOrNull() ?: emptyList()
                 }
-                
+
                 // 3. 并行获取专辑
                 val albumsDeferred = async {
-                    repository.getCollectedAlbums().firstOrNull()?.getOrNull() ?: emptyList()
+                    libraryRepository.getCollectedAlbums().firstOrNull()?.getOrNull() ?: emptyList()
                 }
-                
+
                 // 4. 并行获取用户收藏统计数
                 val subcountDeferred = async {
-                    repository.getUserSubcount().firstOrNull()?.getOrNull()
+                    libraryRepository.getUserSubcount().firstOrNull()?.getOrNull()
                 }
 
                 val playlists = playlistsDeferred.await()
