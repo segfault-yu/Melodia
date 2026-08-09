@@ -29,7 +29,7 @@ import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
-import com.lin0721.linmusic.ui.player.CommentsBottomSheet
+import com.lin0721.linmusic.feature.player.ui.CommentsBottomSheet
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier

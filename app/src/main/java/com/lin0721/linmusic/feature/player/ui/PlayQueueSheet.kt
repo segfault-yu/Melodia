@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.player
+package com.lin0721.linmusic.feature.player.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState

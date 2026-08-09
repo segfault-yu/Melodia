@@ -18,7 +18,6 @@ import androidx.media3.session.CommandButton
 import com.lin0721.linmusic.R
 import com.lin0721.linmusic.data.local.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
-import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +33,6 @@ class MelodiaPlaybackService : MediaSessionService() {
     private val playerManager: PlayerManager by inject()
     private val settingsPreferences: SettingsPreferences by inject()
     private val userPreferences: UserPreferences by inject()
-    private val musicRepository: MusicRepository by inject()
     private val playlistRepository: PlaylistRepository by inject()
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)

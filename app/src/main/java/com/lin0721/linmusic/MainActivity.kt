@@ -60,10 +60,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lin0721.linmusic.core.ui.components.MelodiaNavigationBar
 import com.lin0721.linmusic.core.ui.components.MiniPlayerCard
 import com.lin0721.linmusic.core.ui.components.ProfileSidebar
-import com.lin0721.linmusic.ui.create.CreatePopupMenu
+import com.lin0721.linmusic.feature.create.ui.CreatePopupMenu
 import com.lin0721.linmusic.feature.home.ui.HomeScreen
 import com.lin0721.linmusic.feature.home.ui.HomeViewModel
-import com.lin0721.linmusic.ui.player.FullPlayerScreen
+import com.lin0721.linmusic.feature.player.ui.FullPlayerScreen
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.MelodiaTheme

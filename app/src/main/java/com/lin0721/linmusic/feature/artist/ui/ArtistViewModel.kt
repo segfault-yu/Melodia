@@ -8,8 +8,8 @@ import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.core.auth.AuthRepository
-import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
+import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.player.PlayerManager
@@ -35,7 +35,7 @@ sealed class ArtistUiState {
 }
 
 class ArtistViewModel(
-    private val repository: MusicRepository,
+    private val createRepository: CreateRepository,
     private val libraryRepository: LibraryRepository,
     private val artistRepository: ArtistRepository,
     private val playlistRepository: PlaylistRepository,
@@ -236,7 +236,7 @@ class ArtistViewModel(
 
     fun createPlaylistAndAddSong(name: String, songId: Long) {
         viewModelScope.launch {
-            repository.createPlaylist(name, privacy = 0).collect { result ->
+            createRepository.createPlaylist(name, privacy = 0).collect { result ->
                 result.fold(
                     onSuccess = { playlist ->
                         playlistRepository.manipulatePlaylistTracks("add", playlist.id, songId).collect { addResult ->

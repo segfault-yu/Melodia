@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.player
+package com.lin0721.linmusic.feature.player.ui
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

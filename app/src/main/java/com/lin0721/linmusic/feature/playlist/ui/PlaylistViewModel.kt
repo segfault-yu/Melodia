@@ -7,8 +7,8 @@ import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.api.PlaylistDetail
 import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.core.auth.AuthRepository
-import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.feature.comment.data.CommentRepository
+import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
@@ -20,7 +20,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import com.lin0721.linmusic.ui.player.CommentsState
+import com.lin0721.linmusic.feature.player.ui.CommentsState
 import com.lin0721.linmusic.core.api.CommentItem
 import com.lin0721.linmusic.core.api.DailySong
 
@@ -40,7 +40,7 @@ data class PlaylistCollectState(
 )
 
 class PlaylistViewModel(
-    private val repository: MusicRepository,
+    private val createRepository: CreateRepository,
     private val homeRepository: HomeRepository,
     private val libraryRepository: LibraryRepository,
     private val commentRepository: CommentRepository,
@@ -272,7 +272,7 @@ class PlaylistViewModel(
 
     fun createPlaylistAndAddSong(name: String, songId: Long) {
         viewModelScope.launch {
-            repository.createPlaylist(name, privacy = 0).collect { result ->
+            createRepository.createPlaylist(name, privacy = 0).collect { result ->
                 result.fold(
                     onSuccess = { playlist ->
                         playlistRepository.manipulatePlaylistTracks("add", playlist.id, songId).collect { addResult ->

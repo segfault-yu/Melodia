@@ -1,10 +1,10 @@
-package com.lin0721.linmusic.ui.create
+package com.lin0721.linmusic.feature.create.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
-import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.create.data.CreateRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class CreateViewModel(
-    private val repository: MusicRepository,
+    private val createRepository: CreateRepository,
     userPreferences: UserPreferences
 ) : ViewModel() {
 
@@ -39,7 +39,7 @@ class CreateViewModel(
         viewModelScope.launch {
             _isCreating.value = true
             val privacy = if (isPrivate) 10 else 0
-            repository.createPlaylist(name, privacy).collect { result ->
+            createRepository.createPlaylist(name, privacy).collect { result ->
                 result.onSuccess {
                     _toastEvent.emit("歌单「$name」创建成功！")
                     onSuccess()
