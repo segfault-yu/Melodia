@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.search
+package com.lin0721.linmusic.feature.search.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,8 +35,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.api.SearchSong
-import com.lin0721.linmusic.data.repository.HotSearch
-import com.lin0721.linmusic.data.repository.PlaylistTag
+import com.lin0721.linmusic.feature.search.domain.HotSearch
+import com.lin0721.linmusic.feature.search.domain.PlaylistTag
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark

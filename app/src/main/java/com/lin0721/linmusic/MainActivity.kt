@@ -448,7 +448,7 @@ fun MelodiaApp() {
                             }
                         }
                         Screen.Search -> {
-                            com.lin0721.linmusic.ui.search.SearchScreen(
+                            com.lin0721.linmusic.feature.search.ui.SearchScreen(
                                 autoFocus = searchAutoFocus,
                                 onBack = navigateBack,
                                 onOpenSidebar = openSidebar

@@ -1,13 +1,13 @@
-package com.lin0721.linmusic.ui.search
+package com.lin0721.linmusic.feature.search.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.api.SearchSong
-import com.lin0721.linmusic.data.repository.HotSearch
-import com.lin0721.linmusic.data.repository.MusicRepository
-import com.lin0721.linmusic.data.repository.PlaylistTag
+import com.lin0721.linmusic.feature.search.data.SearchRepository
+import com.lin0721.linmusic.feature.search.domain.HotSearch
+import com.lin0721.linmusic.feature.search.domain.PlaylistTag
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
 import kotlinx.coroutines.Job
@@ -33,7 +33,7 @@ data class SearchUiState(
 )
 
 class SearchViewModel(
-    private val repository: MusicRepository,
+    private val repository: SearchRepository,
     val playerManager: PlayerManager,
     userPreferences: UserPreferences
 ) : ViewModel() {
