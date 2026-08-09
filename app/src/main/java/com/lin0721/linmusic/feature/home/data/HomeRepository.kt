@@ -1,0 +1,33 @@
+package com.lin0721.linmusic.feature.home.data
+
+import com.lin0721.linmusic.core.api.DailySong
+import com.lin0721.linmusic.core.api.PersonalizedData
+import com.lin0721.linmusic.core.api.RecentPlayItem
+import com.lin0721.linmusic.feature.home.domain.HomeFeedPage
+import com.lin0721.linmusic.feature.home.domain.ToplistInfo
+import kotlinx.coroutines.flow.Flow
+
+// 首页数据仓储（home 业务域）
+interface HomeRepository {
+
+    // 获取个性化推荐歌单（公开接口，无需登录）
+    fun getPersonalizedPlaylists(): Flow<Result<PersonalizedData>>
+
+    // 获取最近播放歌单
+    fun getRecentPlaylists(): Flow<Result<List<RecentPlayItem>>>
+
+    // 获取排行榜详情（DTO 映射至领域模型）
+    fun getToplistDetail(): Flow<Result<List<ToplistInfo>>>
+
+    // 获取每日推荐歌曲（需登录）
+    fun getDailyRecommendSongs(): Flow<Result<List<DailySong>>>
+
+    // 获取历史日推可用日期列表（VIP）
+    fun getHistoryRecommendDates(): Flow<Result<List<String>>>
+
+    // 获取指定日期的历史日推详情
+    fun getHistoryRecommendDetail(date: String): Flow<Result<List<DailySong>>>
+
+    // 获取首页动态内容 (支持分页)，当前无调用者，疑似未完工的首页 Feed 流功能，保留待后续确认取舍
+    fun getHomepageBlocks(refresh: Boolean = true, cursor: String? = null): Flow<Result<HomeFeedPage>>
+}

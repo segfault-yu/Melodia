@@ -1,4 +1,7 @@
-package com.lin0721.linmusic.domain.model
+package com.lin0721.linmusic.feature.home.domain
+
+// 调研确认：ActionType/FeedItem/FeedSection 全项目零调用者（含数据层），疑似首页 Feed 流的早期草稿模型，
+// 与实际使用的 HomeFeedPage/HomeSection/CardItem（见 HomeFeedModels.kt）并存。按规划保留不删，留待后续确认取舍。
 
 /**
  * 交互类型

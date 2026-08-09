@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.home
+package com.lin0721.linmusic.feature.home.domain
 
 // 首页动态 Feed 数据模型
 sealed class HomeSection {

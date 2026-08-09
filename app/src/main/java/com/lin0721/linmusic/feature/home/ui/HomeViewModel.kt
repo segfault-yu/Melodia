@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.home
+package com.lin0721.linmusic.feature.home.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,7 +8,8 @@ import com.lin0721.linmusic.core.api.AccountInfoResponse
 import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
-import com.lin0721.linmusic.data.repository.ToplistInfo
+import com.lin0721.linmusic.feature.home.data.HomeRepository
+import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,6 +27,7 @@ import com.lin0721.linmusic.player.QueueItem
 // 首页 ViewModel
 class HomeViewModel(
     private val musicRepository: MusicRepository,
+    private val homeRepository: HomeRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -52,27 +54,27 @@ class HomeViewModel(
 
         viewModelScope.launch {
             try {
-                val playlistsDeferred = async { 
-                    musicRepository.getPersonalizedPlaylists().first()
+                val playlistsDeferred = async {
+                    homeRepository.getPersonalizedPlaylists().first()
                 }
-                
-                val artistsDeferred = async { 
+
+                val artistsDeferred = async {
                     runCatching { musicRepository.getFavoriteArtists().first() }
                         .getOrElse { Result.success(emptyList()) }
                 }
 
                 val recentDeferred = async {
-                    runCatching { musicRepository.getRecentPlaylists().first() }
+                    runCatching { homeRepository.getRecentPlaylists().first() }
                         .getOrDefault(Result.success(emptyList()))
                 }
 
                 val dailySongsDeferred = async {
-                    runCatching { musicRepository.getDailyRecommendSongs().first() }
+                    runCatching { homeRepository.getDailyRecommendSongs().first() }
                         .getOrDefault(Result.success(emptyList()))
                 }
 
                 val toplistDeferred = async {
-                    runCatching { musicRepository.getToplistDetail().first() }
+                    runCatching { homeRepository.getToplistDetail().first() }
                         .getOrDefault(Result.success(emptyList<ToplistInfo>()))
                 }
 

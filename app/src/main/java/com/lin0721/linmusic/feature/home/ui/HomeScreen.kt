@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.home
+package com.lin0721.linmusic.feature.home.ui
 
 import java.util.Calendar
 import kotlinx.coroutines.launch
@@ -38,7 +38,7 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.api.PersonalizedPlaylist
 import com.lin0721.linmusic.core.api.Artist
 import com.lin0721.linmusic.core.api.DailySong
-import com.lin0721.linmusic.data.repository.ToplistInfo
+import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 import com.lin0721.linmusic.core.ui.theme.*
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.ui.components.FilterChipsRow

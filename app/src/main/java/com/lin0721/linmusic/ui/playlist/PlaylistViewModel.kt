@@ -8,6 +8,7 @@ import com.lin0721.linmusic.core.api.PlaylistDetail
 import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
 import kotlinx.coroutines.async
@@ -36,6 +37,7 @@ data class PlaylistCollectState(
 
 class PlaylistViewModel(
     private val repository: MusicRepository,
+    private val homeRepository: HomeRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -102,7 +104,7 @@ class PlaylistViewModel(
         if (id == -1L) {
             _historyRecommendState.update { it.copy(selectedDate = "今天") }
             loadJob = viewModelScope.launch {
-                repository.getDailyRecommendSongs().collect { result ->
+                homeRepository.getDailyRecommendSongs().collect { result ->
                     result.fold(
                         onSuccess = { dailySongs ->
                             val tracks = dailySongs.map { song ->
@@ -470,7 +472,7 @@ class PlaylistViewModel(
     fun loadHistoryDates() {
         viewModelScope.launch {
             _historyRecommendState.update { it.copy(datesLoading = true) }
-            repository.getHistoryRecommendDates().collect { result ->
+            homeRepository.getHistoryRecommendDates().collect { result ->
                 result.onSuccess { dates ->
                     _historyRecommendState.update { it.copy(dates = dates) }
                 }.onFailure {
@@ -490,7 +492,7 @@ class PlaylistViewModel(
         }
         viewModelScope.launch {
             _historyRecommendState.update { it.copy(selectedDate = date, songsLoading = true) }
-            repository.getHistoryRecommendDetail(date).collect { result ->
+            homeRepository.getHistoryRecommendDetail(date).collect { result ->
                 result.onSuccess { songs ->
                     _historyRecommendState.update { it.copy(songs = songs) }
                     _uiState.update { state ->

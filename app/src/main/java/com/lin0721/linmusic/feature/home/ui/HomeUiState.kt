@@ -1,10 +1,10 @@
-package com.lin0721.linmusic.ui.home
+package com.lin0721.linmusic.feature.home.ui
 
 import com.lin0721.linmusic.core.api.PersonalizedPlaylist
 import com.lin0721.linmusic.core.api.Artist
 import com.lin0721.linmusic.core.api.RecentPlayItem
 import com.lin0721.linmusic.core.api.DailySong
-import com.lin0721.linmusic.data.repository.ToplistInfo
+import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 
 import com.lin0721.linmusic.data.repository.ArtistInfo
 

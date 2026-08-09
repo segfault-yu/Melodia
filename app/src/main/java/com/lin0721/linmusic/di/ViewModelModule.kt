@@ -2,7 +2,7 @@ package com.lin0721.linmusic.di
 
 import com.lin0721.linmusic.ui.settings.SettingsViewModel
 import com.lin0721.linmusic.ui.create.CreateViewModel
-import com.lin0721.linmusic.ui.home.HomeViewModel
+import com.lin0721.linmusic.feature.home.ui.HomeViewModel
 import com.lin0721.linmusic.ui.library.LibraryViewModel
 import com.lin0721.linmusic.ui.player.PlayerViewModel
 import com.lin0721.linmusic.ui.playlist.PlaylistViewModel
