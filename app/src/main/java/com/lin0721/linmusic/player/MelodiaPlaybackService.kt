@@ -19,6 +19,7 @@ import com.lin0721.linmusic.R
 import com.lin0721.linmusic.data.local.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,6 +35,7 @@ class MelodiaPlaybackService : MediaSessionService() {
     private val settingsPreferences: SettingsPreferences by inject()
     private val userPreferences: UserPreferences by inject()
     private val musicRepository: MusicRepository by inject()
+    private val playlistRepository: PlaylistRepository by inject()
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val likedSongIdsCache = mutableSetOf<Long>()
@@ -167,7 +169,7 @@ class MelodiaPlaybackService : MediaSessionService() {
             val profile = userPreferences.userProfile.first()
             if (profile != null) {
                 if (!isLikedListLoaded) {
-                    musicRepository.getLikedSongIds(profile.uid).collect { result ->
+                    playlistRepository.getLikedSongIds(profile.uid).collect { result ->
                         result.onSuccess { ids ->
                             likedSongIdsCache.clear()
                             likedSongIdsCache.addAll(ids)
@@ -198,7 +200,7 @@ class MelodiaPlaybackService : MediaSessionService() {
             }
             updateCustomLayout()
 
-            musicRepository.likeSong(songId, targetLiked).collect { result ->
+            playlistRepository.likeSong(songId, targetLiked).collect { result ->
                 result.onFailure {
                     // 回滚
                     if (targetLiked) {

@@ -23,12 +23,6 @@ data class LyricLine(
 // 音乐数据层接口
 interface MusicRepository {
 
-    // 获取歌单详情
-    fun getPlaylistDetail(id: Long): Flow<Result<PlaylistDetail>>
-
-    // 获取专辑详情，映射至统一领域模型 PlaylistDetail
-    fun getAlbumDetail(id: Long): Flow<Result<PlaylistDetail>>
-
     // 获取歌曲播放链接
     fun getSongUrl(songId: Long): Flow<Result<String>>
 
@@ -51,19 +45,6 @@ interface MusicRepository {
     // ================== 智能推荐 ==================
 
     fun getIntelligenceSongs(songId: Long, playlistId: Long): Flow<Result<List<Track>>>
-
-    // ================== 红心/喜欢 ==================
-
-    fun getLikedSongIds(uid: Long): Flow<Result<List<Long>>>
-
-    fun likeSong(songId: Long, like: Boolean): Flow<Result<Unit>>
-
-    // 歌单歌曲添加/删除操作
-    fun manipulatePlaylistTracks(op: String, playlistId: Long, trackId: Long): Flow<Result<Unit>>
-
-    // 收藏/取消收藏歌单
-    fun subscribePlaylist(playlistId: Long, subscribe: Boolean): Flow<Result<Unit>>
-
 
     // ================== 百科与乐谱详情 ==================
     // 获取合并后的歌曲详情与百科信息

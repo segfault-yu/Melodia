@@ -5,7 +5,7 @@ import com.lin0721.linmusic.ui.create.CreateViewModel
 import com.lin0721.linmusic.feature.home.ui.HomeViewModel
 import com.lin0721.linmusic.feature.library.ui.LibraryViewModel
 import com.lin0721.linmusic.ui.player.PlayerViewModel
-import com.lin0721.linmusic.ui.playlist.PlaylistViewModel
+import com.lin0721.linmusic.feature.playlist.ui.PlaylistViewModel
 import com.lin0721.linmusic.feature.artist.ui.ArtistViewModel
 import com.lin0721.linmusic.feature.search.ui.SearchViewModel
 import org.koin.core.module.dsl.viewModelOf

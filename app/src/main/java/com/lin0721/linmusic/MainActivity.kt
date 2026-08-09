@@ -431,7 +431,7 @@ fun MelodiaApp() {
                         }
                         Screen.Playlist -> {
                             activePlaylistId?.let { id ->
-                                com.lin0721.linmusic.ui.playlist.PlaylistScreen(
+                                com.lin0721.linmusic.feature.playlist.ui.PlaylistScreen(
                                     playlistId = id,
                                     isAlbum = activePlaylistIsAlbum,
                                     onBack = navigateBack,

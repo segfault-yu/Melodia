@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.playlist
+package com.lin0721.linmusic.feature.playlist.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,6 +11,7 @@ import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.feature.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
+import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
 import kotlinx.coroutines.async
@@ -42,6 +43,7 @@ class PlaylistViewModel(
     private val homeRepository: HomeRepository,
     private val libraryRepository: LibraryRepository,
     private val commentRepository: CommentRepository,
+    private val playlistRepository: PlaylistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -85,7 +87,7 @@ class PlaylistViewModel(
     fun loadLikedSongIds() {
         viewModelScope.launch {
             val profile = userPreferences.userProfile.first() ?: return@launch
-            repository.getLikedSongIds(profile.uid).collect { result ->
+            playlistRepository.getLikedSongIds(profile.uid).collect { result ->
                 result.onSuccess { ids ->
                     _likedSongIds.value = ids.toSet()
                 }
@@ -140,7 +142,7 @@ class PlaylistViewModel(
             return
         }
         loadJob = viewModelScope.launch {
-            val flow = if (isAlbum) repository.getAlbumDetail(id) else repository.getPlaylistDetail(id)
+            val flow = if (isAlbum) playlistRepository.getAlbumDetail(id) else playlistRepository.getPlaylistDetail(id)
             flow.collect { result ->
                 result.fold(
                     onSuccess = { detail ->
@@ -199,7 +201,7 @@ class PlaylistViewModel(
                             val isInitiallyContains = if (playlist.name.contains("喜欢的音乐") || playlist.id == profile.uid) {
                                 _likedSongIds.value.contains(songId)
                             } else {
-                                val detail = repository.getPlaylistDetail(playlist.id).firstOrNull()?.getOrNull()
+                                val detail = playlistRepository.getPlaylistDetail(playlist.id).firstOrNull()?.getOrNull()
                                 detail?.tracks?.any { it.id == songId } ?: false
                             }
                             PlaylistCollectItem(
@@ -227,7 +229,7 @@ class PlaylistViewModel(
                 if (item.isContains != item.isInitiallyContains) {
                     val isLikedPlaylist = profile != null && (item.playlistName.contains("喜欢的音乐") || item.playlistId == profile.uid)
                     if (isLikedPlaylist) {
-                        repository.likeSong(songId, item.isContains).collect { result ->
+                        playlistRepository.likeSong(songId, item.isContains).collect { result ->
                             result.onSuccess {
                                 val currentLiked = _likedSongIds.value.toMutableSet()
                                 if (item.isContains) {
@@ -246,7 +248,7 @@ class PlaylistViewModel(
                         } else {
                             "del"
                         }
-                        repository.manipulatePlaylistTracks(op, item.playlistId, songId).collect { result ->
+                        playlistRepository.manipulatePlaylistTracks(op, item.playlistId, songId).collect { result ->
                             result.onSuccess {
                                 // 操作成功
                             }.onFailure { e ->
@@ -271,7 +273,7 @@ class PlaylistViewModel(
             repository.createPlaylist(name, privacy = 0).collect { result ->
                 result.fold(
                     onSuccess = { playlist ->
-                        repository.manipulatePlaylistTracks("add", playlist.id, songId).collect { addResult ->
+                        playlistRepository.manipulatePlaylistTracks("add", playlist.id, songId).collect { addResult ->
                             addResult.fold(
                                 onSuccess = {
                                     _toastEvent.emit("创建并加入歌单成功")
@@ -367,7 +369,7 @@ class PlaylistViewModel(
 
     fun addRecommendSongToPlaylist(playlistId: Long, track: Track) {
         viewModelScope.launch {
-            repository.manipulatePlaylistTracks("add", playlistId, track.id).collect { result ->
+            playlistRepository.manipulatePlaylistTracks("add", playlistId, track.id).collect { result ->
                 result.onSuccess {
                     _toastEvent.emit("已添加到歌单")
                     allRecommendedTracks = allRecommendedTracks.filter { it.id != track.id }
@@ -395,7 +397,7 @@ class PlaylistViewModel(
         val playlistId = successState.playlist.id
         val targetSubscribe = !successState.isSubscribed
         viewModelScope.launch {
-            repository.subscribePlaylist(playlistId, targetSubscribe).collect { result ->
+            playlistRepository.subscribePlaylist(playlistId, targetSubscribe).collect { result ->
                 result.onSuccess {
                     _uiState.update { state ->
                         if (state is PlaylistUiState.Success) state.copy(isSubscribed = targetSubscribe) else state
@@ -565,7 +567,7 @@ class PlaylistViewModel(
 
     fun toggleLikeSong(songId: Long, isLike: Boolean) {
         viewModelScope.launch {
-            repository.likeSong(songId, isLike).collect { result ->
+            playlistRepository.likeSong(songId, isLike).collect { result ->
                 result.fold(
                     onSuccess = {
                         _toastEvent.emit(if (isLike) "已添加到我喜欢的音乐" else "已从我喜欢的音乐中移除")

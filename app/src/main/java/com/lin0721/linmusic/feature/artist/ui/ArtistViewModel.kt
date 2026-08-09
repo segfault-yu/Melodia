@@ -11,10 +11,11 @@ import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
+import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
-import com.lin0721.linmusic.ui.playlist.PlaylistCollectState
-import com.lin0721.linmusic.ui.playlist.PlaylistCollectItem
+import com.lin0721.linmusic.feature.playlist.ui.PlaylistCollectState
+import com.lin0721.linmusic.feature.playlist.ui.PlaylistCollectItem
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
@@ -37,6 +38,7 @@ class ArtistViewModel(
     private val repository: MusicRepository,
     private val libraryRepository: LibraryRepository,
     private val artistRepository: ArtistRepository,
+    private val playlistRepository: PlaylistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -82,7 +84,7 @@ class ArtistViewModel(
     fun loadLikedSongIds() {
         viewModelScope.launch {
             val profile = userPreferences.userProfile.first() ?: return@launch
-            repository.getLikedSongIds(profile.uid).collect { result ->
+            playlistRepository.getLikedSongIds(profile.uid).collect { result ->
                 result.onSuccess { ids ->
                     _likedSongIds.value = ids.toSet()
                 }
@@ -176,7 +178,7 @@ class ArtistViewModel(
                             val isInitiallyContains = if (playlist.name.contains("喜欢的音乐") || playlist.id == profile.uid) {
                                 _likedSongIds.value.contains(songId)
                             } else {
-                                val detail = repository.getPlaylistDetail(playlist.id).firstOrNull()?.getOrNull()
+                                val detail = playlistRepository.getPlaylistDetail(playlist.id).firstOrNull()?.getOrNull()
                                 detail?.tracks?.any { it.id == songId } ?: false
                             }
                             PlaylistCollectItem(
@@ -204,7 +206,7 @@ class ArtistViewModel(
                 if (item.isContains != item.isInitiallyContains) {
                     val isLikedPlaylist = profile != null && (item.playlistName.contains("喜欢的音乐") || item.playlistId == profile.uid)
                     if (isLikedPlaylist) {
-                        repository.likeSong(songId, item.isContains).collect { result ->
+                        playlistRepository.likeSong(songId, item.isContains).collect { result ->
                             result.onSuccess {
                                 // 操作成功
                             }.onFailure { e ->
@@ -217,7 +219,7 @@ class ArtistViewModel(
                         } else {
                             "del"
                         }
-                        repository.manipulatePlaylistTracks(op, item.playlistId, songId).collect { result ->
+                        playlistRepository.manipulatePlaylistTracks(op, item.playlistId, songId).collect { result ->
                             result.onSuccess {
                                 // 操作成功
                             }.onFailure { e ->
@@ -237,7 +239,7 @@ class ArtistViewModel(
             repository.createPlaylist(name, privacy = 0).collect { result ->
                 result.fold(
                     onSuccess = { playlist ->
-                        repository.manipulatePlaylistTracks("add", playlist.id, songId).collect { addResult ->
+                        playlistRepository.manipulatePlaylistTracks("add", playlist.id, songId).collect { addResult ->
                             addResult.fold(
                                 onSuccess = {
                                     _toastEvent.emit("创建并加入歌单成功")

@@ -20,40 +20,6 @@ class MusicRepositoryImpl(
     private val context: android.content.Context
 ) : MusicRepository {
 
-    override fun getPlaylistDetail(id: Long): Flow<Result<PlaylistDetail>> = flow {
-        val response = apiService.getPlaylistDetail(PlaylistDetailRequest(id = id))
-        if (response.isSuccess && response.playlist != null) {
-            val filteredTracks = contentFilter.filterBlockedArtists(response.playlist.tracks) { it.ar.map { a -> a.id } }
-            emit(Result.success(response.playlist.copy(tracks = filteredTracks)))
-        } else {
-            emit(Result.failure(Exception("Failed to load playlist detail: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun getAlbumDetail(id: Long): Flow<Result<PlaylistDetail>> = flow {
-        // 专辑 ID 需作为 URL 路径参数传入，不使用 AlbumDetailRequest 请求体
-        val response = apiService.getAlbumDetail(id = id)
-        if (response.isSuccess) {
-            val album = response.album
-            val filteredTracks = contentFilter.filterBlockedArtists(response.songs) { it.ar.map { a -> a.id } }
-            val detail = PlaylistDetail(
-                id = album.id,
-                name = album.name,
-                coverImgUrl = album.picUrl,
-                description = album.description,
-                playCount = 0L,
-                tracks = filteredTracks
-            )
-            emit(Result.success(detail))
-        } else {
-            emit(Result.failure(Exception("Failed to load album detail: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
     private fun isWifiConnected(): Boolean {
         return try {
             val connectivityManager = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
@@ -304,61 +270,6 @@ class MusicRepositoryImpl(
     }.catch { e ->
         emit(Result.failure(e))
     }
-
-    override fun getLikedSongIds(uid: Long): Flow<Result<List<Long>>> = flow {
-        val response = apiService.getLikedSongIds(LikeSongListRequest(uid = uid))
-        if (response.isSuccess) {
-            emit(Result.success(response.ids))
-        } else {
-            emit(Result.failure(Exception("Failed to load liked songs: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun likeSong(songId: Long, like: Boolean): Flow<Result<Unit>> = flow {
-        val response = apiService.likeSong(LikeSongRequest(trackId = songId, like = like))
-        if (response.isSuccess) {
-            emit(Result.success(Unit))
-        } else {
-            emit(Result.failure(Exception("Failed to like song: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun manipulatePlaylistTracks(op: String, playlistId: Long, trackId: Long): Flow<Result<Unit>> = flow {
-        val response = apiService.manipulatePlaylistTracks(
-            PlaylistTracksManipulateRequest(
-                op = op,
-                pid = playlistId,
-                trackIds = "[\"$trackId\"]"
-            )
-        )
-        if (response.isSuccess) {
-            emit(Result.success(Unit))
-        } else {
-            emit(Result.failure(Exception("Failed to manipulate tracks: code ${response.code}, message ${response.message}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun subscribePlaylist(playlistId: Long, subscribe: Boolean): Flow<Result<Unit>> = flow {
-        val op = if (subscribe) "subscribe" else "unsubscribe"
-        val response = apiService.subscribePlaylist(
-            op = op,
-            body = PlaylistSubscribeRequest(id = playlistId)
-        )
-        if (response.isSuccess) {
-            emit(Result.success(Unit))
-        } else {
-            emit(Result.failure(Exception("操作失败: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
 
     // 获取合并后的歌曲详情与百科信息
     override fun getSongWiki(songId: Long): Flow<Result<SongWikiData>> = flow {

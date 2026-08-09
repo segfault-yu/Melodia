@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.playlist
+package com.lin0721.linmusic.feature.playlist.ui
 
 import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.core.api.PlaylistDetail

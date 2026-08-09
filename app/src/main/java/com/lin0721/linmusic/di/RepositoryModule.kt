@@ -12,6 +12,8 @@ import com.lin0721.linmusic.feature.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.comment.data.CommentRepositoryImpl
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepositoryImpl
+import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
+import com.lin0721.linmusic.feature.playlist.data.PlaylistRepositoryImpl
 import com.lin0721.linmusic.feature.search.data.SearchRepository
 import com.lin0721.linmusic.feature.search.data.SearchRepositoryImpl
 import org.koin.core.module.dsl.bind
@@ -43,5 +45,8 @@ val repositoryModule = module {
 
     // 评论数据仓储（feature/comment）
     singleOf(::CommentRepositoryImpl) { bind<CommentRepository>() }
+
+    // 歌单/专辑/红心数据仓储（feature/playlist）
+    singleOf(::PlaylistRepositoryImpl) { bind<PlaylistRepository>() }
 
 }

@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.playlist
+package com.lin0721.linmusic.feature.playlist.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
