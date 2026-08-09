@@ -57,16 +57,16 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lin0721.linmusic.ui.components.MelodiaNavigationBar
-import com.lin0721.linmusic.ui.components.MiniPlayerCard
-import com.lin0721.linmusic.ui.components.ProfileSidebar
-import com.lin0721.linmusic.ui.create.CreatePopupMenu
-import com.lin0721.linmusic.ui.home.HomeScreen
-import com.lin0721.linmusic.ui.home.HomeViewModel
-import com.lin0721.linmusic.ui.player.FullPlayerScreen
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.MelodiaTheme
+import com.lin0721.linmusic.core.ui.components.MelodiaNavigationBar
+import com.lin0721.linmusic.core.ui.components.MiniPlayerCard
+import com.lin0721.linmusic.core.ui.components.ProfileSidebar
+import com.lin0721.linmusic.feature.create.ui.CreatePopupMenu
+import com.lin0721.linmusic.feature.home.ui.HomeScreen
+import com.lin0721.linmusic.feature.home.ui.HomeViewModel
+import com.lin0721.linmusic.feature.player.ui.FullPlayerScreen
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.MelodiaTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import kotlinx.coroutines.launch
@@ -206,7 +206,7 @@ fun MelodiaApp() {
     var toastTrigger by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
-        com.lin0721.linmusic.ui.components.ToastManager.toastFlow.collect { msg ->
+        com.lin0721.linmusic.core.ui.components.ToastManager.toastFlow.collect { msg ->
             toastMessage = msg
             toastTrigger++
         }
@@ -431,7 +431,7 @@ fun MelodiaApp() {
                         }
                         Screen.Playlist -> {
                             activePlaylistId?.let { id ->
-                                com.lin0721.linmusic.ui.playlist.PlaylistScreen(
+                                com.lin0721.linmusic.feature.playlist.ui.PlaylistScreen(
                                     playlistId = id,
                                     isAlbum = activePlaylistIsAlbum,
                                     onBack = navigateBack,
@@ -448,14 +448,14 @@ fun MelodiaApp() {
                             }
                         }
                         Screen.Search -> {
-                            com.lin0721.linmusic.ui.search.SearchScreen(
+                            com.lin0721.linmusic.feature.search.ui.SearchScreen(
                                 autoFocus = searchAutoFocus,
                                 onBack = navigateBack,
                                 onOpenSidebar = openSidebar
                             )
                         }
                         Screen.Library -> {
-                            com.lin0721.linmusic.ui.library.LibraryScreen(
+                            com.lin0721.linmusic.feature.library.ui.LibraryScreen(
                                 onPlaylistClick = { id ->
                                     activePlaylistId = id
                                     activePlaylistIsAlbum = false
@@ -471,13 +471,13 @@ fun MelodiaApp() {
                             )
                         }
                         Screen.Settings -> {
-                            com.lin0721.linmusic.ui.settings.SettingsScreen(
+                            com.lin0721.linmusic.feature.settings.ui.SettingsScreen(
                                 onBack = navigateBack
                             )
                         }
                         Screen.Artist -> {
                             activeArtistId?.let { id ->
-                                com.lin0721.linmusic.ui.artist.ArtistScreen(
+                                com.lin0721.linmusic.feature.artist.ui.ArtistScreen(
                                     artistId = id,
                                     onBack = navigateBack,
                                     onArtistClick = { nextId ->
@@ -665,7 +665,7 @@ fun MelodiaApp() {
                     .zIndex(999f)
             ) {
                 toastMessage?.let { msg ->
-                    com.lin0721.linmusic.ui.components.CustomToast(message = msg)
+                    com.lin0721.linmusic.core.ui.components.CustomToast(message = msg)
                 }
             }
         }

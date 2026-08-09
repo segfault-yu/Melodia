@@ -1,13 +1,13 @@
 package com.lin0721.linmusic.di
 
-import com.lin0721.linmusic.ui.settings.SettingsViewModel
-import com.lin0721.linmusic.ui.create.CreateViewModel
-import com.lin0721.linmusic.ui.home.HomeViewModel
-import com.lin0721.linmusic.ui.library.LibraryViewModel
-import com.lin0721.linmusic.ui.player.PlayerViewModel
-import com.lin0721.linmusic.ui.playlist.PlaylistViewModel
-import com.lin0721.linmusic.ui.artist.ArtistViewModel
-import com.lin0721.linmusic.ui.search.SearchViewModel
+import com.lin0721.linmusic.feature.settings.ui.SettingsViewModel
+import com.lin0721.linmusic.feature.create.ui.CreateViewModel
+import com.lin0721.linmusic.feature.home.ui.HomeViewModel
+import com.lin0721.linmusic.feature.library.ui.LibraryViewModel
+import com.lin0721.linmusic.feature.player.ui.PlayerViewModel
+import com.lin0721.linmusic.feature.playlist.ui.PlaylistViewModel
+import com.lin0721.linmusic.feature.artist.ui.ArtistViewModel
+import com.lin0721.linmusic.feature.search.ui.SearchViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 

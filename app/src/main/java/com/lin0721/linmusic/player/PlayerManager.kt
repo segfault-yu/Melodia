@@ -12,7 +12,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.lin0721.linmusic.data.local.PlaybackPreferences
 import com.lin0721.linmusic.data.local.PlaybackState
-import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.collectLatest
 class PlayerManager(
     private val context: Context,
     private val playbackPreferences: PlaybackPreferences,
-    private val repository: MusicRepository,
+    private val repository: PlayerRepository,
     private val settingsPreferences: SettingsPreferences
 ) : Player.Listener {
 
