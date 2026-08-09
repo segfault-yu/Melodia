@@ -1,18 +1,8 @@
 package com.lin0721.linmusic.data.repository
 
 import com.lin0721.linmusic.core.api.PlaylistDetail
-import com.lin0721.linmusic.core.api.ArtistAlbum
-import com.lin0721.linmusic.core.api.ArtistDetailInfo
-import com.lin0721.linmusic.core.api.Artist
 import com.lin0721.linmusic.core.api.Track
 import kotlinx.coroutines.flow.Flow
-
-// 歌手领域模型
-data class ArtistInfo(
-    val id: Long,
-    val name: String,
-    val avatarUrl: String
-)
 
 // 单个字符/单词的耗时元数据
 data class WordInfo(
@@ -42,12 +32,6 @@ interface MusicRepository {
     // 获取歌曲播放链接
     fun getSongUrl(songId: Long): Flow<Result<String>>
 
-    // 获取热门歌手
-    fun getTopArtists(): Flow<Result<List<Artist>>>
-
-    // 获取最爱的歌手（优先已关注，兜底热门）
-    fun getFavoriteArtists(): Flow<Result<List<ArtistInfo>>>
-
     // 创建歌单
     fun createPlaylist(name: String, privacy: Int = 0): Flow<Result<PlaylistDetail>>
 
@@ -60,10 +44,6 @@ interface MusicRepository {
 
     fun getSongDetail(songId: Long): Flow<Result<Track>>
 
-    // ================== 相似歌手 ==================
-
-    fun getSimilarArtists(artistId: Long): Flow<Result<List<ArtistInfo>>>
-
     // ================== 相似歌曲 ==================
 
     fun getSimilarSongs(songId: Long): Flow<Result<List<Track>>>
@@ -71,24 +51,6 @@ interface MusicRepository {
     // ================== 智能推荐 ==================
 
     fun getIntelligenceSongs(songId: Long, playlistId: Long): Flow<Result<List<Track>>>
-
-    // ================== 艺人详情 ==================
-
-    fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>>
-
-    fun getArtistAlbums(artistId: Long, limit: Int = 10): Flow<Result<List<ArtistAlbum>>>
-
-    // 获取艺人粉丝数（每月听众数）
-    fun getArtistFansCount(artistId: Long): Flow<Result<Long>>
-
-    // 获取艺人热门歌曲（50首）
-    fun getArtistTopSongs(artistId: Long): Flow<Result<List<Track>>>
-
-    // 收藏/关注歌手
-    fun subscribeArtist(artistId: Long, subscribe: Boolean): Flow<Result<Unit>>
-
-    // 检查是否已关注歌手
-    fun checkArtistFollowed(artistId: Long): Flow<Result<Boolean>>
 
     // ================== 红心/喜欢 ==================
 

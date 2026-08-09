@@ -8,9 +8,10 @@ import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.ArtistDetailInfo
 import com.lin0721.linmusic.core.api.Track
-import com.lin0721.linmusic.data.repository.ArtistInfo
+import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.data.repository.LyricLine
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
 import com.lin0721.linmusic.data.repository.SongWikiData
@@ -49,6 +50,7 @@ data class PlayerSongDetailState(
 class PlayerViewModel(
     private val context: Context,
     private val repository: MusicRepository,
+    private val artistRepository: ArtistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val settingsPreferences: SettingsPreferences
@@ -238,7 +240,7 @@ class PlayerViewModel(
     private fun loadSimilarArtists(artistId: Long, forSongId: Long) {
         viewModelScope.launch {
             _songDetailState.update { it.copy(isSimilarArtistsLoading = true) }
-            repository.getSimilarArtists(artistId).collect { result ->
+            artistRepository.getSimilarArtists(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { artists ->
                     _songDetailState.update { it.copy(similarArtists = artists) }
@@ -256,7 +258,7 @@ class PlayerViewModel(
             loadArtistFansCount(artistId, forSongId)
             // 异步加载当前用户是否关注了该歌手
             loadArtistFollowState(artistId, forSongId)
-            repository.getArtistDetail(artistId).collect { result ->
+            artistRepository.getArtistDetail(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { detail ->
                     _songDetailState.update { it.copy(artistDetail = detail) }
@@ -270,7 +272,7 @@ class PlayerViewModel(
     // 异步加载歌手关注状态
     private fun loadArtistFollowState(artistId: Long, forSongId: Long) {
         viewModelScope.launch {
-            repository.checkArtistFollowed(artistId).collect { result ->
+            artistRepository.checkArtistFollowed(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { followed ->
                     _songDetailState.update { it.copy(isArtistFollowed = followed) }
@@ -284,7 +286,7 @@ class PlayerViewModel(
     // 异步获取歌手粉丝数
     private fun loadArtistFansCount(artistId: Long, forSongId: Long) {
         viewModelScope.launch {
-            repository.getArtistFansCount(artistId).collect { result ->
+            artistRepository.getArtistFansCount(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { count ->
                     _songDetailState.update { it.copy(artistFansCount = count) }
@@ -297,7 +299,7 @@ class PlayerViewModel(
 
     private fun loadArtistAlbums(artistId: Long, forSongId: Long) {
         viewModelScope.launch {
-            repository.getArtistAlbums(artistId).collect { result ->
+            artistRepository.getArtistAlbums(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
                 result.onSuccess { albums ->
                     _songDetailState.update { it.copy(artistAlbums = albums) }
@@ -403,7 +405,7 @@ class PlayerViewModel(
 
         val targetFollow = !_songDetailState.value.isArtistFollowed
         viewModelScope.launch {
-            repository.subscribeArtist(artistId, targetFollow).collect { result ->
+            artistRepository.subscribeArtist(artistId, targetFollow).collect { result ->
                 result.onSuccess {
                     _songDetailState.update { it.copy(isArtistFollowed = targetFollow) }
                 }

@@ -8,6 +8,7 @@ import com.lin0721.linmusic.core.api.AccountInfoResponse
 import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,6 +29,7 @@ import com.lin0721.linmusic.player.QueueItem
 class HomeViewModel(
     private val musicRepository: MusicRepository,
     private val homeRepository: HomeRepository,
+    private val artistRepository: ArtistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -59,7 +61,7 @@ class HomeViewModel(
                 }
 
                 val artistsDeferred = async {
-                    runCatching { musicRepository.getFavoriteArtists().first() }
+                    runCatching { artistRepository.getFavoriteArtists().first() }
                         .getOrElse { Result.success(emptyList()) }
                 }
 

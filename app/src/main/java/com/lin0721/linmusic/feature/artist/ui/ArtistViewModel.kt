@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.artist
+package com.lin0721.linmusic.feature.artist.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,9 +6,10 @@ import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.api.ArtistDetailInfo
 import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.Track
-import com.lin0721.linmusic.data.repository.ArtistInfo
+import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
@@ -35,6 +36,7 @@ sealed class ArtistUiState {
 class ArtistViewModel(
     private val repository: MusicRepository,
     private val libraryRepository: LibraryRepository,
+    private val artistRepository: ArtistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -93,12 +95,12 @@ class ArtistViewModel(
         viewModelScope.launch {
             try {
                 // 并行发起网络请求以提供极速的界面预加载
-                val detailDeferred = async { repository.getArtistDetail(artistId).first() }
-                val fansDeferred = async { repository.getArtistFansCount(artistId).first() }
-                val followDeferred = async { repository.checkArtistFollowed(artistId).first() }
-                val topSongsDeferred = async { repository.getArtistTopSongs(artistId).first() }
-                val albumsDeferred = async { repository.getArtistAlbums(artistId, limit = 50).first() }
-                val similarDeferred = async { repository.getSimilarArtists(artistId).first() }
+                val detailDeferred = async { artistRepository.getArtistDetail(artistId).first() }
+                val fansDeferred = async { artistRepository.getArtistFansCount(artistId).first() }
+                val followDeferred = async { artistRepository.checkArtistFollowed(artistId).first() }
+                val topSongsDeferred = async { artistRepository.getArtistTopSongs(artistId).first() }
+                val albumsDeferred = async { artistRepository.getArtistAlbums(artistId, limit = 50).first() }
+                val similarDeferred = async { artistRepository.getSimilarArtists(artistId).first() }
 
                 val detailResult = detailDeferred.await()
                 val fansResult = fansDeferred.await()
@@ -139,7 +141,7 @@ class ArtistViewModel(
         val currentState = _uiState.value as? ArtistUiState.Success ?: return
         val targetSubscribe = !currentState.isFollowed
         viewModelScope.launch {
-            repository.subscribeArtist(artistId, targetSubscribe).collect { result ->
+            artistRepository.subscribeArtist(artistId, targetSubscribe).collect { result ->
                 result.onSuccess {
                     _uiState.value = currentState.copy(isFollowed = targetSubscribe)
                     val msg = if (targetSubscribe) "已关注歌手" else "已取消关注歌手"

@@ -477,7 +477,7 @@ fun MelodiaApp() {
                         }
                         Screen.Artist -> {
                             activeArtistId?.let { id ->
-                                com.lin0721.linmusic.ui.artist.ArtistScreen(
+                                com.lin0721.linmusic.feature.artist.ui.ArtistScreen(
                                     artistId = id,
                                     onBack = navigateBack,
                                     onArtistClick = { nextId ->

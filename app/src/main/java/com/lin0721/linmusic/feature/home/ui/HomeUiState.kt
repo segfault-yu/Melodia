@@ -6,7 +6,7 @@ import com.lin0721.linmusic.core.api.RecentPlayItem
 import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 
-import com.lin0721.linmusic.data.repository.ArtistInfo
+import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 
 // 首页 UI 状态
 sealed interface HomeUiState {

@@ -7,6 +7,7 @@ import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.player.PlayerManager
 import kotlinx.coroutines.async
@@ -53,6 +54,7 @@ sealed interface LibraryUiState {
 class LibraryViewModel(
     private val repository: MusicRepository,
     private val libraryRepository: LibraryRepository,
+    private val artistRepository: ArtistRepository,
     private val userPreferences: UserPreferences,
     val playerManager: PlayerManager,
     private val context: Context,
@@ -133,7 +135,7 @@ class LibraryViewModel(
 
                 // 2. 并行获取歌手
                 val artistsDeferred = async {
-                    repository.getFavoriteArtists().firstOrNull()?.getOrNull() ?: emptyList()
+                    artistRepository.getFavoriteArtists().firstOrNull()?.getOrNull() ?: emptyList()
                 }
 
                 // 3. 并行获取专辑

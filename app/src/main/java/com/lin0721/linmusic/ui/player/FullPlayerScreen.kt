@@ -88,7 +88,7 @@ import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.ArtistDetailInfo
 import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.core.api.CommentItem
-import com.lin0721.linmusic.data.repository.ArtistInfo
+import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.data.repository.LyricLine
 import com.lin0721.linmusic.data.repository.SongWikiData
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape

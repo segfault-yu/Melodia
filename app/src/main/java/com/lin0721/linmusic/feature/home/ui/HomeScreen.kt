@@ -489,7 +489,7 @@ private fun ToplistCard(item: ToplistInfo) {
 
 
 @Composable
-fun FavoriteArtistsSection(artists: List<com.lin0721.linmusic.data.repository.ArtistInfo>) {
+fun FavoriteArtistsSection(artists: List<com.lin0721.linmusic.feature.artist.domain.ArtistInfo>) {
     Column {
         SectionHeader(title = "你最爱的艺人", showAction = false)
         LazyRow(
@@ -504,7 +504,7 @@ fun FavoriteArtistsSection(artists: List<com.lin0721.linmusic.data.repository.Ar
 }
 
 @Composable
-fun ArtistCircleCard(artist: com.lin0721.linmusic.data.repository.ArtistInfo) {
+fun ArtistCircleCard(artist: com.lin0721.linmusic.feature.artist.domain.ArtistInfo) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp).clickable { /* artist click */ }

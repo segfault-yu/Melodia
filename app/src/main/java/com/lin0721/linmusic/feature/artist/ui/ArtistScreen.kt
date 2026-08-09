@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.artist
+package com.lin0721.linmusic.feature.artist.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
@@ -52,7 +52,7 @@ import coil.request.ImageRequest
 import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.ArtistDetailInfo
 import com.lin0721.linmusic.core.api.Track
-import com.lin0721.linmusic.data.repository.ArtistInfo
+import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.core.ui.components.CreatePlaylistDialog
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
