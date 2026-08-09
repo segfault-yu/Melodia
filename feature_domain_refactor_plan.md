@@ -134,15 +134,30 @@ com.lin0721.linmusic/
 
 ---
 
-## 7. 进度
+## 7. 进度 —— 全部完成
 
 - [x] §5 七个待确认点已按推荐方案确认（2026-08-09）
 - [x] 阶段 0 骨架：`core/ui/theme`、`core/ui/components`、`core/network`、`core/network/crypto`、`core/api` 迁移完成
-- [x] `core/auth`（UserPreferences + AuthRepository）拆出，5 个 ViewModel 消费方已切换
+- [x] `core/auth`（UserPreferences + AuthRepository）拆出
 - [x] `core/contentfilter`（ContentFilter.filterBlockedArtists）拆出，8 处重复过滤逻辑收敛
-- [x] `feature/home` 试点完成：HomeRepository(+Impl)、领域模型（ToplistInfo/HomeFeedPage 系列/未用草稿模型）、UI 三件套均已迁移；`PlaylistViewModel` 新增 `homeRepository` 依赖
-- [x] `./gradlew :app:compileDebugKotlin` 全程编译通过
-- [ ] **运行时验证未完成**：当前环境未连接 Android 设备/模拟器，无法验证 Koin 依赖图在运行时能否正确解析、首页功能是否有回归——这一步需要用户配合（见下方对话）
-- [ ] 阶段 1-7（search/library/artist/comment/playlist/player/settings/create）尚未开始
+- [x] `feature/home`（试点域）
+- [x] `feature/search`
+- [x] `feature/library`
+- [x] `feature/artist`
+- [x] `feature/comment`
+- [x] `feature/playlist`（含红心 getLikedSongIds/likeSong）
+- [x] `feature/player`（含 PlayerManager DI 接线，只改类型未动 shuffle bug 相关逻辑）
+- [x] `feature/settings`
+- [x] `feature/create`（`MusicRepository`/`MusicRepositoryImpl` 已清空并删除）
+- [x] `domain/model/`、`data/repository/`、`ui/<domain>/` 旧目录全部清空/删除
+- [x] 全项目 grep 确认无残留 `data.repository.*` 或旧 `ui.<domain>` 包引用
+- [x] `./gradlew :app:assembleDebug` 完整构建通过（非仅编译，含资源/清单/dex）
+- [ ] **运行时验证未完成**：当前环境未连接 Android 设备/模拟器，用户已确认"先不验证，继续往下做"——建议合并前用真机/模拟器跑一遍主流程（登录、首页、搜索、播放、歌单收藏、心动模式、设置签到、新建歌单）
 
-下一步：等待用户确认运行时验证方式与是否继续阶段 1。
+## 8. 后续可选事项（本次范围外，已在 §5 里明确搁置）
+
+- `createPlaylist` 四处重复的"建歌单+加入当前歌曲"流程尚未收敛成公共 UseCase
+- 两处死代码（`getHomepageBlocks`/`getDiscoveryBlocks`/`getDailyRecommendPlaylists`）仍保留未删
+- 两份重复的"播放模式"存储（`SettingsPreferences.playMode` vs `PlaybackPreferences.playMode`）未清理
+- 之前搁置的 shuffle 播放模式并发 bug 尚未修复
+- 分支尚未合并回 `main`，由用户决定节奏
