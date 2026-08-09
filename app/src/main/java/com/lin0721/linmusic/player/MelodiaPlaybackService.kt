@@ -17,7 +17,7 @@ import androidx.media3.session.SessionResult
 import androidx.media3.session.CommandButton
 import com.lin0721.linmusic.R
 import com.lin0721.linmusic.data.local.SettingsPreferences
-import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.data.repository.MusicRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

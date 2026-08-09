@@ -2,11 +2,12 @@ package com.lin0721.linmusic.ui.artist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.api.ArtistDetailInfo
 import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.data.repository.ArtistInfo
+import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
@@ -33,7 +34,8 @@ sealed class ArtistUiState {
 class ArtistViewModel(
     private val repository: MusicRepository,
     val playerManager: PlayerManager,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ArtistUiState>(ArtistUiState.Loading)
@@ -255,13 +257,13 @@ class ArtistViewModel(
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
             userPreferences.saveCookies(cookies)
-            repository.getAccountInfo().collect { result ->
+            authRepository.getAccountInfo().collect { result ->
                 val response = result.getOrNull()
                 if (response != null) {
                     val remoteProfile = response.profile
                     if (remoteProfile != null) {
                         userPreferences.saveUserProfile(
-                            com.lin0721.linmusic.data.local.UserProfile(
+                            com.lin0721.linmusic.core.auth.UserProfile(
                                 uid = remoteProfile.userId,
                                 nickname = remoteProfile.nickname,
                                 avatarUrl = remoteProfile.avatarUrl

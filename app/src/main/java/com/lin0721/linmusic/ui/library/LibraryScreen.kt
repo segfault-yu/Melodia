@@ -57,7 +57,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import com.lin0721.linmusic.core.ui.components.ProfileSidebar
 import kotlinx.coroutines.launch
-import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.core.auth.UserProfile
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable

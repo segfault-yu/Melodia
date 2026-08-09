@@ -2,8 +2,8 @@ package com.lin0721.linmusic.ui.create
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lin0721.linmusic.data.local.UserPreferences
-import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.core.auth.UserPreferences
+import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.data.repository.MusicRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

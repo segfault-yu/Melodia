@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.SettingsPreferences
-import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.ArtistDetailInfo
 import com.lin0721.linmusic.core.api.Track

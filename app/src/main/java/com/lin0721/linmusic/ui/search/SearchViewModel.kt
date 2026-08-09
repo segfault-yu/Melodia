@@ -2,8 +2,8 @@ package com.lin0721.linmusic.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lin0721.linmusic.data.local.UserPreferences
-import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.core.auth.UserPreferences
+import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.api.SearchSong
 import com.lin0721.linmusic.data.repository.HotSearch
 import com.lin0721.linmusic.data.repository.MusicRepository

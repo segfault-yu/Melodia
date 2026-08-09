@@ -4,10 +4,11 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.SettingsPreferences
-import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.api.UserBindingItem
 import com.lin0721.linmusic.core.api.UserLevelData
 import com.lin0721.linmusic.core.api.VipInfoData
+import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.AudioCacheManager
 import kotlinx.coroutines.FlowPreview
@@ -19,7 +20,8 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val musicRepository: MusicRepository,
     private val settingsPreferences: SettingsPreferences,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     // ─── 本地偏合设置对外状态流动 ───
@@ -385,7 +387,7 @@ class SettingsViewModel(
     // 退出登录，注销远端会话并清空本地 preferences 缓存
     fun executeLogout(onFinished: () -> Unit) {
         viewModelScope.launch {
-            musicRepository.logout().collect { }
+            authRepository.logout().collect { }
             userPreferences.clearUserProfile()
             _toastEvent.emit("已成功退出登录")
             onFinished()

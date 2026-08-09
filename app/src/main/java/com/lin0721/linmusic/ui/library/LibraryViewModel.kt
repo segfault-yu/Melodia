@@ -3,8 +3,9 @@ package com.lin0721.linmusic.ui.library
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lin0721.linmusic.data.local.UserPreferences
-import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.core.auth.UserPreferences
+import com.lin0721.linmusic.core.auth.UserProfile
+import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
 import kotlinx.coroutines.async
@@ -52,7 +53,8 @@ class LibraryViewModel(
     private val repository: MusicRepository,
     private val userPreferences: UserPreferences,
     val playerManager: PlayerManager,
-    private val context: Context
+    private val context: Context,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val sharedPrefs = context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE)
@@ -337,7 +339,7 @@ class LibraryViewModel(
         viewModelScope.launch {
             _toastEvent.emit("登录成功，正在同步乐库...")
             userPreferences.saveCookies(cookies)
-            repository.getAccountInfo().collect { result ->
+            authRepository.getAccountInfo().collect { result ->
                 val response = result.getOrNull()
                 if (response != null) {
                     val remoteProfile = response.profile

@@ -1,6 +1,6 @@
 package com.lin0721.linmusic.core.network
 
-import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.data.local.SettingsPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking

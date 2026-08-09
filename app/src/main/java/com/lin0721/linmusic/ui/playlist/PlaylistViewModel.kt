@@ -2,10 +2,11 @@ package com.lin0721.linmusic.ui.playlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lin0721.linmusic.data.local.UserPreferences
-import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.core.auth.UserPreferences
+import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.api.PlaylistDetail
 import com.lin0721.linmusic.core.api.Track
+import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
@@ -36,7 +37,8 @@ data class PlaylistCollectState(
 class PlaylistViewModel(
     private val repository: MusicRepository,
     val playerManager: PlayerManager,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private var allRecommendedTracks = listOf<Track>()
@@ -287,7 +289,7 @@ class PlaylistViewModel(
         viewModelScope.launch {
             _toastEvent.emit("登录成功，正在同步数据...")
             userPreferences.saveCookies(cookies)
-            repository.getAccountInfo().collect { result ->
+            authRepository.getAccountInfo().collect { result ->
                 val response = result.getOrNull()
                 if (response != null) {
                     val remoteProfile = response.profile

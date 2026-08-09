@@ -40,7 +40,7 @@ import com.lin0721.linmusic.core.api.Artist
 import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.data.repository.ToplistInfo
 import com.lin0721.linmusic.core.ui.theme.*
-import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.ui.components.FilterChipsRow
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.core.ui.components.ProfileSidebar

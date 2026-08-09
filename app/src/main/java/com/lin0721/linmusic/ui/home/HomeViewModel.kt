@@ -2,10 +2,11 @@ package com.lin0721.linmusic.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lin0721.linmusic.data.local.UserPreferences
-import com.lin0721.linmusic.data.local.UserProfile
+import com.lin0721.linmusic.core.auth.UserPreferences
+import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.api.AccountInfoResponse
 import com.lin0721.linmusic.core.api.DailySong
+import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.data.repository.ToplistInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,7 +27,8 @@ import com.lin0721.linmusic.player.QueueItem
 class HomeViewModel(
     private val musicRepository: MusicRepository,
     val playerManager: PlayerManager,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -132,7 +134,7 @@ class HomeViewModel(
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
             userPreferences.saveCookies(cookies)
-            musicRepository.getAccountInfo().collect { result ->
+            authRepository.getAccountInfo().collect { result ->
                 val response = result.getOrNull()
                 if (response != null) {
                     val remoteProfile = response.profile

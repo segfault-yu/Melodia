@@ -1,7 +1,7 @@
 package com.lin0721.linmusic.data.repository
 
 import com.lin0721.linmusic.data.local.SettingsPreferences
-import com.lin0721.linmusic.data.local.UserPreferences
+import com.lin0721.linmusic.core.auth.UserPreferences
 import okhttp3.MediaType.Companion.toMediaType
 import com.lin0721.linmusic.core.api.*
 import com.lin0721.linmusic.ui.home.*
@@ -312,17 +312,6 @@ class MusicRepositoryImpl(
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
-    }
-
-    override fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.core.api.AccountInfoResponse>> = flow {
-        val response = apiService.getAccountInfo()
-        if (response.code == 200) {
-            emit(Result.success(response))
-        } else {
-            emit(Result.failure(Exception("Failed to get account info: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
     }
 
     override fun getRecentPlaylists(): Flow<Result<List<RecentPlayItem>>> = flow {
@@ -1065,15 +1054,6 @@ class MusicRepositoryImpl(
             emit(Result.success(0))
         } else {
             emit(Result.failure(Exception(response.msg ?: "签到失败")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
-
-    override fun logout(): Flow<Result<Unit>> = flow {
-        val response = apiService.logoutApi()
-        if (response.isSuccess) {
-            emit(Result.success(Unit))
-        } else {
-            emit(Result.failure(Exception("退出登录接口异常")))
         }
     }.catch { e -> emit(Result.failure(e)) }
 

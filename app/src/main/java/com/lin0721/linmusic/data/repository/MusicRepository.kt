@@ -105,9 +105,6 @@ interface MusicRepository {
     // 获取最爱的歌手（优先已关注，兜底热门）
     fun getFavoriteArtists(): Flow<Result<List<ArtistInfo>>>
 
-    // 获取当前登录账号信息
-    fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.core.api.AccountInfoResponse>>
-
     // 获取最近播放歌单
     fun getRecentPlaylists(): Flow<Result<List<com.lin0721.linmusic.core.api.RecentPlayItem>>>
 
@@ -226,9 +223,6 @@ interface MusicRepository {
 
     // 每日签到
     fun dailySignin(type: Int): Flow<Result<Int>> // 返回签到获得的积分数
-
-    // 退出登录并清理网络会话
-    fun logout(): Flow<Result<Unit>>
 
     // 上传并更换头像
     fun uploadAvatar(file: java.io.File): Flow<Result<String>>
