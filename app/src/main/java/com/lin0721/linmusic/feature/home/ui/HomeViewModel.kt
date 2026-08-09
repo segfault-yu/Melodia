@@ -7,9 +7,9 @@ import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.api.AccountInfoResponse
 import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.core.auth.AuthRepository
-import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
+import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +27,7 @@ import com.lin0721.linmusic.player.QueueItem
 
 // 首页 ViewModel
 class HomeViewModel(
-    private val musicRepository: MusicRepository,
+    private val playerRepository: PlayerRepository,
     private val homeRepository: HomeRepository,
     private val artistRepository: ArtistRepository,
     val playerManager: PlayerManager,
@@ -109,7 +109,7 @@ class HomeViewModel(
 
     fun playSong(songId: Long, title: String, artist: String, coverUrl: String, startPosition: Long = 0, playContext: String? = null) {
         viewModelScope.launch {
-            musicRepository.getSongUrl(songId).collect { result ->
+            playerRepository.getSongUrl(songId).collect { result ->
                 result.onSuccess { url ->
                     playerManager.playAudio(songId, url, title, artist, coverUrl, startPosition, playContext)
                 }.onFailure { error ->
@@ -175,7 +175,7 @@ class HomeViewModel(
             val artist = current.mediaMetadata.artist?.toString() ?: ""
             val coverUrl = current.mediaMetadata.artworkUri?.toString() ?: ""
             viewModelScope.launch {
-                musicRepository.getSimilarSongs(songId).collect { result ->
+                playerRepository.getSimilarSongs(songId).collect { result ->
                     result.onSuccess { simiSongs ->
                         if (simiSongs.isNotEmpty()) {
                             val currentItem = QueueItem(songId, title, artist, coverUrl)
@@ -203,7 +203,7 @@ class HomeViewModel(
             if (state is HomeUiState.Success && state.data.dailySongs.isNotEmpty()) {
                 val firstSong = state.data.dailySongs.first()
                 viewModelScope.launch {
-                    musicRepository.getSimilarSongs(firstSong.id).collect { result ->
+                    playerRepository.getSimilarSongs(firstSong.id).collect { result ->
                         result.onSuccess { simiSongs ->
                             val currentItem = QueueItem(firstSong.id, firstSong.name, firstSong.ar.joinToString("/") { it.name }, firstSong.al.picUrl)
                             val simiItems = simiSongs.map { track ->
@@ -229,7 +229,7 @@ class HomeViewModel(
         if (current != null) {
             val songId = current.mediaId?.toLongOrNull() ?: return
             viewModelScope.launch {
-                musicRepository.getIntelligenceSongs(songId, 0).collect { result ->
+                playerRepository.getIntelligenceSongs(songId, 0).collect { result ->
                     result.onSuccess { tracks ->
                         if (tracks.isNotEmpty()) {
                             val currentItem = QueueItem(
@@ -256,7 +256,7 @@ class HomeViewModel(
                                         if (state is HomeUiState.Success && state.data.dailySongs.isNotEmpty()) {
                                             val firstSong = state.data.dailySongs.first()
                                             viewModelScope.launch {
-                                                musicRepository.getIntelligenceSongs(firstSong.id, 0).collect { result ->
+                                                playerRepository.getIntelligenceSongs(firstSong.id, 0).collect { result ->
                                                     result.onSuccess { tracks ->
                                                         val currentItem = QueueItem(firstSong.id, firstSong.name, firstSong.ar.joinToString("/") { it.name }, firstSong.al.picUrl)
                                                         val items = listOf(currentItem) + tracks.map { track ->

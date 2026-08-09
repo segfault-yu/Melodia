@@ -12,6 +12,8 @@ import com.lin0721.linmusic.feature.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.comment.data.CommentRepositoryImpl
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepositoryImpl
+import com.lin0721.linmusic.feature.player.data.PlayerRepository
+import com.lin0721.linmusic.feature.player.data.PlayerRepositoryImpl
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepositoryImpl
 import com.lin0721.linmusic.feature.search.data.SearchRepository
@@ -48,5 +50,8 @@ val repositoryModule = module {
 
     // 歌单/专辑/红心数据仓储（feature/playlist）
     singleOf(::PlaylistRepositoryImpl) { bind<PlaylistRepository>() }
+
+    // 播放数据仓储（feature/player）
+    singleOf(::PlayerRepositoryImpl) { bind<PlayerRepository>() }
 
 }

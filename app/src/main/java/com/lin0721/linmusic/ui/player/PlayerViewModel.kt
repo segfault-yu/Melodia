@@ -9,14 +9,14 @@ import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.ArtistDetailInfo
 import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
-import com.lin0721.linmusic.data.repository.LyricLine
-import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
+import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
-import com.lin0721.linmusic.data.repository.SongWikiData
+import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +51,7 @@ data class PlayerSongDetailState(
 
 class PlayerViewModel(
     private val context: Context,
-    private val repository: MusicRepository,
+    private val playerRepository: PlayerRepository,
     private val artistRepository: ArtistRepository,
     private val commentRepository: CommentRepository,
     private val playlistRepository: PlaylistRepository,
@@ -202,7 +202,7 @@ class PlayerViewModel(
     private fun loadLyrics(songId: Long) {
         viewModelScope.launch {
             _songDetailState.update { it.copy(isLyricsLoading = true) }
-            repository.getLyrics(songId).collect { result ->
+            playerRepository.getLyrics(songId).collect { result ->
                 result.onSuccess { lines ->
                     if (currentSongId == songId) _songDetailState.update { it.copy(lyrics = lines) }
                 }.onFailure {
@@ -215,7 +215,7 @@ class PlayerViewModel(
 
     private fun loadSongDetail(songId: Long) {
         viewModelScope.launch {
-            repository.getSongDetail(songId).collect { result ->
+            playerRepository.getSongDetail(songId).collect { result ->
                 result.onSuccess { track ->
                     if (currentSongId != songId) return@onSuccess
                     _songDetailState.update { it.copy(songDetail = track) }
@@ -233,7 +233,7 @@ class PlayerViewModel(
     // 异步加载歌曲详情与音乐百科信息
     private fun loadSongWiki(songId: Long) {
         viewModelScope.launch {
-            repository.getSongWiki(songId).collect { result ->
+            playerRepository.getSongWiki(songId).collect { result ->
                 if (currentSongId == songId) {
                     _songDetailState.update { it.copy(songWiki = result.getOrNull()) }
                 }
@@ -430,7 +430,7 @@ class PlayerViewModel(
     // 开启相似歌曲漫游逻辑
     fun startSimilarSongsRoaming(songId: Long, currentTitle: String, currentArtist: String, currentCoverUrl: String) {
         viewModelScope.launch {
-            repository.getSimilarSongs(songId).collect { result ->
+            playerRepository.getSimilarSongs(songId).collect { result ->
                 result.onSuccess { simiSongs ->
                     if (simiSongs.isNotEmpty()) {
                         val currentItem = QueueItem(songId, currentTitle, currentArtist, currentCoverUrl)
@@ -458,7 +458,7 @@ class PlayerViewModel(
     // 插播一首相似歌曲到下一首位置
     fun insertSimilarSongs(songId: Long) {
         viewModelScope.launch {
-            repository.getSimilarSongs(songId).collect { result ->
+            playerRepository.getSimilarSongs(songId).collect { result ->
                 result.onSuccess { simiSongs ->
                     val firstSong = simiSongs.firstOrNull()
                     if (firstSong != null) {

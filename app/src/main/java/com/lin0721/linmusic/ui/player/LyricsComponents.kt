@@ -73,7 +73,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lin0721.linmusic.data.repository.LyricLine
+import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
