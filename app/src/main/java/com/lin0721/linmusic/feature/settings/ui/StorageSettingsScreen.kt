@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.settings
+package com.lin0721.linmusic.feature.settings.ui
 
 import android.content.Context
 import androidx.compose.foundation.clickable

@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.settings
+package com.lin0721.linmusic.feature.settings.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text

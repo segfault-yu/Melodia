@@ -471,7 +471,7 @@ fun MelodiaApp() {
                             )
                         }
                         Screen.Settings -> {
-                            com.lin0721.linmusic.ui.settings.SettingsScreen(
+                            com.lin0721.linmusic.feature.settings.ui.SettingsScreen(
                                 onBack = navigateBack
                             )
                         }

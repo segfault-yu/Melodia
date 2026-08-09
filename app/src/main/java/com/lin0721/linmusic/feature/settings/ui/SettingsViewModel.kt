@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.settings
+package com.lin0721.linmusic.feature.settings.ui
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -9,7 +9,7 @@ import com.lin0721.linmusic.core.api.UserBindingItem
 import com.lin0721.linmusic.core.api.UserLevelData
 import com.lin0721.linmusic.core.api.VipInfoData
 import com.lin0721.linmusic.core.auth.AuthRepository
-import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.settings.data.SettingsRepository
 import com.lin0721.linmusic.player.AudioCacheManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class)
 class SettingsViewModel(
-    private val musicRepository: MusicRepository,
+    private val settingsRepository: SettingsRepository,
     private val settingsPreferences: SettingsPreferences,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -163,7 +163,7 @@ class SettingsViewModel(
                     _isNicknameDuplicated.value = false
                     return@onEach
                 }
-                musicRepository.checkNickname(name).collect { result ->
+                settingsRepository.checkNickname(name).collect { result ->
                     result.onSuccess { duplicated ->
                         _isNicknameDuplicated.value = duplicated
                     }.onFailure {
@@ -298,17 +298,17 @@ class SettingsViewModel(
 
             // 并发获取用户等级、VIP 信息和绑定第三方账号信息
             launch {
-                musicRepository.getUserLevel().collect { res ->
+                settingsRepository.getUserLevel().collect { res ->
                     res.onSuccess { _userLevel.value = it }
                 }
             }
             launch {
-                musicRepository.getVipInfo().collect { res ->
+                settingsRepository.getVipInfo().collect { res ->
                     res.onSuccess { _vipInfo.value = it }
                 }
             }
             launch {
-                musicRepository.getUserBindings(profile.uid).collect { res ->
+                settingsRepository.getUserBindings(profile.uid).collect { res ->
                     res.onSuccess { _userBindings.value = it }
                 }
             }
@@ -319,7 +319,7 @@ class SettingsViewModel(
     // 每日签到
     fun executeDailySignin(type: Int = 0) {
         viewModelScope.launch {
-            musicRepository.dailySignin(type).collect { res ->
+            settingsRepository.dailySignin(type).collect { res ->
                 res.onSuccess { point ->
                     if (point > 0) {
                         _toastEvent.emit("签到成功！积分+$point")
@@ -337,7 +337,7 @@ class SettingsViewModel(
     fun uploadUserAvatar(file: java.io.File) {
         viewModelScope.launch {
             _isLoading.value = true
-            musicRepository.uploadAvatar(file).collect { res ->
+            settingsRepository.uploadAvatar(file).collect { res ->
                 res.onSuccess { newUrl ->
                     // 更新本地用户元数据
                     val currentProfile = userPreferences.userProfile.first()
@@ -357,7 +357,7 @@ class SettingsViewModel(
     fun saveProfileChanges(nickname: String, signature: String, onFinished: (Boolean) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
-            musicRepository.updateUserProfile(
+            settingsRepository.updateUserProfile(
                 nickname = nickname,
                 gender = 1,
                 birthday = 0L,

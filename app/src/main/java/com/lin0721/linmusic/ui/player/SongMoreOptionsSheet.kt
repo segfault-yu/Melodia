@@ -34,7 +34,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.window.Dialog
-import com.lin0721.linmusic.ui.settings.getQualityDisplayName
+import com.lin0721.linmusic.feature.settings.ui.getQualityDisplayName
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
