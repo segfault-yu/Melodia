@@ -2,6 +2,7 @@ package com.lin0721.linmusic.data.repository
 
 import com.lin0721.linmusic.data.local.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
+import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import okhttp3.MediaType.Companion.toMediaType
 import com.lin0721.linmusic.core.api.*
 import com.lin0721.linmusic.ui.home.*
@@ -16,6 +17,7 @@ class MusicRepositoryImpl(
     private val apiService: NeteaseApiService,
     private val settingsPreferences: SettingsPreferences,
     private val userPreferences: UserPreferences,
+    private val contentFilter: ContentFilter,
     private val context: android.content.Context
 ) : MusicRepository {
 
@@ -33,10 +35,7 @@ class MusicRepositoryImpl(
         if (response.isSuccess && response.result != null) {
             val songs = response.result.songs ?: emptyList()
             val total = response.result.songCount
-            val blockedIds = userPreferences.blockedArtistIds.first()
-            val filteredSongs = songs.filter { song ->
-                song.ar.none { artist -> blockedIds.contains(artist.id) }
-            }
+            val filteredSongs = contentFilter.filterBlockedArtists(songs) { it.ar.map { a -> a.id } }
             val hasMore = if (filteredSongs.isEmpty()) false else (offset + songs.size < total)
             emit(Result.success(SearchSongsResult(filteredSongs, total, hasMore)))
         } else {
@@ -182,10 +181,7 @@ class MusicRepositoryImpl(
     override fun getPlaylistDetail(id: Long): Flow<Result<PlaylistDetail>> = flow {
         val response = apiService.getPlaylistDetail(PlaylistDetailRequest(id = id))
         if (response.isSuccess && response.playlist != null) {
-            val blockedIds = userPreferences.blockedArtistIds.first()
-            val filteredTracks = response.playlist.tracks.filter { track ->
-                track.ar.none { artist -> blockedIds.contains(artist.id) }
-            }
+            val filteredTracks = contentFilter.filterBlockedArtists(response.playlist.tracks) { it.ar.map { a -> a.id } }
             emit(Result.success(response.playlist.copy(tracks = filteredTracks)))
         } else {
             emit(Result.failure(Exception("Failed to load playlist detail: code ${response.code}")))
@@ -199,10 +195,7 @@ class MusicRepositoryImpl(
         val response = apiService.getAlbumDetail(id = id)
         if (response.isSuccess) {
             val album = response.album
-            val blockedIds = userPreferences.blockedArtistIds.first()
-            val filteredTracks = response.songs.filter { track ->
-                track.ar.none { artist -> blockedIds.contains(artist.id) }
-            }
+            val filteredTracks = contentFilter.filterBlockedArtists(response.songs) { it.ar.map { a -> a.id } }
             val detail = PlaylistDetail(
                 id = album.id,
                 name = album.name,
@@ -328,10 +321,7 @@ class MusicRepositoryImpl(
     override fun getDailyRecommendSongs(): Flow<Result<List<DailySong>>> = flow {
         val response = apiService.getDailyRecommendSongs()
         if (response.isSuccess && response.data != null) {
-            val blockedIds = userPreferences.blockedArtistIds.first()
-            val filteredSongs = response.data.dailySongs.filter { song ->
-                song.ar.none { artist -> blockedIds.contains(artist.id) }
-            }
+            val filteredSongs = contentFilter.filterBlockedArtists(response.data.dailySongs) { it.ar.map { a -> a.id } }
             emit(Result.success(filteredSongs))
         } else {
             emit(Result.failure(Exception("Failed to load daily recommend songs: code ${response.code}")))
@@ -354,10 +344,7 @@ class MusicRepositoryImpl(
     override fun getHistoryRecommendDetail(date: String): Flow<Result<List<DailySong>>> = flow {
         val response = apiService.getHistoryRecommendDetail(HistoryDetailRequest(date = date))
         if (response.code == 200 && response.data != null) {
-            val blockedIds = userPreferences.blockedArtistIds.first()
-            val filteredSongs = response.data.dailySongs.filter { song ->
-                song.ar.none { artist -> blockedIds.contains(artist.id) }
-            }
+            val filteredSongs = contentFilter.filterBlockedArtists(response.data.dailySongs) { it.ar.map { a -> a.id } }
             emit(Result.success(filteredSongs))
         } else {
             emit(Result.failure(Exception("Failed to load history detail: code ${response.code}")))
@@ -408,10 +395,7 @@ class MusicRepositoryImpl(
             } else {
                 response.allData?.map { it.song } ?: emptyList()
             }
-            val blockedIds = userPreferences.blockedArtistIds.first()
-            val filteredTracks = list.filter { track ->
-                track.ar.none { artist -> blockedIds.contains(artist.id) }
-            }
+            val filteredTracks = contentFilter.filterBlockedArtists(list) { it.ar.map { a -> a.id } }
             emit(Result.success(filteredTracks))
         } else {
             emit(Result.failure(Exception("获取听歌排行失败: code ${response.code}")))
@@ -610,10 +594,7 @@ class MusicRepositoryImpl(
         // 传入 songId.toString()
         val response = apiService.getSimiSongs(SimiSongRequest(songid = songId.toString()))
         if (response.isSuccess) {
-            val blockedIds = userPreferences.blockedArtistIds.first()
-            val filteredTracks = response.songs.filter { track ->
-                track.ar.none { artist -> blockedIds.contains(artist.id) }
-            }
+            val filteredTracks = contentFilter.filterBlockedArtists(response.songs) { it.ar.map { a -> a.id } }
             emit(Result.success(filteredTracks))
         } else {
             emit(Result.failure(Exception("获取相似歌曲失败: code ${response.code}")))
@@ -654,20 +635,15 @@ class MusicRepositoryImpl(
             }
         }
 
-        val blockedIds = userPreferences.blockedArtistIds.first()
         if (success) {
-            val filteredTracks = tracksList.filter { track ->
-                track.ar.none { artist -> blockedIds.contains(artist.id) }
-            }
+            val filteredTracks = contentFilter.filterBlockedArtists(tracksList) { it.ar.map { a -> a.id } }
             emit(Result.success(filteredTracks))
         } else {
             // 若心动模式报错或不支持，自动通过相似歌曲接口获取推荐
             try {
                 val simiResponse = apiService.getSimiSongs(SimiSongRequest(songid = songId.toString()))
                 if (simiResponse.isSuccess) {
-                    val filteredSimi = simiResponse.songs.filter { track ->
-                        track.ar.none { artist -> blockedIds.contains(artist.id) }
-                    }
+                    val filteredSimi = contentFilter.filterBlockedArtists(simiResponse.songs) { it.ar.map { a -> a.id } }
                     emit(Result.success(filteredSimi))
                 } else {
                     emit(Result.failure(Exception("获取智能推荐与相似推荐均失败")))
