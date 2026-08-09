@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.TextGray
 
 @Composable
 fun MiniPlayer(

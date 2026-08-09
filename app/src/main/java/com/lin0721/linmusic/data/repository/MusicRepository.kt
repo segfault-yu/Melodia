@@ -1,12 +1,12 @@
 package com.lin0721.linmusic.data.repository
 
-import com.lin0721.linmusic.data.remote.api.PlaylistDetail
-import com.lin0721.linmusic.data.remote.api.PersonalizedData
-import com.lin0721.linmusic.data.remote.api.ArtistAlbum
-import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
-import com.lin0721.linmusic.data.remote.api.Artist
-import com.lin0721.linmusic.data.remote.api.DailySong
-import com.lin0721.linmusic.data.remote.api.Track
+import com.lin0721.linmusic.core.api.PlaylistDetail
+import com.lin0721.linmusic.core.api.PersonalizedData
+import com.lin0721.linmusic.core.api.ArtistAlbum
+import com.lin0721.linmusic.core.api.ArtistDetailInfo
+import com.lin0721.linmusic.core.api.Artist
+import com.lin0721.linmusic.core.api.DailySong
+import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.ui.home.HomeFeedPage
 import kotlinx.coroutines.flow.Flow
 
@@ -29,7 +29,7 @@ data class ArtistInfo(
 
 // 搜索结果领域模型
 data class SearchSongsResult(
-    val songs: List<com.lin0721.linmusic.data.remote.api.SearchSong>,
+    val songs: List<com.lin0721.linmusic.core.api.SearchSong>,
     val totalCount: Int,
     val hasMore: Boolean
 )
@@ -81,7 +81,7 @@ interface MusicRepository {
     fun getPlaylistTags(): Flow<Result<List<PlaylistTag>>>
 
     // 获取发现页（Search Screen）原始区块结构
-    fun getDiscoveryBlocks(refresh: Boolean = true, cursor: String? = null): Flow<Result<List<com.lin0721.linmusic.data.remote.api.HomepageBlock>>>
+    fun getDiscoveryBlocks(refresh: Boolean = true, cursor: String? = null): Flow<Result<List<com.lin0721.linmusic.core.api.HomepageBlock>>>
 
     // ================== 首页内容 ==================
     // 获取首页动态内容 (支持分页)
@@ -106,10 +106,10 @@ interface MusicRepository {
     fun getFavoriteArtists(): Flow<Result<List<ArtistInfo>>>
 
     // 获取当前登录账号信息
-    fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.data.remote.api.AccountInfoResponse>>
+    fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.core.api.AccountInfoResponse>>
 
     // 获取最近播放歌单
-    fun getRecentPlaylists(): Flow<Result<List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>>>
+    fun getRecentPlaylists(): Flow<Result<List<com.lin0721.linmusic.core.api.RecentPlayItem>>>
 
     // ================== 每日推荐 ==================
 
@@ -127,16 +127,16 @@ interface MusicRepository {
 
     // ================== 音乐库 ==================
     // 获取用户歌单
-    fun getUserPlaylists(uid: Long, limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.data.remote.api.UserPlaylist>>>
+    fun getUserPlaylists(uid: Long, limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.core.api.UserPlaylist>>>
 
     // 获取听歌排行
     fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>>
 
     // 获取收藏专辑
-    fun getCollectedAlbums(limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.data.remote.api.AlbumSubItem>>>
+    fun getCollectedAlbums(limit: Int = 1000): Flow<Result<List<com.lin0721.linmusic.core.api.AlbumSubItem>>>
 
     // 获取各分类收藏数
-    fun getUserSubcount(): Flow<Result<com.lin0721.linmusic.data.remote.api.UserSubcountResponse>>
+    fun getUserSubcount(): Flow<Result<com.lin0721.linmusic.core.api.UserSubcountResponse>>
 
     // 创建歌单
     fun createPlaylist(name: String, privacy: Int = 0): Flow<Result<PlaylistDetail>>
@@ -195,10 +195,10 @@ interface MusicRepository {
 
     // ================== 评论 ==================
 
-    fun getComments(songId: Long, limit: Int = 20, offset: Int = 0): Flow<Result<com.lin0721.linmusic.data.remote.api.CommentsResponse>>
+    fun getComments(songId: Long, limit: Int = 20, offset: Int = 0): Flow<Result<com.lin0721.linmusic.core.api.CommentsResponse>>
 
     // 获取通用资源的评论 (例如歌单 A_PL_0_ID)
-    fun getComments(threadId: String, limit: Int = 20, offset: Int = 0): Flow<Result<com.lin0721.linmusic.data.remote.api.CommentsResponse>>
+    fun getComments(threadId: String, limit: Int = 20, offset: Int = 0): Flow<Result<com.lin0721.linmusic.core.api.CommentsResponse>>
 
     // 评论点赞/取消点赞
     fun likeComment(threadId: String, commentId: Long, like: Boolean): Flow<Result<Unit>>
@@ -210,13 +210,13 @@ interface MusicRepository {
 
     // ================== 设置和隐私扩展 ==================
     // 获取用户等级信息
-    fun getUserLevel(): Flow<Result<com.lin0721.linmusic.data.remote.api.UserLevelData>>
+    fun getUserLevel(): Flow<Result<com.lin0721.linmusic.core.api.UserLevelData>>
 
     // 获取 VIP 状态信息
-    fun getVipInfo(): Flow<Result<com.lin0721.linmusic.data.remote.api.VipInfoData>>
+    fun getVipInfo(): Flow<Result<com.lin0721.linmusic.core.api.VipInfoData>>
 
     // 获取账号绑定信息
-    fun getUserBindings(uid: Long): Flow<Result<List<com.lin0721.linmusic.data.remote.api.UserBindingItem>>>
+    fun getUserBindings(uid: Long): Flow<Result<List<com.lin0721.linmusic.core.api.UserBindingItem>>>
 
     // 修改用户个人资料
     fun updateUserProfile(nickname: String, gender: Int, birthday: Long, province: Int, city: Int, signature: String): Flow<Result<Unit>>

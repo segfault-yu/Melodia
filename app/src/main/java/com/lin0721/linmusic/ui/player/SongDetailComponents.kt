@@ -26,13 +26,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.data.remote.api.ArtistAlbum
-import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
-import com.lin0721.linmusic.data.remote.api.Track
+import com.lin0721.linmusic.core.api.ArtistAlbum
+import com.lin0721.linmusic.core.api.ArtistDetailInfo
+import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.data.repository.SongWikiData
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.TextGray
 
 @Composable
 fun SongDetailCard(

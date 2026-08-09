@@ -23,9 +23,9 @@ import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import com.lin0721.linmusic.R
-import com.lin0721.linmusic.ui.components.ToastManager
-import com.lin0721.linmusic.ui.theme.SurfaceLight
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.theme.SurfaceLight
+import com.lin0721.linmusic.core.ui.theme.TextGray
 
 @Composable
 fun AboutSettingsView() {

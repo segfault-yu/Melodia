@@ -57,16 +57,16 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lin0721.linmusic.ui.components.MelodiaNavigationBar
-import com.lin0721.linmusic.ui.components.MiniPlayerCard
-import com.lin0721.linmusic.ui.components.ProfileSidebar
+import com.lin0721.linmusic.core.ui.components.MelodiaNavigationBar
+import com.lin0721.linmusic.core.ui.components.MiniPlayerCard
+import com.lin0721.linmusic.core.ui.components.ProfileSidebar
 import com.lin0721.linmusic.ui.create.CreatePopupMenu
 import com.lin0721.linmusic.ui.home.HomeScreen
 import com.lin0721.linmusic.ui.home.HomeViewModel
 import com.lin0721.linmusic.ui.player.FullPlayerScreen
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.MelodiaTheme
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.MelodiaTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import kotlinx.coroutines.launch
@@ -206,7 +206,7 @@ fun MelodiaApp() {
     var toastTrigger by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
-        com.lin0721.linmusic.ui.components.ToastManager.toastFlow.collect { msg ->
+        com.lin0721.linmusic.core.ui.components.ToastManager.toastFlow.collect { msg ->
             toastMessage = msg
             toastTrigger++
         }
@@ -665,7 +665,7 @@ fun MelodiaApp() {
                     .zIndex(999f)
             ) {
                 toastMessage?.let { msg ->
-                    com.lin0721.linmusic.ui.components.CustomToast(message = msg)
+                    com.lin0721.linmusic.core.ui.components.CustomToast(message = msg)
                 }
             }
         }

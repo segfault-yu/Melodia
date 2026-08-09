@@ -23,12 +23,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.window.Dialog
-import com.lin0721.linmusic.ui.components.CreatePlaylistDialog
-import com.lin0721.linmusic.ui.components.LoginBottomSheet
-import com.lin0721.linmusic.ui.components.MelodiaDragHandle
-import com.lin0721.linmusic.ui.components.SongRow
-import com.lin0721.linmusic.ui.components.SongRowData
-import com.lin0721.linmusic.ui.components.WebViewLoginScreen
+import com.lin0721.linmusic.core.ui.components.CreatePlaylistDialog
+import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
+import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
+import com.lin0721.linmusic.core.ui.components.SongRow
+import com.lin0721.linmusic.core.ui.components.SongRowData
+import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
 import com.lin0721.linmusic.ui.player.CommentsBottomSheet
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,7 +39,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import com.lin0721.linmusic.ui.theme.extractDominantColor
+import com.lin0721.linmusic.core.ui.theme.extractDominantColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -52,10 +52,10 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.lin0721.linmusic.data.remote.api.PlaylistDetail
-import com.lin0721.linmusic.data.remote.api.Track
-import com.lin0721.linmusic.ui.theme.BottomSheetShape
-import com.lin0721.linmusic.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.api.PlaylistDetail
+import com.lin0721.linmusic.core.api.Track
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.SolidColor
@@ -103,7 +103,7 @@ fun PlaylistScreen(
     }
 
     LaunchedEffect(viewModel) {
-        viewModel.toastEvent.collect { com.lin0721.linmusic.ui.components.ToastManager.showToast(it) }
+        viewModel.toastEvent.collect { com.lin0721.linmusic.core.ui.components.ToastManager.showToast(it) }
     }
     LaunchedEffect(playlistId, isAlbum) {
         viewModel.loadPlaylist(playlistId, isAlbum)
@@ -286,7 +286,7 @@ fun PlaylistScreen(
                             if (firstArtist != null) {
                                 onArtistClick(firstArtist.id)
                             } else {
-                                com.lin0721.linmusic.ui.components.ToastManager.showToast("未找到关联艺人信息")
+                                com.lin0721.linmusic.core.ui.components.ToastManager.showToast("未找到关联艺人信息")
                             }
                         },
                         PlaylistMenuItem(
@@ -303,7 +303,7 @@ fun PlaylistScreen(
                             subtitle = "将全部歌曲导入到其他歌单"
                         ) {
                             showMoreMenuSheet = false
-                            com.lin0721.linmusic.ui.components.ToastManager.showToast("批量导入功能开发中，敬请期待")
+                            com.lin0721.linmusic.core.ui.components.ToastManager.showToast("批量导入功能开发中，敬请期待")
                         }
                     )
                     
@@ -1083,7 +1083,7 @@ private fun PlaylistContent(
                             if (track.al.id > 0) {
                                 onAlbumClick(track.al.id)
                             } else {
-                                com.lin0721.linmusic.ui.components.ToastManager.showToast("暂无专辑信息")
+                                com.lin0721.linmusic.core.ui.components.ToastManager.showToast("暂无专辑信息")
                             }
                         }
                     )

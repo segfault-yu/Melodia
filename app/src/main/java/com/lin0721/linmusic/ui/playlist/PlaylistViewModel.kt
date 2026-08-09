@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.UserPreferences
 import com.lin0721.linmusic.data.local.UserProfile
-import com.lin0721.linmusic.data.remote.api.PlaylistDetail
-import com.lin0721.linmusic.data.remote.api.Track
+import com.lin0721.linmusic.core.api.PlaylistDetail
+import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
@@ -15,8 +15,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.ui.player.CommentsState
-import com.lin0721.linmusic.data.remote.api.CommentItem
-import com.lin0721.linmusic.data.remote.api.DailySong
+import com.lin0721.linmusic.core.api.CommentItem
+import com.lin0721.linmusic.core.api.DailySong
 
 
 data class PlaylistCollectItem(

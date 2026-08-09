@@ -1,9 +1,9 @@
 package com.lin0721.linmusic.di
 
-import com.lin0721.linmusic.data.remote.api.NeteaseApiService
-import com.lin0721.linmusic.data.remote.network.CryptoInterceptor
-import com.lin0721.linmusic.data.remote.network.EmptyBodyInterceptor
-import com.lin0721.linmusic.data.remote.network.HeaderInterceptor
+import com.lin0721.linmusic.core.api.NeteaseApiService
+import com.lin0721.linmusic.core.network.CryptoInterceptor
+import com.lin0721.linmusic.core.network.EmptyBodyInterceptor
+import com.lin0721.linmusic.core.network.HeaderInterceptor
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient

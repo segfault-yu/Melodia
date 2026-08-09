@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.data.remote.crypto
+package com.lin0721.linmusic.core.network.crypto
 
 import java.util.Base64
 import java.math.BigInteger

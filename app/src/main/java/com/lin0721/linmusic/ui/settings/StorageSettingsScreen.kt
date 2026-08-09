@@ -14,9 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.TextGray
 
 @Composable
 fun StorageSettingsView(viewModel: SettingsViewModel, context: Context) {

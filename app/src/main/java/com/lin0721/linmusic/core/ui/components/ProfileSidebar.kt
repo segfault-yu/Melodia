@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.components
+package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -33,11 +33,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.data.local.UserProfile
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.SurfaceLight
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.SurfaceLight
+import com.lin0721.linmusic.core.ui.theme.TextGray
 
 
  // 侧边栏 

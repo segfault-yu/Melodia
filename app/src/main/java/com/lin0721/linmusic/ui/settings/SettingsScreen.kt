@@ -24,8 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lin0721.linmusic.ui.components.ToastManager
-import com.lin0721.linmusic.ui.theme.*
+import com.lin0721.linmusic.core.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 

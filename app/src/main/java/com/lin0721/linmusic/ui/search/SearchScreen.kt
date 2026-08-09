@@ -34,15 +34,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.data.remote.api.SearchSong
+import com.lin0721.linmusic.core.api.SearchSong
 import com.lin0721.linmusic.data.repository.HotSearch
 import com.lin0721.linmusic.data.repository.PlaylistTag
-import com.lin0721.linmusic.ui.components.SongRow
-import com.lin0721.linmusic.ui.components.SongRowData
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.components.SongRow
+import com.lin0721.linmusic.core.ui.components.SongRowData
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.TextGray
 import org.koin.androidx.compose.koinViewModel
 
 private val tagFallbackColors = listOf(
@@ -77,7 +77,7 @@ fun SearchScreen(
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(viewModel) {
-        viewModel.toastEvent.collect { com.lin0721.linmusic.ui.components.ToastManager.showToast(it) }
+        viewModel.toastEvent.collect { com.lin0721.linmusic.core.ui.components.ToastManager.showToast(it) }
     }
 
     val focusRequester = remember { FocusRequester() }
@@ -128,7 +128,7 @@ fun SearchScreen(
                     modifier = Modifier
                         .size(36.dp)
                         .clickable {
-                            com.lin0721.linmusic.ui.components.ToastManager.showToast("请先在主页登录以显示侧边栏哦！")
+                            com.lin0721.linmusic.core.ui.components.ToastManager.showToast("请先在主页登录以显示侧边栏哦！")
                         }
                 )
             }

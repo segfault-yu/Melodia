@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.components
+package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,12 +35,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.media3.common.MediaItem
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.Screen
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.TextGray
-import com.lin0721.linmusic.ui.theme.ColorPalette
-import com.lin0721.linmusic.ui.theme.extractColorPalette
-import com.lin0721.linmusic.ui.theme.PaletteMemoryCache
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.ColorPalette
+import com.lin0721.linmusic.core.ui.theme.extractColorPalette
+import com.lin0721.linmusic.core.ui.theme.PaletteMemoryCache
 import dev.chrisbanes.haze.HazeState
 import androidx.compose.ui.platform.LocalContext
 import coil.request.ImageRequest

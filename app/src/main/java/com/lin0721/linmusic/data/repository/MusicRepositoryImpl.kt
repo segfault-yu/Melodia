@@ -3,7 +3,7 @@ package com.lin0721.linmusic.data.repository
 import com.lin0721.linmusic.data.local.SettingsPreferences
 import com.lin0721.linmusic.data.local.UserPreferences
 import okhttp3.MediaType.Companion.toMediaType
-import com.lin0721.linmusic.data.remote.api.*
+import com.lin0721.linmusic.core.api.*
 import com.lin0721.linmusic.ui.home.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -314,7 +314,7 @@ class MusicRepositoryImpl(
         }
     }
 
-    override fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.data.remote.api.AccountInfoResponse>> = flow {
+    override fun getAccountInfo(): Flow<Result<com.lin0721.linmusic.core.api.AccountInfoResponse>> = flow {
         val response = apiService.getAccountInfo()
         if (response.code == 200) {
             emit(Result.success(response))
@@ -400,8 +400,8 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
-    override fun getUserPlaylists(uid: Long, limit: Int): Flow<Result<List<com.lin0721.linmusic.data.remote.api.UserPlaylist>>> = flow {
-        val response = apiService.getUserPlaylists(com.lin0721.linmusic.data.remote.api.UserPlaylistRequest(uid = uid, limit = limit))
+    override fun getUserPlaylists(uid: Long, limit: Int): Flow<Result<List<com.lin0721.linmusic.core.api.UserPlaylist>>> = flow {
+        val response = apiService.getUserPlaylists(com.lin0721.linmusic.core.api.UserPlaylistRequest(uid = uid, limit = limit))
         if (response.isSuccess) {
             emit(Result.success(response.playlist))
         } else {
@@ -431,8 +431,8 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
-    override fun getCollectedAlbums(limit: Int): Flow<Result<List<com.lin0721.linmusic.data.remote.api.AlbumSubItem>>> = flow {
-        val response = apiService.getAlbumSublist(com.lin0721.linmusic.data.remote.api.AlbumSublistRequest(limit = limit))
+    override fun getCollectedAlbums(limit: Int): Flow<Result<List<com.lin0721.linmusic.core.api.AlbumSubItem>>> = flow {
+        val response = apiService.getAlbumSublist(com.lin0721.linmusic.core.api.AlbumSublistRequest(limit = limit))
         if (response.isSuccess) {
             emit(Result.success(response.data))
         } else {
@@ -442,7 +442,7 @@ class MusicRepositoryImpl(
         emit(Result.failure(e))
     }
 
-    override fun getUserSubcount(): Flow<Result<com.lin0721.linmusic.data.remote.api.UserSubcountResponse>> = flow {
+    override fun getUserSubcount(): Flow<Result<com.lin0721.linmusic.core.api.UserSubcountResponse>> = flow {
         val response = apiService.getUserSubcount()
         if (response.isSuccess) {
             emit(Result.success(response))
@@ -454,7 +454,7 @@ class MusicRepositoryImpl(
     }
 
     override fun createPlaylist(name: String, privacy: Int): Flow<Result<PlaylistDetail>> = flow {
-        val response = apiService.createPlaylist(com.lin0721.linmusic.data.remote.api.PlaylistCreateRequest(name = name, privacy = privacy))
+        val response = apiService.createPlaylist(com.lin0721.linmusic.core.api.PlaylistCreateRequest(name = name, privacy = privacy))
         if (response.isSuccess && response.playlist != null) {
             emit(Result.success(response.playlist))
         } else {
@@ -466,7 +466,7 @@ class MusicRepositoryImpl(
 
     override fun getLyrics(songId: Long): Flow<Result<List<LyricLine>>> = flow {
         val response = apiService.getLyrics(
-            com.lin0721.linmusic.data.remote.api.LyricRequest(
+            com.lin0721.linmusic.core.api.LyricRequest(
                 id = songId,
                 tv = -1,
                 lv = -1,
@@ -587,7 +587,7 @@ class MusicRepositoryImpl(
         return parseLrc(lrcText).associate { it.timeMs to it.text }
     }
 
-    override fun getSongDetail(songId: Long): Flow<Result<com.lin0721.linmusic.data.remote.api.Track>> = flow {
+    override fun getSongDetail(songId: Long): Flow<Result<com.lin0721.linmusic.core.api.Track>> = flow {
         val c = """[{"id":$songId}]"""
         val response = apiService.getSongDetail(SongDetailRequest(c = c))
         if (response.isSuccess && response.songs.isNotEmpty()) {

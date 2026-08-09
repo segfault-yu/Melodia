@@ -49,19 +49,19 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.lin0721.linmusic.data.remote.api.ArtistAlbum
-import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
-import com.lin0721.linmusic.data.remote.api.Track
+import com.lin0721.linmusic.core.api.ArtistAlbum
+import com.lin0721.linmusic.core.api.ArtistDetailInfo
+import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.data.repository.ArtistInfo
-import com.lin0721.linmusic.ui.components.CreatePlaylistDialog
-import com.lin0721.linmusic.ui.components.LoginBottomSheet
-import com.lin0721.linmusic.ui.components.MelodiaDragHandle
-import com.lin0721.linmusic.ui.components.SongRow
-import com.lin0721.linmusic.ui.components.SongRowData
-import com.lin0721.linmusic.ui.components.WebViewLoginScreen
-import com.lin0721.linmusic.ui.theme.BottomSheetShape
-import com.lin0721.linmusic.ui.theme.MelodiaSpacing
-import com.lin0721.linmusic.ui.theme.extractDominantColor
+import com.lin0721.linmusic.core.ui.components.CreatePlaylistDialog
+import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
+import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
+import com.lin0721.linmusic.core.ui.components.SongRow
+import com.lin0721.linmusic.core.ui.components.SongRowData
+import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.extractDominantColor
 import com.lin0721.linmusic.ui.playlist.PlaylistCollectState
 import com.lin0721.linmusic.ui.playlist.PlaylistCollectItem
 import org.koin.androidx.compose.koinViewModel
@@ -90,7 +90,7 @@ fun ArtistScreen(
     var showWebViewLogin by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
-        viewModel.toastEvent.collect { com.lin0721.linmusic.ui.components.ToastManager.showToast(it) }
+        viewModel.toastEvent.collect { com.lin0721.linmusic.core.ui.components.ToastManager.showToast(it) }
     }
     LaunchedEffect(artistId) {
         viewModel.loadArtistData(artistId)

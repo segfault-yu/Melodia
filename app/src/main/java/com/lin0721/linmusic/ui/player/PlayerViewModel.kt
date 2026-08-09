@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.SettingsPreferences
 import com.lin0721.linmusic.data.local.UserPreferences
-import com.lin0721.linmusic.data.remote.api.ArtistAlbum
-import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
-import com.lin0721.linmusic.data.remote.api.Track
+import com.lin0721.linmusic.core.api.ArtistAlbum
+import com.lin0721.linmusic.core.api.ArtistDetailInfo
+import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.data.repository.LyricLine
 import com.lin0721.linmusic.data.repository.MusicRepository
@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
-import com.lin0721.linmusic.data.remote.api.CommentItem
+import com.lin0721.linmusic.core.api.CommentItem
 
 // 当前播放歌曲的详情聚合状态：歌词/歌曲详情/歌手资料等异步分别到达，各自保留独立的 loading/nullable 语义
 data class PlayerSongDetailState(

@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.theme
+package com.lin0721.linmusic.core.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes

@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.data.remote.api
+package com.lin0721.linmusic.core.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

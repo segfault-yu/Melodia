@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.components
+package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.lin0721.linmusic.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // "新建歌单并收藏"对话框，供收藏到歌单弹窗内触发
 @Composable

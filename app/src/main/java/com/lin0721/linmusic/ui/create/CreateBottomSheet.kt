@@ -23,11 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.SurfaceLight
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.SurfaceLight
+import com.lin0721.linmusic.core.ui.theme.TextGray
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,7 +45,7 @@ fun CreatePopupMenu(
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
-            com.lin0721.linmusic.ui.components.ToastManager.showToast(message)
+            com.lin0721.linmusic.core.ui.components.ToastManager.showToast(message)
         }
     }
 
@@ -64,7 +64,7 @@ fun CreatePopupMenu(
                 if (userProfile != null) {
                     showCreateDialog = true
                 } else {
-                    com.lin0721.linmusic.ui.components.ToastManager.showToast("请先登录以创建歌单")
+                    com.lin0721.linmusic.core.ui.components.ToastManager.showToast("请先登录以创建歌单")
                     onDismiss()
                     onLoginRequest()
                 }
@@ -76,7 +76,7 @@ fun CreatePopupMenu(
             title = "共建歌单",
             subtitle = "与好友一起创建歌单",
             onClick = {
-                com.lin0721.linmusic.ui.components.ToastManager.showToast("功能开发中，敬请期待")
+                com.lin0721.linmusic.core.ui.components.ToastManager.showToast("功能开发中，敬请期待")
             }
         )
 
@@ -85,7 +85,7 @@ fun CreatePopupMenu(
             title = "共享合辑",
             subtitle = "将好友的音乐喜好合并为一个歌单",
             onClick = {
-                com.lin0721.linmusic.ui.components.ToastManager.showToast("功能开发中，敬请期待")
+                com.lin0721.linmusic.core.ui.components.ToastManager.showToast("功能开发中，敬请期待")
             }
         )
     }

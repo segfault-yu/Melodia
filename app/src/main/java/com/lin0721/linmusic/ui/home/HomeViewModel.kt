@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.UserPreferences
 import com.lin0721.linmusic.data.local.UserProfile
-import com.lin0721.linmusic.data.remote.api.AccountInfoResponse
-import com.lin0721.linmusic.data.remote.api.DailySong
+import com.lin0721.linmusic.core.api.AccountInfoResponse
+import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.data.repository.ToplistInfo
 import kotlinx.coroutines.flow.MutableSharedFlow

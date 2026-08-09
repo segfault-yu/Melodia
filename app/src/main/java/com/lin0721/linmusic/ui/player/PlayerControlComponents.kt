@@ -64,10 +64,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.data.repository.LyricLine
 import com.lin0721.linmusic.player.PlayMode
-import com.lin0721.linmusic.ui.theme.ColorPalette
-import com.lin0721.linmusic.ui.theme.SurfaceLight
-import com.lin0721.linmusic.ui.theme.TextGray
-import com.lin0721.linmusic.ui.theme.extractColorPalette
+import com.lin0721.linmusic.core.ui.theme.ColorPalette
+import com.lin0721.linmusic.core.ui.theme.SurfaceLight
+import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.extractColorPalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

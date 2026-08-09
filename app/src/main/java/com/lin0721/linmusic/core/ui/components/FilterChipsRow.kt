@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.components
+package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,7 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lin0721.linmusic.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 受控的横向筛选药丸组：Library 的分类过滤、Home 的内容筛选共用
 @Composable

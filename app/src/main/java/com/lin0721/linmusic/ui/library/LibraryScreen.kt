@@ -44,18 +44,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.ui.components.FilterChipsRow
-import com.lin0721.linmusic.ui.components.LoginBottomSheet
-import com.lin0721.linmusic.ui.components.MelodiaDragHandle
-import com.lin0721.linmusic.ui.components.WebViewLoginScreen
-import com.lin0721.linmusic.ui.theme.BottomSheetShape
-import com.lin0721.linmusic.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.components.FilterChipsRow
+import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
+import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
+import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.foundation.gestures.*
 import androidx.compose.animation.core.*
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import com.lin0721.linmusic.ui.components.ProfileSidebar
+import com.lin0721.linmusic.core.ui.components.ProfileSidebar
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.data.local.UserProfile
 
@@ -87,7 +87,7 @@ fun LibraryScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
-            com.lin0721.linmusic.ui.components.ToastManager.showToast(message)
+            com.lin0721.linmusic.core.ui.components.ToastManager.showToast(message)
         }
     }
 
@@ -220,7 +220,7 @@ fun LibraryScreen(
                                 playlistNameInput = ""
                                 showCreateDialog = true
                             } else {
-                                com.lin0721.linmusic.ui.components.ToastManager.showToast("请先登录以创建歌单！")
+                                com.lin0721.linmusic.core.ui.components.ToastManager.showToast("请先登录以创建歌单！")
                                 showLoginSheet = true
                             }
                         }) {
@@ -358,7 +358,7 @@ fun LibraryScreen(
                                                     } else if (item.type == LibraryItemType.ARTIST) {
                                                         onArtistClick(item.id.toLong())
                                                     } else {
-                                                        com.lin0721.linmusic.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
+                                                        com.lin0721.linmusic.core.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
                                                     }
                                                 }
                                             )
@@ -384,7 +384,7 @@ fun LibraryScreen(
                                             } else if (item.type == LibraryItemType.ARTIST) {
                                                 onArtistClick(item.id.toLong())
                                             } else {
-                                                com.lin0721.linmusic.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
+                                                com.lin0721.linmusic.core.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
                                             }
                                         },
                                         onLongClick = {
@@ -463,7 +463,7 @@ fun LibraryScreen(
                                     viewModel.createPlaylist(playlistNameInput)
                                     showCreateDialog = false
                                 } else {
-                                    com.lin0721.linmusic.ui.components.ToastManager.showToast("名字不能为空哦！")
+                                    com.lin0721.linmusic.core.ui.components.ToastManager.showToast("名字不能为空哦！")
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),

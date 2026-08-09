@@ -35,18 +35,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.data.remote.api.PersonalizedPlaylist
-import com.lin0721.linmusic.data.remote.api.Artist
-import com.lin0721.linmusic.data.remote.api.DailySong
+import com.lin0721.linmusic.core.api.PersonalizedPlaylist
+import com.lin0721.linmusic.core.api.Artist
+import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.data.repository.ToplistInfo
-import com.lin0721.linmusic.ui.theme.*
+import com.lin0721.linmusic.core.ui.theme.*
 import com.lin0721.linmusic.data.local.UserProfile
-import com.lin0721.linmusic.ui.components.FilterChipsRow
-import com.lin0721.linmusic.ui.components.LoginBottomSheet
-import com.lin0721.linmusic.ui.components.ProfileSidebar
-import com.lin0721.linmusic.ui.components.SongRow
-import com.lin0721.linmusic.ui.components.SongRowData
-import com.lin0721.linmusic.ui.components.WebViewLoginScreen
+import com.lin0721.linmusic.core.ui.components.FilterChipsRow
+import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
+import com.lin0721.linmusic.core.ui.components.ProfileSidebar
+import com.lin0721.linmusic.core.ui.components.SongRow
+import com.lin0721.linmusic.core.ui.components.SongRowData
+import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
@@ -77,7 +77,7 @@ fun HomeScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
-            com.lin0721.linmusic.ui.components.ToastManager.showToast(message)
+            com.lin0721.linmusic.core.ui.components.ToastManager.showToast(message)
         }
     }
 
@@ -332,7 +332,7 @@ fun RecommendationCarousel(playlists: List<PersonalizedPlaylist>, onClick: (Pers
 }
 
 @Composable
-fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>, onClick: (com.lin0721.linmusic.data.remote.api.RecentPlayItem) -> Unit) {
+fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.core.api.RecentPlayItem>, onClick: (com.lin0721.linmusic.core.api.RecentPlayItem) -> Unit) {
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)) {
         items(items, key = { it.data.id }) { item ->
             val playlist = item.data
@@ -356,8 +356,8 @@ fun RecentPlaylistCarousel(items: List<com.lin0721.linmusic.data.remote.api.Rece
 
 @Composable
 fun RecentPlaylistGrid(
-    items: List<com.lin0721.linmusic.data.remote.api.RecentPlayItem>,
-    onClick: (com.lin0721.linmusic.data.remote.api.RecentPlayItem) -> Unit
+    items: List<com.lin0721.linmusic.core.api.RecentPlayItem>,
+    onClick: (com.lin0721.linmusic.core.api.RecentPlayItem) -> Unit
 ) {
     val gridItems = items.take(9)
     val rows = gridItems.chunked(3)

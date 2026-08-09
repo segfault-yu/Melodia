@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.UserPreferences
 import com.lin0721.linmusic.data.local.UserProfile
-import com.lin0721.linmusic.data.remote.api.SearchSong
+import com.lin0721.linmusic.core.api.SearchSong
 import com.lin0721.linmusic.data.repository.HotSearch
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.data.repository.PlaylistTag

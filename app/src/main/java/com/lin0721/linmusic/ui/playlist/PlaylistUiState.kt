@@ -1,8 +1,8 @@
 package com.lin0721.linmusic.ui.playlist
 
-import com.lin0721.linmusic.data.remote.api.DailySong
-import com.lin0721.linmusic.data.remote.api.PlaylistDetail
-import com.lin0721.linmusic.data.remote.api.Track
+import com.lin0721.linmusic.core.api.DailySong
+import com.lin0721.linmusic.core.api.PlaylistDetail
+import com.lin0721.linmusic.core.api.Track
 
 sealed interface PlaylistUiState {
     object Loading : PlaylistUiState

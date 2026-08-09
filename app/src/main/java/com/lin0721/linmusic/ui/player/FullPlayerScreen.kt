@@ -84,18 +84,18 @@ import androidx.compose.animation.core.Spring
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import com.lin0721.linmusic.data.remote.api.ArtistAlbum
-import com.lin0721.linmusic.data.remote.api.ArtistDetailInfo
-import com.lin0721.linmusic.data.remote.api.Track
-import com.lin0721.linmusic.data.remote.api.CommentItem
+import com.lin0721.linmusic.core.api.ArtistAlbum
+import com.lin0721.linmusic.core.api.ArtistDetailInfo
+import com.lin0721.linmusic.core.api.Track
+import com.lin0721.linmusic.core.api.CommentItem
 import com.lin0721.linmusic.data.repository.ArtistInfo
 import com.lin0721.linmusic.data.repository.LyricLine
 import com.lin0721.linmusic.data.repository.SongWikiData
-import com.lin0721.linmusic.ui.theme.BottomSheetShape
-import com.lin0721.linmusic.ui.theme.ColorPalette
-import com.lin0721.linmusic.ui.theme.DragHandleShape
-import com.lin0721.linmusic.ui.theme.MelodiaSpacing
-import com.lin0721.linmusic.ui.theme.PaletteMemoryCache
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.ColorPalette
+import com.lin0721.linmusic.core.ui.theme.DragHandleShape
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PaletteMemoryCache
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
@@ -103,7 +103,7 @@ import dev.chrisbanes.haze.hazeChild
 import org.koin.androidx.compose.koinViewModel
 import com.lin0721.linmusic.player.PlayMode
 import androidx.activity.compose.BackHandler
-import com.lin0721.linmusic.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.components.ToastManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,7 +151,7 @@ fun FullPlayerScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
-            com.lin0721.linmusic.ui.components.ToastManager.showToast(message)
+            com.lin0721.linmusic.core.ui.components.ToastManager.showToast(message)
         }
     }
 

@@ -1,6 +1,6 @@
-package com.lin0721.linmusic.data.remote.network
+package com.lin0721.linmusic.core.network
 
-import com.lin0721.linmusic.data.remote.crypto.NeteaseCrypto
+import com.lin0721.linmusic.core.network.crypto.NeteaseCrypto
 import okhttp3.FormBody
 import okhttp3.Interceptor
 import okhttp3.RequestBody

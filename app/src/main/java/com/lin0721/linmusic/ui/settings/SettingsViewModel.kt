@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.data.local.SettingsPreferences
 import com.lin0721.linmusic.data.local.UserPreferences
-import com.lin0721.linmusic.data.remote.api.UserBindingItem
-import com.lin0721.linmusic.data.remote.api.UserLevelData
-import com.lin0721.linmusic.data.remote.api.VipInfoData
+import com.lin0721.linmusic.core.api.UserBindingItem
+import com.lin0721.linmusic.core.api.UserLevelData
+import com.lin0721.linmusic.core.api.VipInfoData
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.player.AudioCacheManager
 import kotlinx.coroutines.FlowPreview

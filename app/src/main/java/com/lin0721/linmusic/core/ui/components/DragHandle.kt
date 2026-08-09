@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.ui.components
+package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -9,8 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.lin0721.linmusic.ui.theme.DragHandleShape
-import com.lin0721.linmusic.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.DragHandleShape
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // ModalBottomSheet 顶部拖拽把手，供各处 dragHandle 参数复用
 @Composable

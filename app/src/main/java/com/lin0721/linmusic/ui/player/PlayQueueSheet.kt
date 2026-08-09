@@ -36,13 +36,13 @@ import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.player.PlayMode
 import com.lin0721.linmusic.player.QueueItem
-import com.lin0721.linmusic.ui.components.DraggableSongRow
-import com.lin0721.linmusic.ui.components.SongRowData
-import com.lin0721.linmusic.ui.theme.BackgroundDark
-import com.lin0721.linmusic.ui.theme.NeteaseRed
-import com.lin0721.linmusic.ui.theme.SurfaceDark
-import com.lin0721.linmusic.ui.theme.SurfaceLight
-import com.lin0721.linmusic.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.components.DraggableSongRow
+import com.lin0721.linmusic.core.ui.components.SongRowData
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.SurfaceLight
+import com.lin0721.linmusic.core.ui.theme.TextGray
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

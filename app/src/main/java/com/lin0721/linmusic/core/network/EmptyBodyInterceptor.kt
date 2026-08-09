@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.data.remote.network
+package com.lin0721.linmusic.core.network
 
 import okhttp3.Interceptor
 import okhttp3.Response
