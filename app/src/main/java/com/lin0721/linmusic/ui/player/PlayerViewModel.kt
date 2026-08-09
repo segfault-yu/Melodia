@@ -12,6 +12,7 @@ import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.data.repository.LyricLine
 import com.lin0721.linmusic.data.repository.MusicRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
+import com.lin0721.linmusic.feature.comment.data.CommentRepository
 import com.lin0721.linmusic.player.PlayerManager
 import com.lin0721.linmusic.player.QueueItem
 import com.lin0721.linmusic.data.repository.SongWikiData
@@ -51,6 +52,7 @@ class PlayerViewModel(
     private val context: Context,
     private val repository: MusicRepository,
     private val artistRepository: ArtistRepository,
+    private val commentRepository: CommentRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val settingsPreferences: SettingsPreferences
@@ -329,7 +331,7 @@ class PlayerViewModel(
     private fun loadComments(songId: Long) {
         viewModelScope.launch {
             _commentsState.value = CommentsState.Loading
-            repository.getComments(songId, limit = 20).collect { result ->
+            commentRepository.getComments(songId, limit = 20).collect { result ->
                 if (currentSongId != songId) return@collect
                 result.onSuccess { response ->
                     _commentsState.value = CommentsState.Success(
@@ -388,7 +390,7 @@ class PlayerViewModel(
                 total = currentState.total
             )
 
-            repository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
+            commentRepository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
                 result.onFailure { e ->
                     _commentsState.value = currentState
                     _toastEvent.emit("操作失败: ${e.message}")

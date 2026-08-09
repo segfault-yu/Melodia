@@ -8,6 +8,7 @@ import com.lin0721.linmusic.core.api.PlaylistDetail
 import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.data.repository.MusicRepository
+import com.lin0721.linmusic.feature.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.player.PlayerManager
@@ -40,6 +41,7 @@ class PlaylistViewModel(
     private val repository: MusicRepository,
     private val homeRepository: HomeRepository,
     private val libraryRepository: LibraryRepository,
+    private val commentRepository: CommentRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository
@@ -410,7 +412,7 @@ class PlaylistViewModel(
         viewModelScope.launch {
             _commentsState.value = CommentsState.Loading
             val threadId = "A_PL_0_$playlistId"
-            repository.getComments(threadId, limit = 20).collect { result ->
+            commentRepository.getComments(threadId, limit = 20).collect { result ->
                 result.onSuccess { response ->
                     _commentsState.value = CommentsState.Success(
                         hotComments = response.hotComments,
@@ -461,7 +463,7 @@ class PlaylistViewModel(
                 total = currentState.total
             )
 
-            repository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
+            commentRepository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
                 result.onFailure { e ->
                     _commentsState.value = currentState
                     _toastEvent.emit("操作失败: ${e.message}")
