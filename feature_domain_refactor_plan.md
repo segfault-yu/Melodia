@@ -134,6 +134,15 @@ com.lin0721.linmusic/
 
 ---
 
-## 7. 下一步
+## 7. 进度
 
-请先回答 §5 的 7 个待确认点（可以简单地"按方案默认走"或逐条给出你的选择），确认后我从**阶段 0（home 试点）**开始动代码，每完成一步会向你汇报编译/验证结果。
+- [x] §5 七个待确认点已按推荐方案确认（2026-08-09）
+- [x] 阶段 0 骨架：`core/ui/theme`、`core/ui/components`、`core/network`、`core/network/crypto`、`core/api` 迁移完成
+- [x] `core/auth`（UserPreferences + AuthRepository）拆出，5 个 ViewModel 消费方已切换
+- [x] `core/contentfilter`（ContentFilter.filterBlockedArtists）拆出，8 处重复过滤逻辑收敛
+- [x] `feature/home` 试点完成：HomeRepository(+Impl)、领域模型（ToplistInfo/HomeFeedPage 系列/未用草稿模型）、UI 三件套均已迁移；`PlaylistViewModel` 新增 `homeRepository` 依赖
+- [x] `./gradlew :app:compileDebugKotlin` 全程编译通过
+- [ ] **运行时验证未完成**：当前环境未连接 Android 设备/模拟器，无法验证 Koin 依赖图在运行时能否正确解析、首页功能是否有回归——这一步需要用户配合（见下方对话）
+- [ ] 阶段 1-7（search/library/artist/comment/playlist/player/settings/create）尚未开始
+
+下一步：等待用户确认运行时验证方式与是否继续阶段 1。
