@@ -3,14 +3,14 @@ package com.lin0721.linmusic.feature.settings.ui
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lin0721.linmusic.data.local.SettingsPreferences
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.api.UserBindingItem
 import com.lin0721.linmusic.core.api.UserLevelData
 import com.lin0721.linmusic.core.api.VipInfoData
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.settings.data.SettingsRepository
-import com.lin0721.linmusic.player.AudioCacheManager
+import com.lin0721.linmusic.core.player.AudioCacheManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*

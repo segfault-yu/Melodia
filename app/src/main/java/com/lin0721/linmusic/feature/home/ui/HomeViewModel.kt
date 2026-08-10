@@ -22,8 +22,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import com.lin0721.linmusic.player.PlayerManager
-import com.lin0721.linmusic.player.QueueItem
+import com.lin0721.linmusic.core.player.PlayerManager
+import com.lin0721.linmusic.core.player.QueueItem
 
 // 首页 ViewModel
 class HomeViewModel(

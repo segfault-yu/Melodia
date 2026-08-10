@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.player.PlayMode
-import com.lin0721.linmusic.player.QueueItem
+import com.lin0721.linmusic.core.player.PlayMode
+import com.lin0721.linmusic.core.player.QueueItem
 import com.lin0721.linmusic.core.ui.components.DraggableSongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark

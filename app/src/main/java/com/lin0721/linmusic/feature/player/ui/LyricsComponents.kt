@@ -29,7 +29,7 @@ import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Slider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import com.lin0721.linmusic.player.PlayMode
+import com.lin0721.linmusic.core.player.PlayMode
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState

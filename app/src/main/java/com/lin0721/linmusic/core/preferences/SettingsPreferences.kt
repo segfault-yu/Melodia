@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.data.local
+package com.lin0721.linmusic.core.preferences
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
