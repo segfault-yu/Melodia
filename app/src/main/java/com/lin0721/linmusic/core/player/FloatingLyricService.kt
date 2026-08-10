@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.player
+package com.lin0721.linmusic.core.player
 
 import android.app.Service
 import android.content.Context
@@ -14,7 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
-import com.lin0721.linmusic.data.local.SettingsPreferences
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import kotlinx.coroutines.CoroutineScope

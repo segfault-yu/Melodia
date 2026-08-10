@@ -9,7 +9,7 @@ import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
-import com.lin0721.linmusic.player.PlayerManager
+import com.lin0721.linmusic.core.player.PlayerManager
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

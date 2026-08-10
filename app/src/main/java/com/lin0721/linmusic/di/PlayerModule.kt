@@ -1,6 +1,6 @@
 package com.lin0721.linmusic.di
 
-import com.lin0721.linmusic.player.PlayerManager
+import com.lin0721.linmusic.core.player.PlayerManager
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 

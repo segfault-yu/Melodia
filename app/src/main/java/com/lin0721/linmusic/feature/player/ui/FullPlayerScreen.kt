@@ -101,7 +101,7 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import org.koin.androidx.compose.koinViewModel
-import com.lin0721.linmusic.player.PlayMode
+import com.lin0721.linmusic.core.player.PlayMode
 import androidx.activity.compose.BackHandler
 import com.lin0721.linmusic.core.ui.components.ToastManager
 

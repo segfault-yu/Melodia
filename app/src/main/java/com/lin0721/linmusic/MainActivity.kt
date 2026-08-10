@@ -73,8 +73,8 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import android.content.Intent
 import androidx.lifecycle.lifecycleScope
-import com.lin0721.linmusic.data.local.SettingsPreferences
-import com.lin0721.linmusic.player.FloatingLyricService
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
+import com.lin0721.linmusic.core.player.FloatingLyricService
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import org.koin.android.ext.android.inject

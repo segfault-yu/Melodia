@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.player
+package com.lin0721.linmusic.core.player
 
 import android.Manifest
 import android.content.BroadcastReceiver
@@ -7,7 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
-import com.lin0721.linmusic.data.local.SettingsPreferences
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

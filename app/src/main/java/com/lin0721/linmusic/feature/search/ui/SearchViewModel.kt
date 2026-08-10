@@ -8,8 +8,8 @@ import com.lin0721.linmusic.core.api.SearchSong
 import com.lin0721.linmusic.feature.search.data.SearchRepository
 import com.lin0721.linmusic.feature.search.domain.HotSearch
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
-import com.lin0721.linmusic.player.PlayerManager
-import com.lin0721.linmusic.player.QueueItem
+import com.lin0721.linmusic.core.player.PlayerManager
+import com.lin0721.linmusic.core.player.QueueItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay

@@ -3,7 +3,7 @@ package com.lin0721.linmusic.feature.player.ui
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lin0721.linmusic.data.local.SettingsPreferences
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.api.ArtistAlbum
 import com.lin0721.linmusic.core.api.ArtistDetailInfo
@@ -14,8 +14,8 @@ import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
-import com.lin0721.linmusic.player.PlayerManager
-import com.lin0721.linmusic.player.QueueItem
+import com.lin0721.linmusic.core.player.PlayerManager
+import com.lin0721.linmusic.core.player.QueueItem
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

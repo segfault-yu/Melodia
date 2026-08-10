@@ -11,7 +11,7 @@ import com.lin0721.linmusic.core.api.SongWikiSummaryRequest
 import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
-import com.lin0721.linmusic.data.local.SettingsPreferences
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import com.lin0721.linmusic.feature.player.domain.WordInfo

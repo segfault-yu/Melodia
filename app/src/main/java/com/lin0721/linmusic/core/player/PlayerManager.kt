@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.player
+package com.lin0721.linmusic.core.player
 
 import android.content.ComponentName
 import android.content.Context
@@ -10,8 +10,8 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import com.lin0721.linmusic.data.local.PlaybackPreferences
-import com.lin0721.linmusic.data.local.PlaybackState
+import com.lin0721.linmusic.core.player.PlaybackPreferences
+import com.lin0721.linmusic.core.player.PlaybackState
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +28,7 @@ import kotlin.coroutines.resume
 import coil.Coil
 import coil.request.ImageRequest
 
-import com.lin0721.linmusic.data.local.SettingsPreferences
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.flow.collectLatest
 
 class PlayerManager(

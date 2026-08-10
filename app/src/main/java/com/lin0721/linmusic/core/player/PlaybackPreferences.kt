@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.data.local
+package com.lin0721.linmusic.core.player
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -6,8 +6,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.lin0721.linmusic.player.PlayMode
-import com.lin0721.linmusic.player.QueueItem
+import com.lin0721.linmusic.core.player.PlayMode
+import com.lin0721.linmusic.core.player.QueueItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString

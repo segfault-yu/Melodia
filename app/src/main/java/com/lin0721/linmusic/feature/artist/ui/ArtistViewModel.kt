@@ -12,8 +12,8 @@ import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
-import com.lin0721.linmusic.player.PlayerManager
-import com.lin0721.linmusic.player.QueueItem
+import com.lin0721.linmusic.core.player.PlayerManager
+import com.lin0721.linmusic.core.player.QueueItem
 import com.lin0721.linmusic.feature.playlist.ui.PlaylistCollectState
 import com.lin0721.linmusic.feature.playlist.ui.PlaylistCollectItem
 import kotlinx.coroutines.async

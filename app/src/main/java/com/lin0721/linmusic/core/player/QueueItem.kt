@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.player
+package com.lin0721.linmusic.core.player
 
 import android.net.Uri
 import android.os.Bundle

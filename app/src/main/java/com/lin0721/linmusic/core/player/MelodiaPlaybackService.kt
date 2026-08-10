@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.player
+package com.lin0721.linmusic.core.player
 
 import android.os.Bundle
 import androidx.annotation.OptIn
@@ -16,7 +16,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.CommandButton
 import com.lin0721.linmusic.R
-import com.lin0721.linmusic.data.local.SettingsPreferences
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import kotlinx.coroutines.CoroutineScope
