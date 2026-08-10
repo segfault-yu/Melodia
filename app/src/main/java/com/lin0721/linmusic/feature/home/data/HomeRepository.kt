@@ -3,7 +3,6 @@ package com.lin0721.linmusic.feature.home.data
 import com.lin0721.linmusic.core.api.DailySong
 import com.lin0721.linmusic.core.api.PersonalizedData
 import com.lin0721.linmusic.core.api.RecentPlayItem
-import com.lin0721.linmusic.feature.home.domain.HomeFeedPage
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 import kotlinx.coroutines.flow.Flow
 
@@ -27,7 +26,4 @@ interface HomeRepository {
 
     // 获取指定日期的历史日推详情
     fun getHistoryRecommendDetail(date: String): Flow<Result<List<DailySong>>>
-
-    // 获取首页动态内容 (支持分页)，当前无调用者，疑似未完工的首页 Feed 流功能，保留待后续确认取舍
-    fun getHomepageBlocks(refresh: Boolean = true, cursor: String? = null): Flow<Result<HomeFeedPage>>
 }

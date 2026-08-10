@@ -9,7 +9,7 @@ import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
-import com.lin0721.linmusic.feature.create.data.CreateRepository
+import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.player.PlayerManager
@@ -35,7 +35,7 @@ sealed class ArtistUiState {
 }
 
 class ArtistViewModel(
-    private val createRepository: CreateRepository,
+    private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
     private val libraryRepository: LibraryRepository,
     private val artistRepository: ArtistRepository,
     private val playlistRepository: PlaylistRepository,
@@ -236,24 +236,15 @@ class ArtistViewModel(
 
     fun createPlaylistAndAddSong(name: String, songId: Long) {
         viewModelScope.launch {
-            createRepository.createPlaylist(name, privacy = 0).collect { result ->
+            createPlaylistAndAddSongUseCase(name, songId).collect { result ->
                 result.fold(
-                    onSuccess = { playlist ->
-                        playlistRepository.manipulatePlaylistTracks("add", playlist.id, songId).collect { addResult ->
-                            addResult.fold(
-                                onSuccess = {
-                                    _toastEvent.emit("创建并加入歌单成功")
-                                    prepareCollectDialog(songId)
-                                    loadLikedSongIds()
-                                },
-                                onFailure = { e ->
-                                    _toastEvent.emit("加入新建歌单失败: ${e.message}")
-                                }
-                            )
-                        }
+                    onSuccess = {
+                        _toastEvent.emit("创建并加入歌单成功")
+                        prepareCollectDialog(songId)
+                        loadLikedSongIds()
                     },
                     onFailure = { e ->
-                        _toastEvent.emit("创建歌单失败: ${e.message}")
+                        _toastEvent.emit(e.message ?: "操作失败")
                     }
                 )
             }

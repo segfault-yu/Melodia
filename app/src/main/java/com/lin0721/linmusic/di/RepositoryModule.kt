@@ -15,6 +15,7 @@ import com.lin0721.linmusic.feature.library.data.LibraryRepositoryImpl
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepositoryImpl
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
+import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.settings.data.SettingsRepository
 import com.lin0721.linmusic.feature.settings.data.SettingsRepositoryImpl
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepositoryImpl
@@ -58,5 +59,8 @@ val repositoryModule = module {
 
     // 新建歌单数据仓储（feature/create）
     singleOf(::CreateRepositoryImpl) { bind<CreateRepository>() }
+
+    // 新建歌单并加入当前歌曲（跨 artist/library/playlist 域共用）
+    singleOf(::CreatePlaylistAndAddSongUseCase)
 
 }

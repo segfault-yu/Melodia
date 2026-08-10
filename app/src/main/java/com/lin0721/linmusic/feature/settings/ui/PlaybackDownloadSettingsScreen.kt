@@ -13,10 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun PlaybackDownloadSettingsView(viewModel: SettingsViewModel) {
     val autoPlayNext by viewModel.autoPlayNext.collectAsStateWithLifecycle()
     val streamCacheEnabled by viewModel.streamCacheEnabled.collectAsStateWithLifecycle()
-    val playMode by viewModel.playMode.collectAsStateWithLifecycle()
 
-    val playModeDisplayName = if (playMode == "random") "随机播放" else "列表循环"
-    
     // 渲染播放与下载的子设置项
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -29,14 +26,6 @@ fun PlaybackDownloadSettingsView(viewModel: SettingsViewModel) {
                     subtitle = "当前曲目播放完毕后自动接入相似推荐",
                     checked = autoPlayNext,
                     onCheckedChange = { viewModel.updateAutoPlayNext(it) }
-                )
-                HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
-                SettingsRow(
-                    title = "默认播放顺序",
-                    subtitle = playModeDisplayName,
-                    onClick = {
-                        viewModel.updatePlayMode(if (playMode == "loop") "random" else "loop")
-                    }
                 )
             }
         }

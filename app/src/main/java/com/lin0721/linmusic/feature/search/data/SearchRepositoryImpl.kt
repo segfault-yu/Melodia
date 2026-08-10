@@ -2,8 +2,6 @@ package com.lin0721.linmusic.feature.search.data
 
 import com.lin0721.linmusic.core.api.CloudSearchRequest
 import com.lin0721.linmusic.core.api.HighQualityPlaylistRequest
-import com.lin0721.linmusic.core.api.HomepageBlock
-import com.lin0721.linmusic.core.api.HomepageBlockRequest
 import com.lin0721.linmusic.core.api.NeteaseApiService
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.feature.search.domain.HotSearch
@@ -94,15 +92,5 @@ class SearchRepositoryImpl(
             }
 
         emit(Result.success(result))
-    }.catch { e -> emit(Result.failure(e)) }
-
-    // 当前无调用者，保留待后续确认取舍
-    override fun getDiscoveryBlocks(refresh: Boolean, cursor: String?): Flow<Result<List<HomepageBlock>>> = flow {
-        val response = apiService.getHomepageBlocks(HomepageBlockRequest(cursor = cursor, refresh = refresh))
-        if (response.code == 200 && response.data != null) {
-            emit(Result.success(response.data.blocks))
-        } else {
-            emit(Result.failure(Exception("Failed to load discovery blocks")))
-        }
     }.catch { e -> emit(Result.failure(e)) }
 }

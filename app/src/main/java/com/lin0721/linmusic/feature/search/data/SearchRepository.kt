@@ -1,6 +1,5 @@
 package com.lin0721.linmusic.feature.search.data
 
-import com.lin0721.linmusic.core.api.HomepageBlock
 import com.lin0721.linmusic.feature.search.domain.HotSearch
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
 import com.lin0721.linmusic.feature.search.domain.SearchSongsResult
@@ -20,7 +19,4 @@ interface SearchRepository {
 
     // 获取精品歌单标签（含封面图）
     fun getPlaylistTags(): Flow<Result<List<PlaylistTag>>>
-
-    // 获取发现页（Search Screen）原始区块结构 —— 当前无调用者，保留待后续确认取舍
-    fun getDiscoveryBlocks(refresh: Boolean = true, cursor: String? = null): Flow<Result<List<HomepageBlock>>>
 }

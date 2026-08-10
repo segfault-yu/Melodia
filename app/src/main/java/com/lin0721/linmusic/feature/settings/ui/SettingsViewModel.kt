@@ -73,12 +73,6 @@ class SettingsViewModel(
         initialValue = true
     )
 
-    val playMode = settingsPreferences.playMode.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = "loop"
-    )
-
     val wifiOnlyPlay = settingsPreferences.wifiOnlyPlay.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -225,12 +219,6 @@ class SettingsViewModel(
     fun updateAutoPlayNext(enabled: Boolean) {
         viewModelScope.launch {
             settingsPreferences.saveAutoPlayNext(enabled)
-        }
-    }
-
-    fun updatePlayMode(mode: String) {
-        viewModelScope.launch {
-            settingsPreferences.savePlayMode(mode)
         }
     }
 
