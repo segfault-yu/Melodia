@@ -10,14 +10,6 @@ import retrofit2.http.Path
 // 网易云音乐 Retrofit 接口定义。
 interface NeteaseApiService {
 
-    // ===================== 推荐歌单 =====================
-
-    // 获取每日推荐歌单 (需要登录后的 Cookie)
-    @POST("/eapi/v1/discovery/recommend/resource")
-    suspend fun getDailyRecommendPlaylists(
-        @Body body: EmptyBody = EmptyBody()
-    ): NeteaseResponse<RecommendPlaylistData>
-
     // =================== 个性化推荐 ===================
 
     // 获取个性化推荐歌单（公开接口，无需登录）
@@ -418,26 +410,6 @@ data class UserProfile(
     @SerialName("backgroundUrl")
     val backgroundUrl: String = "",
     val signature: String = "",
-)
-
-@Serializable
-data class RecommendPlaylistData(
-    val recommend: List<RecommendPlaylist> = emptyList(),
-)
-
-@Serializable
-data class RecommendPlaylist(
-    val id: Long = 0,
-    val name: String = "",
-    // 歌单封面
-    val picUrl: String = "",
-    // 播放次数
-    val playcount: Long = 0,
-    // 歌曲数量
-    val trackCount: Int = 0,
-    // 创建者昵称
-    @SerialName("creator")
-    val creator: PlaylistCreator? = null,
 )
 
 @Serializable
