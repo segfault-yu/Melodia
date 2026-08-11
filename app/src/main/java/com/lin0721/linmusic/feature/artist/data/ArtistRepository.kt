@@ -1,9 +1,7 @@
 package com.lin0721.linmusic.feature.artist.data
 
-import com.lin0721.linmusic.core.api.Artist
-import com.lin0721.linmusic.core.api.ArtistAlbum
-import com.lin0721.linmusic.core.api.ArtistDetailInfo
-import com.lin0721.linmusic.core.api.Track
+import com.lin0721.linmusic.core.model.Artist
+import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import kotlinx.coroutines.flow.Flow
 

@@ -1,6 +1,6 @@
 package com.lin0721.linmusic.feature.playlist.domain
 
-import com.lin0721.linmusic.core.api.PlaylistDetail
+import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
 import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import kotlinx.coroutines.flow.Flow

@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.core.api.SearchSong
+import com.lin0721.linmusic.feature.search.data.SearchSong
 import com.lin0721.linmusic.feature.search.domain.HotSearch
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
 import com.lin0721.linmusic.core.ui.components.SongRow

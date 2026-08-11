@@ -1,8 +1,5 @@
 package com.lin0721.linmusic.feature.search.data
 
-import com.lin0721.linmusic.core.api.CloudSearchRequest
-import com.lin0721.linmusic.core.api.HighQualityPlaylistRequest
-import com.lin0721.linmusic.core.api.NeteaseApiService
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.feature.search.domain.HotSearch
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
@@ -14,7 +11,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class SearchRepositoryImpl(
-    private val apiService: NeteaseApiService,
+    private val apiService: SearchApi,
     private val contentFilter: ContentFilter
 ) : SearchRepository {
 

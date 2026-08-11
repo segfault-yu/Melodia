@@ -1,22 +1,14 @@
 package com.lin0721.linmusic.feature.artist.data
 
-import com.lin0721.linmusic.core.api.Artist
-import com.lin0721.linmusic.core.api.ArtistAlbum
-import com.lin0721.linmusic.core.api.ArtistAlbumRequest
-import com.lin0721.linmusic.core.api.ArtistDetailInfo
-import com.lin0721.linmusic.core.api.ArtistDetailRequest
-import com.lin0721.linmusic.core.api.ArtistFollowCountRequest
-import com.lin0721.linmusic.core.api.ArtistSubscriptionRequest
-import com.lin0721.linmusic.core.api.ArtistTopSongsRequest
-import com.lin0721.linmusic.core.api.NeteaseApiService
-import com.lin0721.linmusic.core.api.Track
+import com.lin0721.linmusic.core.model.Artist
+import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class ArtistRepositoryImpl(
-    private val apiService: NeteaseApiService
+    private val apiService: ArtistApi
 ) : ArtistRepository {
 
     override fun getTopArtists(): Flow<Result<List<Artist>>> = flow {
@@ -138,7 +130,7 @@ class ArtistRepositoryImpl(
     }.catch { e -> emit(Result.failure(e)) }
 
     override fun getSimilarArtists(artistId: Long): Flow<Result<List<ArtistInfo>>> = flow {
-        val response = apiService.getSimiArtists(com.lin0721.linmusic.core.api.SimiArtistRequest(artistid = artistId))
+        val response = apiService.getSimiArtists(SimiArtistRequest(artistid = artistId))
         if (response.isSuccess) {
             val artists = response.artists.map { artist ->
                 ArtistInfo(

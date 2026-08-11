@@ -1,14 +1,12 @@
 package com.lin0721.linmusic.feature.create.data
 
-import com.lin0721.linmusic.core.api.NeteaseApiService
-import com.lin0721.linmusic.core.api.PlaylistCreateRequest
-import com.lin0721.linmusic.core.api.PlaylistDetail
+import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class CreateRepositoryImpl(
-    private val apiService: NeteaseApiService
+    private val apiService: CreateApi
 ) : CreateRepository {
 
     override fun createPlaylist(name: String, privacy: Int): Flow<Result<PlaylistDetail>> = flow {

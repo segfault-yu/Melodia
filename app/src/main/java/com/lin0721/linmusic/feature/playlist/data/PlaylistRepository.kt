@@ -1,6 +1,5 @@
 package com.lin0721.linmusic.feature.playlist.data
 
-import com.lin0721.linmusic.core.api.PlaylistDetail
 import kotlinx.coroutines.flow.Flow
 
 // 歌单/专辑/红心数据仓储（playlist 业务域）
