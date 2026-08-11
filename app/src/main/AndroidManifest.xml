@@ -34,7 +34,7 @@
         </activity>
 
         <service
-            android:name=".player.MelodiaPlaybackService"
+            android:name=".core.player.MelodiaPlaybackService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="true">
             <intent-filter>
@@ -43,12 +43,12 @@
         </service>
 
         <service
-            android:name=".player.FloatingLyricService"
+            android:name=".core.player.FloatingLyricService"
             android:enabled="true"
             android:exported="false" />
 
         <receiver
-            android:name=".player.BluetoothReceiver"
+            android:name=".core.player.BluetoothReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
