@@ -14,8 +14,8 @@ import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
-import com.lin0721.linmusic.feature.playlist.ui.PlaylistCollectState
-import com.lin0721.linmusic.feature.playlist.ui.PlaylistCollectItem
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*

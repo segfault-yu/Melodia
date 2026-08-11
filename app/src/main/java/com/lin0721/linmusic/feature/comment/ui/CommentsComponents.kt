@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.player.ui
+package com.lin0721.linmusic.feature.comment.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable

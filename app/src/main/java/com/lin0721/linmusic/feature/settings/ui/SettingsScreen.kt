@@ -347,16 +347,3 @@ fun getBindingIcon(type: Int): androidx.compose.ui.graphics.vector.ImageVector {
         else -> Icons.Default.Link
     }
 }
-
-fun getQualityDisplayName(quality: String): String {
-    return when (quality) {
-        "standard" -> "标准"
-        "exhigh" -> "极高"
-        "lossless" -> "无损 (FLAC)"
-        "hires" -> "Hi-Res"
-        "jyeffect" -> "高清环绕声"
-        "sky" -> "沉浸环绕声"
-        "jymaster" -> "超清母带"
-        else -> quality
-    }
-}

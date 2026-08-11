@@ -26,10 +26,12 @@ import androidx.compose.ui.window.Dialog
 import com.lin0721.linmusic.core.ui.components.CreatePlaylistDialog
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
-import com.lin0721.linmusic.feature.player.ui.CommentsBottomSheet
+import com.lin0721.linmusic.feature.comment.ui.CommentsBottomSheet
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
