@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import com.lin0721.linmusic.feature.comment.data.CommentItem
+import com.lin0721.linmusic.feature.comment.ui.CommentsState
 
 // 当前播放歌曲的详情聚合状态：歌词/歌曲详情/歌手资料等异步分别到达，各自保留独立的 loading/nullable 语义
 data class PlayerSongDetailState(

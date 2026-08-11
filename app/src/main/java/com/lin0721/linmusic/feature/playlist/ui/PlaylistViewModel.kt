@@ -20,24 +20,11 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import com.lin0721.linmusic.feature.player.ui.CommentsState
+import com.lin0721.linmusic.feature.comment.ui.CommentsState
 import com.lin0721.linmusic.feature.comment.data.CommentItem
 import com.lin0721.linmusic.feature.home.data.DailySong
-
-
-data class PlaylistCollectItem(
-    val playlistId: Long,
-    val playlistName: String,
-    val coverUrl: String,
-    val isInitiallyContains: Boolean,
-    var isContains: Boolean
-)
-
-data class PlaylistCollectState(
-    val songId: Long = -1L,
-    val collectItems: List<PlaylistCollectItem> = emptyList(),
-    val isLoading: Boolean = false
-)
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 
 class PlaylistViewModel(
     private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
