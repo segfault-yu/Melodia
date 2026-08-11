@@ -1,10 +1,5 @@
 package com.lin0721.linmusic.feature.home.data
 
-import com.lin0721.linmusic.core.api.DailySong
-import com.lin0721.linmusic.core.api.HistoryDetailRequest
-import com.lin0721.linmusic.core.api.NeteaseApiService
-import com.lin0721.linmusic.core.api.PersonalizedData
-import com.lin0721.linmusic.core.api.RecentPlayItem
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 import kotlinx.coroutines.flow.Flow
@@ -12,7 +7,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class HomeRepositoryImpl(
-    private val apiService: NeteaseApiService,
+    private val apiService: HomeApi,
     private val contentFilter: ContentFilter
 ) : HomeRepository {
 

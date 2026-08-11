@@ -1,6 +1,5 @@
 package com.lin0721.linmusic.feature.comment.data
 
-import com.lin0721.linmusic.core.api.CommentsResponse
 import kotlinx.coroutines.flow.Flow
 
 // 评论数据仓储（comment 业务域，被 playlist/player 两个域的评论 Tab 共享）

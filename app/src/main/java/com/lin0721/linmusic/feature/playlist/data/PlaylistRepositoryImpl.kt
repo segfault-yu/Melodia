@@ -1,19 +1,12 @@
 package com.lin0721.linmusic.feature.playlist.data
 
-import com.lin0721.linmusic.core.api.LikeSongListRequest
-import com.lin0721.linmusic.core.api.LikeSongRequest
-import com.lin0721.linmusic.core.api.NeteaseApiService
-import com.lin0721.linmusic.core.api.PlaylistDetail
-import com.lin0721.linmusic.core.api.PlaylistDetailRequest
-import com.lin0721.linmusic.core.api.PlaylistSubscribeRequest
-import com.lin0721.linmusic.core.api.PlaylistTracksManipulateRequest
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class PlaylistRepositoryImpl(
-    private val apiService: NeteaseApiService,
+    private val apiService: PlaylistApi,
     private val contentFilter: ContentFilter
 ) : PlaylistRepository {
 

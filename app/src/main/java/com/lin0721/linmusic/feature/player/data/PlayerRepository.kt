@@ -1,6 +1,6 @@
 package com.lin0721.linmusic.feature.player.data
 
-import com.lin0721.linmusic.core.api.Track
+import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import kotlinx.coroutines.flow.Flow

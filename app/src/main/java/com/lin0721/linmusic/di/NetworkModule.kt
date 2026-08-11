@@ -4,6 +4,15 @@ import com.lin0721.linmusic.core.api.NeteaseApiService
 import com.lin0721.linmusic.core.network.CryptoInterceptor
 import com.lin0721.linmusic.core.network.EmptyBodyInterceptor
 import com.lin0721.linmusic.core.network.HeaderInterceptor
+import com.lin0721.linmusic.feature.artist.data.ArtistApi
+import com.lin0721.linmusic.feature.comment.data.CommentApi
+import com.lin0721.linmusic.feature.create.data.CreateApi
+import com.lin0721.linmusic.feature.home.data.HomeApi
+import com.lin0721.linmusic.feature.library.data.LibraryApi
+import com.lin0721.linmusic.feature.player.data.PlayerApi
+import com.lin0721.linmusic.feature.playlist.data.PlaylistApi
+import com.lin0721.linmusic.feature.search.data.SearchApi
+import com.lin0721.linmusic.feature.settings.data.SettingsApi
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -27,7 +36,8 @@ import kotlinx.coroutines.launch
  * - [CryptoInterceptor]   ： 网易云加密拦截器
  * - [OkHttpClient]        ： 含加密拦截器 + 日志拦截器
  * - [Retrofit]            ： 基于 kotlinx.serialization 的转换器
- * - [NeteaseApiService]   ： Retrofit 代理接口
+ * - [NeteaseApiService]   ： 账号鉴权 Retrofit 代理接口（core/auth 跨域共用）
+ * - 各业务域 Api           ： HomeApi/PlaylistApi/CreateApi/PlayerApi/ArtistApi/SearchApi/LibraryApi/CommentApi/SettingsApi
  */
 val networkModule = module {
 
@@ -103,10 +113,21 @@ val networkModule = module {
             .build()
     }
 
-    // ─── API Service ───
+    // ─── API Service（core/auth 跨域鉴权接口） ───
     single<NeteaseApiService> {
         get<Retrofit>().create(NeteaseApiService::class.java)
     }
+
+    // ─── 按业务域拆分的 API Service ───
+    single<HomeApi> { get<Retrofit>().create(HomeApi::class.java) }
+    single<PlaylistApi> { get<Retrofit>().create(PlaylistApi::class.java) }
+    single<CreateApi> { get<Retrofit>().create(CreateApi::class.java) }
+    single<PlayerApi> { get<Retrofit>().create(PlayerApi::class.java) }
+    single<ArtistApi> { get<Retrofit>().create(ArtistApi::class.java) }
+    single<SearchApi> { get<Retrofit>().create(SearchApi::class.java) }
+    single<LibraryApi> { get<Retrofit>().create(LibraryApi::class.java) }
+    single<CommentApi> { get<Retrofit>().create(CommentApi::class.java) }
+    single<SettingsApi> { get<Retrofit>().create(SettingsApi::class.java) }
 }
 
 private const val BASE_URL = "https://music.163.com"

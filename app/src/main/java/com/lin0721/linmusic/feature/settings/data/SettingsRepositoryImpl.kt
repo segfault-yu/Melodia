@@ -1,20 +1,12 @@
 package com.lin0721.linmusic.feature.settings.data
 
-import com.lin0721.linmusic.core.api.DailySigninRequest
-import com.lin0721.linmusic.core.api.NeteaseApiService
-import com.lin0721.linmusic.core.api.NicknameCheckRequest
-import com.lin0721.linmusic.core.api.UserBindingItem
-import com.lin0721.linmusic.core.api.UserBindingRequest
-import com.lin0721.linmusic.core.api.UserLevelData
-import com.lin0721.linmusic.core.api.UserProfileUpdateRequest
-import com.lin0721.linmusic.core.api.VipInfoData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import okhttp3.MediaType.Companion.toMediaType
 
 class SettingsRepositoryImpl(
-    private val apiService: NeteaseApiService
+    private val apiService: SettingsApi
 ) : SettingsRepository {
 
     override fun getUserLevel(): Flow<Result<UserLevelData>> = flow {

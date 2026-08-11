@@ -1,6 +1,6 @@
 package com.lin0721.linmusic.feature.create.data
 
-import com.lin0721.linmusic.core.api.PlaylistDetail
+import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
 import kotlinx.coroutines.flow.Flow
 
 // 新建歌单数据仓储（create 业务域）

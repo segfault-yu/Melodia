@@ -1,16 +1,8 @@
 package com.lin0721.linmusic.feature.player.data
 
-import com.lin0721.linmusic.core.api.IntelligenceSongsRequest
-import com.lin0721.linmusic.core.api.LyricRequest
-import com.lin0721.linmusic.core.api.NeteaseApiService
-import com.lin0721.linmusic.core.api.SimiSongRequest
-import com.lin0721.linmusic.core.api.SongCreatorsRequest
-import com.lin0721.linmusic.core.api.SongDetailRequest
-import com.lin0721.linmusic.core.api.SongUrlRequest
-import com.lin0721.linmusic.core.api.SongWikiSummaryRequest
-import com.lin0721.linmusic.core.api.Track
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
+import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
@@ -23,7 +15,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 
 class PlayerRepositoryImpl(
-    private val apiService: NeteaseApiService,
+    private val apiService: PlayerApi,
     private val settingsPreferences: SettingsPreferences,
     private val userPreferences: UserPreferences,
     private val contentFilter: ContentFilter,

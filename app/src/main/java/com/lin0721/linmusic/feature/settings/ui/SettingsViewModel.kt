@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
-import com.lin0721.linmusic.core.api.UserBindingItem
-import com.lin0721.linmusic.core.api.UserLevelData
-import com.lin0721.linmusic.core.api.VipInfoData
+import com.lin0721.linmusic.feature.settings.data.UserBindingItem
+import com.lin0721.linmusic.feature.settings.data.UserLevelData
+import com.lin0721.linmusic.feature.settings.data.VipInfoData
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.settings.data.SettingsRepository
 import com.lin0721.linmusic.core.player.AudioCacheManager

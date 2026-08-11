@@ -1,15 +1,11 @@
 package com.lin0721.linmusic.feature.comment.data
 
-import com.lin0721.linmusic.core.api.CommentsRequest
-import com.lin0721.linmusic.core.api.CommentsResponse
-import com.lin0721.linmusic.core.api.LikeCommentRequest
-import com.lin0721.linmusic.core.api.NeteaseApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class CommentRepositoryImpl(
-    private val apiService: NeteaseApiService
+    private val apiService: CommentApi
 ) : CommentRepository {
 
     override fun getComments(songId: Long, limit: Int, offset: Int): Flow<Result<CommentsResponse>> =

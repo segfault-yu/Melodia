@@ -1,9 +1,9 @@
 package com.lin0721.linmusic.feature.home.ui
 
-import com.lin0721.linmusic.core.api.PersonalizedPlaylist
-import com.lin0721.linmusic.core.api.Artist
-import com.lin0721.linmusic.core.api.RecentPlayItem
-import com.lin0721.linmusic.core.api.DailySong
+import com.lin0721.linmusic.feature.home.data.PersonalizedPlaylist
+import com.lin0721.linmusic.core.model.Artist
+import com.lin0721.linmusic.feature.home.data.RecentPlayItem
+import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo

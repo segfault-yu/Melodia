@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
-import com.lin0721.linmusic.core.api.PlaylistDetail
-import com.lin0721.linmusic.core.api.Track
+import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
+import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
@@ -21,8 +21,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.feature.player.ui.CommentsState
-import com.lin0721.linmusic.core.api.CommentItem
-import com.lin0721.linmusic.core.api.DailySong
+import com.lin0721.linmusic.feature.comment.data.CommentItem
+import com.lin0721.linmusic.feature.home.data.DailySong
 
 
 data class PlaylistCollectItem(

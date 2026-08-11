@@ -49,9 +49,9 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.lin0721.linmusic.core.api.ArtistAlbum
-import com.lin0721.linmusic.core.api.ArtistDetailInfo
-import com.lin0721.linmusic.core.api.Track
+import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
+import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
+import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.core.ui.components.CreatePlaylistDialog
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
