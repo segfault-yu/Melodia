@@ -39,9 +39,11 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectSheet
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.extractDominantColor
 import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
@@ -589,12 +591,15 @@ fun ArtistContent(
 
         // 4. 详情 Bottom Sheet (批量收藏)
         if (collectSongId != null) {
-            ArtistCollectSheet(
+            PlaylistCollectSheet(
                 songId = collectSongId!!,
                 collectState = collectState,
                 onDismiss = { collectSongId = null },
                 onSaveCollection = onSaveCollection,
-                onSaveNewCollection = onSaveNewCollection
+                onSaveNewCollection = onSaveNewCollection,
+                sheetShape = BottomSheetShape,
+                itemCornerRadius = 6.dp,
+                confirmButtonShape = RoundedCornerShape(12.dp)
             )
         }
 

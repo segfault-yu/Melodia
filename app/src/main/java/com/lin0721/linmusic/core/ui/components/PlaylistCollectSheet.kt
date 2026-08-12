@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.artist.ui
+package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,36 +13,36 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.core.ui.components.CreatePlaylistDialog
-import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
-import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
-import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
-import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // ────────────────────────────────────────────────────────────────────────────
-// "收藏到歌单" 弹层（艺人页版本）
+// "收藏到歌单" 弹层，被 playlist、artist 等多个域复用。
+// 各域视觉圆角略有差异，通过参数保留各自现状。
 // ────────────────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArtistCollectSheet(
+fun PlaylistCollectSheet(
     songId: Long,
     collectState: PlaylistCollectState,
     onDismiss: () -> Unit,
     onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
-    onSaveNewCollection: (String, Long) -> Unit
+    onSaveNewCollection: (String, Long) -> Unit,
+    sheetShape: Shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
+    itemCornerRadius: Dp = 10.dp,
+    confirmButtonShape: Shape = RoundedCornerShape(10.dp)
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = BottomSheetShape,
+        shape = sheetShape,
         dragHandle = { MelodiaDragHandle() }
     ) {
         Column(
@@ -94,7 +94,7 @@ fun ArtistCollectSheet(
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
-                                    .clip(RoundedCornerShape(6.dp))
+                                    .clip(RoundedCornerShape(itemCornerRadius))
                                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -127,12 +127,12 @@ fun ArtistCollectSheet(
                             }
                         }
                     } else {
-                        itemsIndexed(localItems, key = { _, item -> item.playlistId }) { idx, item ->
+                        itemsIndexed(localItems, key = { _, item -> item.playlistId }) { index, item ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        localItems[idx] = item.copy(isContains = !item.isContains)
+                                        localItems[index] = item.copy(isContains = !item.isContains)
                                     }
                                     .padding(vertical = MelodiaSpacing.sm),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -148,7 +148,7 @@ fun ArtistCollectSheet(
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .size(40.dp)
-                                            .clip(RoundedCornerShape(6.dp))
+                                            .clip(RoundedCornerShape(itemCornerRadius))
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
@@ -162,7 +162,7 @@ fun ArtistCollectSheet(
                                 Checkbox(
                                     checked = item.isContains,
                                     onCheckedChange = { checked ->
-                                        localItems[idx] = item.copy(isContains = checked)
+                                        localItems[index] = item.copy(isContains = checked)
                                     },
                                     colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                                 )
@@ -187,7 +187,7 @@ fun ArtistCollectSheet(
                             onDismiss()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = confirmButtonShape
                     ) {
                         Text("确定", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                     }
