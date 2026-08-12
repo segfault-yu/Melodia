@@ -46,7 +46,10 @@ class ArtistRepositoryImpl(
         }
 
         // 备用：热门歌手榜单
-        try {
+        // 注意：emit 必须放在 try/catch 之外——.first() 等短路收集算子会在拿到首个值后
+        // 向上抛内部取消信号，若 emit 处在 try 块内会被这里的 catch(Exception) 误捕获，
+        // 导致再次 emit 时触发 "Flow exception transparency violated" 崩溃
+        val fallbackResult = try {
             val response = apiService.getTopArtists()
             if (response.isSuccess && response.artists.isNotEmpty()) {
                 artists = response.artists.map { dto ->
@@ -56,13 +59,14 @@ class ArtistRepositoryImpl(
                         avatarUrl = dto.img1v1Url.takeIf { it.isNotBlank() } ?: dto.picUrl
                     )
                 }
-                emit(Result.success(artists))
+                Result.success(artists)
             } else {
-                emit(Result.failure(Exception("API Error (Code: ${response.code})")))
+                Result.failure(Exception("API Error (Code: ${response.code})"))
             }
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            Result.failure(e)
         }
+        emit(fallbackResult)
     }
 
     override fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>> = flow {

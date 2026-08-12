@@ -37,10 +37,10 @@ class CryptoInterceptor : Interceptor {
 
     // ---------- 路由判定 ----------
 
-    private enum class CryptoType { WEAPI, EAPI, LINUXAPI }
+    internal enum class CryptoType { WEAPI, EAPI, LINUXAPI }
 
-    // 根据 URL 路径判断加密类型
-    private fun resolveCryptoType(url: String): CryptoType? = when {
+    // 根据 URL 路径判断加密类型（internal 以便单测直接调用）
+    internal fun resolveCryptoType(url: String): CryptoType? = when {
         url.contains("/eapi/") -> CryptoType.EAPI
         url.contains("/linux/api/") -> CryptoType.LINUXAPI
         url.contains("/weapi/") || url.contains("/api/") -> CryptoType.WEAPI
