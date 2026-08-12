@@ -5,8 +5,8 @@ import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.feature.player.domain.LyricLine
+import com.lin0721.linmusic.feature.player.domain.LyricParser
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
-import com.lin0721.linmusic.feature.player.domain.WordInfo
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -100,10 +100,10 @@ class PlayerRepositoryImpl(
         }
 
         val lines = if (!yrcText.isNullOrBlank()) {
-            val parsedYrc = parseYrc(yrcText)
-            if (parsedYrc.isNotEmpty()) parsedYrc else parseLrc(lrcText ?: "")
+            val parsedYrc = LyricParser.parseYrc(yrcText)
+            if (parsedYrc.isNotEmpty()) parsedYrc else LyricParser.parseLrc(lrcText ?: "")
         } else {
-            parseLrc(lrcText ?: "")
+            LyricParser.parseLrc(lrcText ?: "")
         }
 
         if (lines.isEmpty()) {
@@ -112,7 +112,7 @@ class PlayerRepositoryImpl(
         }
 
         // 解析翻译歌词列表（优先使用 ytlrc，其次使用 tlyric）
-        val translationLines = parseLrc(response.ytlrc?.lyric ?: response.tlyric?.lyric ?: "")
+        val translationLines = LyricParser.parseLrc(response.ytlrc?.lyric ?: response.tlyric?.lyric ?: "")
         val finalLines = lines.map { line ->
             // 寻找在 150ms 内与原词时间戳最接近的翻译行
             val matchedTranslation = translationLines
@@ -125,63 +125,6 @@ class PlayerRepositoryImpl(
         emit(Result.success(finalLines))
     }.catch { e ->
         emit(Result.failure(e))
-    }
-
-    private val yrcLineRegex = Regex("""^\[(\d+),(\d+)](.*)$""")
-    private val yrcWordRegex = Regex("""\((\d+),(\d+),\d+\)([^(\n]+)""")
-
-    private fun parseYrc(yrcText: String): List<LyricLine> {
-        return yrcText.lines().mapNotNull { line ->
-            val trimmed = line.trim()
-            if (trimmed.isEmpty()) return@mapNotNull null
-
-            yrcLineRegex.find(trimmed)?.let { match ->
-                val lineStartTime = match.groupValues[1].toLongOrNull() ?: return@let null
-                val lineDuration = match.groupValues[2].toLongOrNull() ?: return@let null
-                val wordsContent = match.groupValues[3]
-
-                val wordsList = mutableListOf<WordInfo>()
-                val fullTextBuilder = StringBuilder()
-
-                yrcWordRegex.findAll(wordsContent).forEach { wordMatch ->
-                    val absoluteTime = wordMatch.groupValues[1].toLongOrNull() ?: 0L
-                    val startOffset = absoluteTime - lineStartTime // 计算相对于行开始时间的偏移量
-                    val duration = wordMatch.groupValues[2].toLongOrNull() ?: 0L
-                    val wordText = wordMatch.groupValues[3]
-
-                    wordsList.add(WordInfo(wordText, startOffset, duration))
-                    fullTextBuilder.append(wordText)
-                }
-
-                LyricLine(
-                    timeMs = lineStartTime,
-                    durationMs = lineDuration,
-                    text = fullTextBuilder.toString(),
-                    words = wordsList
-                )
-            }
-        }.sortedBy { it.timeMs }
-    }
-
-    private val lrcPattern = Regex("""\[(\d{2}):(\d{2})[.:](\d{2,3})](.*)""")
-
-    private fun parseLrc(lrcText: String): List<LyricLine> {
-        return lrcText.lines().mapNotNull { line ->
-            lrcPattern.find(line)?.let { match ->
-                val min = match.groupValues[1].toLongOrNull() ?: return@let null
-                val sec = match.groupValues[2].toLongOrNull() ?: return@let null
-                val msRaw = match.groupValues[3]
-                val ms = if (msRaw.length == 2) msRaw.toLong() * 10 else msRaw.toLong()
-                val text = match.groupValues[4].trim()
-                if (text.isEmpty()) return@let null
-                LyricLine(timeMs = min * 60_000 + sec * 1000 + ms, text = text)
-            }
-        }.sortedBy { it.timeMs }
-    }
-
-    private fun parseLrcToMap(lrcText: String?): Map<Long, String> {
-        if (lrcText.isNullOrBlank()) return emptyMap()
-        return parseLrc(lrcText).associate { it.timeMs to it.text }
     }
 
     override fun getSongDetail(songId: Long): Flow<Result<Track>> = flow {
@@ -246,17 +189,19 @@ class PlayerRepositoryImpl(
             emit(Result.success(filteredTracks))
         } else {
             // 若心动模式报错或不支持，自动通过相似歌曲接口获取推荐
-            try {
+            // 注意：emit 必须放在 try/catch 之外，原因同上（避免误捕获 .first() 的内部取消信号）
+            val fallbackResult = try {
                 val simiResponse = apiService.getSimiSongs(SimiSongRequest(songid = songId.toString()))
                 if (simiResponse.isSuccess) {
                     val filteredSimi = contentFilter.filterBlockedArtists(simiResponse.songs) { it.ar.map { a -> a.id } }
-                    emit(Result.success(filteredSimi))
+                    Result.success(filteredSimi)
                 } else {
-                    emit(Result.failure(Exception("获取智能推荐与相似推荐均失败")))
+                    Result.failure(Exception("获取智能推荐与相似推荐均失败"))
                 }
             } catch (e: Exception) {
-                emit(Result.failure(e))
+                Result.failure(e)
             }
+            emit(fallbackResult)
         }
     }.catch { e ->
         emit(Result.failure(e))
