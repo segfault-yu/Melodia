@@ -389,116 +389,30 @@ fun MelodiaApp() {
                     .fillMaxSize()
                     .then(if (isPlayerOpen) Modifier.haze(hazeState) else Modifier)
             ) {
-                AnimatedContent(
-                    targetState = currentScreen,
-                    transitionSpec = {
-                        val forward = targetState != Screen.Home
-                        val offsetY = 40
-                        if (forward) {
-                            (fadeIn(tween(300, delayMillis = 100, easing = FastOutSlowInEasing))
-                                    + slideInVertically(tween(300, delayMillis = 100, easing = FastOutSlowInEasing)) { offsetY })
-                                .togetherWith(
-                                    fadeOut(tween(200, easing = FastOutSlowInEasing))
-                                            + slideOutVertically(tween(200, easing = FastOutSlowInEasing)) { -offsetY }
-                                )
-                        } else {
-                            (fadeIn(tween(300, delayMillis = 100, easing = FastOutSlowInEasing))
-                                    + slideInVertically(tween(300, delayMillis = 100, easing = FastOutSlowInEasing)) { -offsetY })
-                                .togetherWith(
-                                    fadeOut(tween(200, easing = FastOutSlowInEasing))
-                                            + slideOutVertically(tween(200, easing = FastOutSlowInEasing)) { offsetY }
-                                )
-                        }.using(SizeTransform(clip = false))
+                MelodiaNavHost(
+                    currentScreen = currentScreen,
+                    homeViewModel = viewModel,
+                    activePlaylistId = activePlaylistId,
+                    activePlaylistIsAlbum = activePlaylistIsAlbum,
+                    activeArtistId = activeArtistId,
+                    searchAutoFocus = searchAutoFocus,
+                    onOpenSidebar = openSidebar,
+                    onLoginScreenVisibilityChanged = { isLoginScreenVisible = it },
+                    onNavigateToPlaylist = { id, isAlbum ->
+                        activePlaylistId = id
+                        activePlaylistIsAlbum = isAlbum
+                        navigateTo(Screen.Playlist)
                     },
-                    label = "screen_transition"
-                ) { screen ->
-                    when (screen) {
-                        Screen.Home -> {
-                            HomeScreen(
-                                viewModel = viewModel,
-                                onPlaylistClick = { id ->
-                                    activePlaylistId = id
-                                    activePlaylistIsAlbum = false
-                                    navigateTo(Screen.Playlist)
-                                },
-                                onSearchClick = {
-                                    searchAutoFocus = true
-                                    navigateTo(Screen.Search)
-                                },
-                                onOpenSidebar = openSidebar,
-                                onLoginScreenVisibilityChanged = { isLoginScreenVisible = it }
-                            )
-                        }
-                        Screen.Playlist -> {
-                            activePlaylistId?.let { id ->
-                                com.lin0721.linmusic.feature.playlist.ui.PlaylistScreen(
-                                    playlistId = id,
-                                    isAlbum = activePlaylistIsAlbum,
-                                    onBack = navigateBack,
-                                    onArtistClick = { artistId ->
-                                        activeArtistId = artistId
-                                        navigateTo(Screen.Artist)
-                                    },
-                                    onAlbumClick = { albumId ->
-                                        activePlaylistId = albumId
-                                        activePlaylistIsAlbum = true
-                                        navigateTo(Screen.Playlist)
-                                    }
-                                )
-                            }
-                        }
-                        Screen.Search -> {
-                            com.lin0721.linmusic.feature.search.ui.SearchScreen(
-                                autoFocus = searchAutoFocus,
-                                onBack = navigateBack,
-                                onOpenSidebar = openSidebar
-                            )
-                        }
-                        Screen.Library -> {
-                            com.lin0721.linmusic.feature.library.ui.LibraryScreen(
-                                onPlaylistClick = { id ->
-                                    activePlaylistId = id
-                                    activePlaylistIsAlbum = false
-                                    navigateTo(Screen.Playlist)
-                                },
-                                onArtistClick = { id ->
-                                    activeArtistId = id
-                                    navigateTo(Screen.Artist)
-                                },
-                                onBack = navigateBack,
-                                onOpenSidebar = openSidebar,
-                                onLoginScreenVisibilityChanged = { isLoginScreenVisible = it }
-                            )
-                        }
-                        Screen.Settings -> {
-                            com.lin0721.linmusic.feature.settings.ui.SettingsScreen(
-                                onBack = navigateBack
-                            )
-                        }
-                        Screen.Artist -> {
-                            activeArtistId?.let { id ->
-                                com.lin0721.linmusic.feature.artist.ui.ArtistScreen(
-                                    artistId = id,
-                                    onBack = navigateBack,
-                                    onArtistClick = { nextId ->
-                                        activeArtistId = nextId
-                                        navigateTo(Screen.Artist)
-                                    },
-                                    onPlaylistClick = { playlistId ->
-                                        activePlaylistId = playlistId
-                                        activePlaylistIsAlbum = false
-                                        navigateTo(Screen.Playlist)
-                                    },
-                                    onAlbumClick = { albumId ->
-                                        activePlaylistId = albumId
-                                        activePlaylistIsAlbum = true
-                                        navigateTo(Screen.Playlist)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
+                    onNavigateToArtist = { id ->
+                        activeArtistId = id
+                        navigateTo(Screen.Artist)
+                    },
+                    onNavigateToSearch = {
+                        searchAutoFocus = true
+                        navigateTo(Screen.Search)
+                    },
+                    onBack = navigateBack
+                )
             }
 
             // 创建菜单遮罩
@@ -512,79 +426,32 @@ fun MelodiaApp() {
             }
 
             // 放置在应用了平移 graphicsLayer 的主 Box 内部的底部
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-            ) {
-                // 0. 创建菜单弹出层
-                AnimatedVisibility(
-                    visible = showCreateSheet && !isLoginScreenVisible,
-                    enter = slideInVertically(
-                        initialOffsetY = { it / 2 },
-                        animationSpec = tween(250, easing = FastOutSlowInEasing)
-                    ) + fadeIn(tween(200)),
-                    exit = slideOutVertically(
-                        targetOffsetY = { it / 2 },
-                        animationSpec = tween(200, easing = FastOutSlowInEasing)
-                    ) + fadeOut(tween(150))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 12.dp)
-                    ) {
-                        CreatePopupMenu(
-                            onDismiss = { showCreateSheet = false },
-                            onLoginRequest = {
-                                // TODO: 触发登录流程
-                            }
-                        )
-                    }
-                }
-
-                // 1. 浮动播放卡片
-                AnimatedVisibility(
-                    visible = currentTrack != null && !isLoginScreenVisible,
-                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-                ) {
-                    MiniPlayerCard(
-                        hazeState = hazeState,
-                        currentTrack = currentTrack,
-                        isPlaying = isPlaying,
-                        currentPositionProvider = currentPositionProvider,
-                        duration = duration,
-                        onTogglePlay = { viewModel.togglePlayPause() },
-                        onNext = { viewModel.playerManager.playNext() },
-                        onClick = { animatePlayerTo(true, 0f) },
-                        onDrag = { delta ->
-                            springJobRef[0]?.cancel()
-                            if (!isPlayerOpen) isPlayerOpen = true
-                            playerOffsetY = (playerOffsetY + delta).coerceIn(0f, screenHeightPx)
-                        },
-                        onDragEnd = { velocity ->
-                            val shouldOpen = playerOffsetY < screenHeightPx * 0.80f || velocity < -1000f
-                            animatePlayerTo(shouldOpen, velocity)
-                        },
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                }
-
-                // 2. M3 导航栏 (在非登录状态下显示)
-                AnimatedVisibility(
-                    visible = !isLoginScreenVisible,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    MelodiaNavigationBar(
-                        currentScreen = currentScreen,
-                        onNavigate = { searchAutoFocus = false; navigateTo(it) },
-                        onCreateClick = { showCreateSheet = !showCreateSheet },
-                        isCreateMenuOpen = showCreateSheet
-                    )
-                }
-            }
+            MelodiaBottomOverlay(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                currentScreen = currentScreen,
+                showCreateSheet = showCreateSheet,
+                isLoginScreenVisible = isLoginScreenVisible,
+                currentTrack = currentTrack,
+                isPlaying = isPlaying,
+                currentPositionProvider = currentPositionProvider,
+                duration = duration,
+                hazeState = hazeState,
+                onTogglePlay = { viewModel.togglePlayPause() },
+                onNext = { viewModel.playerManager.playNext() },
+                onMiniPlayerClick = { animatePlayerTo(true, 0f) },
+                onMiniPlayerDrag = { delta ->
+                    springJobRef[0]?.cancel()
+                    if (!isPlayerOpen) isPlayerOpen = true
+                    playerOffsetY = (playerOffsetY + delta).coerceIn(0f, screenHeightPx)
+                },
+                onMiniPlayerDragEnd = { velocity ->
+                    val shouldOpen = playerOffsetY < screenHeightPx * 0.80f || velocity < -1000f
+                    animatePlayerTo(shouldOpen, velocity)
+                },
+                onCreateDismiss = { showCreateSheet = false },
+                onNavigate = { searchAutoFocus = false; navigateTo(it) },
+                onCreateClick = { showCreateSheet = !showCreateSheet }
+            )
 
             // 侧边栏打开时的遮罩与点击收起事件
             val currentOffset = drawerState.offset
@@ -602,73 +469,32 @@ fun MelodiaApp() {
             }
         }
 
-        // 仅在播放器打开或动画进行中时渲染，避免关闭后 nestedScroll 拦截触摸事件
-        if (currentTrack != null && screenHeightPx > 0f && isPlayerOpen) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset { IntOffset(0, playerOffsetY.toInt()) }
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = if (playerOffsetY > 0f) 24.dp else 0.dp,
-                            topEnd = if (playerOffsetY > 0f) 24.dp else 0.dp
-                        )
-                    )
-            ) {
-                FullPlayerScreen(
-                    currentTrack = currentTrack,
-                    isPlaying = isPlaying,
-                    currentPositionProvider = currentPositionProvider,
-                    duration = duration,
-                    onTogglePlay = { viewModel.togglePlayPause() },
-                    onSeek = { viewModel.playerManager.seekTo(it) },
-                    onClose = {
-                        animatePlayerTo(false, 0f)
-                    },
-                    onDragClose = { offset, velocity ->
-                        animatePlayerTo(false, velocity, offset)
-                    },
-                    isPlayerOpen = isPlayerOpen,
-                    onArtistClick = { artistId ->
-                        animatePlayerTo(false, 0f)
-                        activeArtistId = artistId
-                        navigateTo(Screen.Artist)
-                    },
-                    onAlbumClick = { albumId ->
-                        animatePlayerTo(false, 0f)
-                        activePlaylistId = albumId
-                        activePlaylistIsAlbum = true
-                        navigateTo(Screen.Playlist)
-                    }
-                )
+        MelodiaFullPlayerOverlay(
+            currentTrack = currentTrack,
+            screenHeightPx = screenHeightPx,
+            isPlayerOpen = isPlayerOpen,
+            playerOffsetY = playerOffsetY,
+            isPlaying = isPlaying,
+            currentPositionProvider = currentPositionProvider,
+            duration = duration,
+            onTogglePlay = { viewModel.togglePlayPause() },
+            onSeek = { viewModel.playerManager.seekTo(it) },
+            onClose = { animatePlayerTo(false, 0f) },
+            onDragClose = { offset, velocity -> animatePlayerTo(false, velocity, offset) },
+            onArtistClick = { artistId ->
+                animatePlayerTo(false, 0f)
+                activeArtistId = artistId
+                navigateTo(Screen.Artist)
+            },
+            onAlbumClick = { albumId ->
+                animatePlayerTo(false, 0f)
+                activePlaylistId = albumId
+                activePlaylistIsAlbum = true
+                navigateTo(Screen.Playlist)
             }
-        }
+        )
 
         // 4. 全局自定义 Toast 提示
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            AnimatedVisibility(
-                visible = toastMessage != null,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeIn(tween(250)),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(250, easing = FastOutSlowInEasing)
-                ) + fadeOut(tween(200)),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 120.dp) // 位于底部浮岛上方
-                    .zIndex(999f)
-            ) {
-                toastMessage?.let { msg ->
-                    com.lin0721.linmusic.core.ui.components.CustomToast(message = msg)
-                }
-            }
-        }
-
+        MelodiaToastHost(toastMessage = toastMessage)
     }
 }
