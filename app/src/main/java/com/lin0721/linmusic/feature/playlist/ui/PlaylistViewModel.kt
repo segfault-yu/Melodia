@@ -23,7 +23,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.lin0721.linmusic.core.comment.ui.CommentsState
-import com.lin0721.linmusic.core.comment.data.CommentItem
+import com.lin0721.linmusic.core.model.CommentItem
 import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState

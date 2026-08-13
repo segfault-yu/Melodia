@@ -3,8 +3,8 @@ package com.lin0721.linmusic.feature.artist.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
-import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
-import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
+import com.lin0721.linmusic.core.model.ArtistDetailInfo
+import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.core.auth.AuthRepository

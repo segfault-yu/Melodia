@@ -67,3 +67,56 @@ data class ArtistInfo(
     val name: String,
     val avatarUrl: String
 )
+
+// ======================= 歌手载荷模型（artist 域产出，player 域同样消费）=======================
+
+@Serializable
+data class ArtistDetailInfo(
+    val id: Long = 0,
+    val name: String = "",
+    val cover: String = "",
+    val avatar: String = "",
+    val briefDesc: String = "",
+    val albumSize: Int = 0,
+    val musicSize: Int = 0,
+    val identifyTag: List<String>? = null,
+    val trans: String? = null, // 翻译名称
+    val alias: List<String>? = null // 别名列表
+)
+
+@Serializable
+data class ArtistAlbum(
+    val id: Long = 0,
+    val name: String = "",
+    val picUrl: String = "",
+    val publishTime: Long = 0,
+    val size: Int = 0
+)
+
+// ======================= 评论载荷模型（core/comment 产出，player/playlist 消费）=======================
+
+@Serializable
+data class CommentItem(
+    val commentId: Long = 0,
+    val user: CommentUser = CommentUser(),
+    val content: String = "",
+    val time: Long = 0,
+    val timeStr: String? = null,
+    val likedCount: Int = 0,
+    val liked: Boolean = false,
+    val beReplied: List<BeRepliedComment>? = null
+)
+
+@Serializable
+data class CommentUser(
+    val userId: Long = 0,
+    val nickname: String = "",
+    val avatarUrl: String = ""
+)
+
+@Serializable
+data class BeRepliedComment(
+    val user: CommentUser? = null,
+    val content: String? = null,
+    val beRepliedCommentId: Long? = null
+)

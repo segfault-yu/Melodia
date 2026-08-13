@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.core.comment.data
 
+import com.lin0721.linmusic.core.model.CommentItem
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -58,28 +59,3 @@ data class LikeCommentResponse(
     val isSuccess: Boolean get() = code == 200
 }
 
-@Serializable
-data class CommentItem(
-    val commentId: Long = 0,
-    val user: CommentUser = CommentUser(),
-    val content: String = "",
-    val time: Long = 0,
-    val timeStr: String? = null,
-    val likedCount: Int = 0,
-    val liked: Boolean = false,
-    val beReplied: List<BeRepliedComment>? = null
-)
-
-@Serializable
-data class CommentUser(
-    val userId: Long = 0,
-    val nickname: String = "",
-    val avatarUrl: String = ""
-)
-
-@Serializable
-data class BeRepliedComment(
-    val user: CommentUser? = null,
-    val content: String? = null,
-    val beRepliedCommentId: Long? = null
-)

@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
-import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
+import com.lin0721.linmusic.core.model.ArtistDetailInfo
 
 // ────────────────────────────────────────────────────────────────────────────
 // 艺人简介 Dialog
