@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.feature.create.data.CreateRepository
+import com.lin0721.linmusic.core.network.ResourceProvider
+import com.lin0721.linmusic.core.network.toUserMessage
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -17,7 +19,8 @@ import kotlinx.coroutines.launch
 
 class CreateViewModel(
     private val createRepository: CreateRepository,
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     val userProfile: StateFlow<UserProfile?> = userPreferences.userProfile
@@ -44,7 +47,7 @@ class CreateViewModel(
                     _toastEvent.emit("歌单「$name」创建成功！")
                     onSuccess()
                 }.onFailure { e ->
-                    _toastEvent.emit(e.message ?: "创建歌单失败")
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
             }
             _isCreating.value = false

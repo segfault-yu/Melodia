@@ -16,6 +16,8 @@ import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
+import com.lin0721.linmusic.core.network.ResourceProvider
+import com.lin0721.linmusic.core.network.toUserMessage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
@@ -41,7 +43,8 @@ class ArtistViewModel(
     private val playlistRepository: PlaylistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ArtistUiState>(ArtistUiState.Loading)
@@ -128,13 +131,13 @@ class ArtistViewModel(
                         similarArtists = similar
                     )
                 } else {
-                    val err = detailResult.exceptionOrNull()?.message
-                        ?: topSongsResult.exceptionOrNull()?.message
-                        ?: "加载歌手数据失败"
+                    val err = (detailResult.exceptionOrNull() ?: topSongsResult.exceptionOrNull())
+                        ?.toUserMessage(resourceProvider)
+                        ?: resourceProvider.getString(com.lin0721.linmusic.R.string.app_error_biz_default)
                     _uiState.value = ArtistUiState.Error(err)
                 }
             } catch (e: Exception) {
-                _uiState.value = ArtistUiState.Error(e.message ?: "加载数据异常")
+                _uiState.value = ArtistUiState.Error(e.toUserMessage(resourceProvider))
             }
         }
     }
@@ -149,7 +152,7 @@ class ArtistViewModel(
                     val msg = if (targetSubscribe) "已关注歌手" else "已取消关注歌手"
                     _toastEvent.emit(msg)
                 }.onFailure { e ->
-                    _toastEvent.emit("操作失败: ${e.message}")
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -194,6 +197,7 @@ class ArtistViewModel(
                     _collectState.update { it.copy(collectItems = items, isLoading = false) }
                 }.onFailure {
                     _collectState.update { it.copy(isLoading = false) }
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -210,7 +214,7 @@ class ArtistViewModel(
                             result.onSuccess {
                                 // 操作成功
                             }.onFailure { e ->
-                                _toastEvent.emit("更新喜欢状态失败: ${e.message}")
+                                _toastEvent.emit(e.toUserMessage(resourceProvider))
                             }
                         }
                     } else {
@@ -223,7 +227,7 @@ class ArtistViewModel(
                             result.onSuccess {
                                 // 操作成功
                             }.onFailure { e ->
-                                _toastEvent.emit("收藏至 [${item.playlistName}] 失败: ${e.message}")
+                                _toastEvent.emit(e.toUserMessage(resourceProvider))
                             }
                         }
                     }
@@ -244,7 +248,7 @@ class ArtistViewModel(
                         loadLikedSongIds()
                     },
                     onFailure = { e ->
-                        _toastEvent.emit(e.message ?: "操作失败")
+                        _toastEvent.emit(e.toUserMessage(resourceProvider))
                     }
                 )
             }

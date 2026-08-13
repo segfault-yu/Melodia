@@ -2,6 +2,7 @@ package com.lin0721.linmusic.di
 
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
+import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.player.PlaybackPreferences
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import org.koin.android.ext.koin.androidContext
@@ -12,4 +13,5 @@ val localModule = module {
     single { UserPreferences(androidContext()) }
     single { SettingsPreferences(androidContext()) }
     single { ContentFilter(get()) }
+    single { ResourceProvider(androidContext()) }
 }
