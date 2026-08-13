@@ -2,23 +2,22 @@ package com.lin0721.linmusic.feature.artist.data
 
 import com.lin0721.linmusic.core.model.Artist
 import com.lin0721.linmusic.core.model.Track
+import com.lin0721.linmusic.core.network.AppError
+import com.lin0721.linmusic.core.network.apiFlow
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class ArtistRepositoryImpl(
     private val apiService: ArtistApi
 ) : ArtistRepository {
 
-    override fun getTopArtists(): Flow<Result<List<Artist>>> = flow {
-        val response = apiService.getTopArtists()
-        if (response.isSuccess) {
-            emit(Result.success(response.artists))
-        } else {
-            emit(Result.failure(Exception("API Error (Code: ${response.code})")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getTopArtists(): Flow<Result<List<Artist>>> = apiFlow(
+        request = { apiService.getTopArtists() },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { it.artists }
+    )
 
     override fun getFavoriteArtists(): Flow<Result<List<ArtistInfo>>> = flow {
         var artists = emptyList<ArtistInfo>()
@@ -61,7 +60,7 @@ class ArtistRepositoryImpl(
                 }
                 Result.success(artists)
             } else {
-                Result.failure(Exception("API Error (Code: ${response.code})"))
+                Result.failure(AppError.BizError(response.code, null))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -69,83 +68,69 @@ class ArtistRepositoryImpl(
         emit(fallbackResult)
     }
 
-    override fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>> = flow {
-        val response = apiService.getArtistDetail(ArtistDetailRequest(id = artistId))
-        if (response.isSuccess && response.data?.artist != null) {
-            emit(Result.success(response.data.artist))
-        } else {
-            emit(Result.failure(Exception("Failed to load artist detail: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>> = apiFlow(
+        request = { apiService.getArtistDetail(ArtistDetailRequest(id = artistId)) },
+        isSuccess = { it.isSuccess && it.data?.artist != null },
+        code = { it.code },
+        transform = { it.data!!.artist!! }
+    )
 
-    override fun getArtistAlbums(artistId: Long, limit: Int): Flow<Result<List<ArtistAlbum>>> = flow {
-        val response = apiService.getArtistAlbums(id = artistId, body = ArtistAlbumRequest(limit = limit))
-        if (response.isSuccess) {
-            emit(Result.success(response.hotAlbums))
-        } else {
-            emit(Result.failure(Exception("Failed to load artist albums: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getArtistAlbums(artistId: Long, limit: Int): Flow<Result<List<ArtistAlbum>>> = apiFlow(
+        request = { apiService.getArtistAlbums(id = artistId, body = ArtistAlbumRequest(limit = limit)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { it.hotAlbums }
+    )
 
     // 获取歌手粉丝数量
-    override fun getArtistFansCount(artistId: Long): Flow<Result<Long>> = flow {
-        val response = apiService.getArtistFollowCount(ArtistFollowCountRequest(id = artistId))
-        if (response.isSuccess) {
-            val data = response.data
-            val fans = data?.fansCnt ?: data?.fansCount ?: data?.fans ?: 0L
-            emit(Result.success(fans))
-        } else {
-            emit(Result.failure(Exception("Failed to load artist fans count: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getArtistFansCount(artistId: Long): Flow<Result<Long>> = apiFlow(
+        request = { apiService.getArtistFollowCount(ArtistFollowCountRequest(id = artistId)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { val data = it.data; data?.fansCnt ?: data?.fansCount ?: data?.fans ?: 0L }
+    )
 
-    override fun getArtistTopSongs(artistId: Long): Flow<Result<List<Track>>> = flow {
-        val response = apiService.getArtistTopSongs(ArtistTopSongsRequest(id = artistId))
-        if (response.isSuccess) {
-            emit(Result.success(response.songs))
-        } else {
-            emit(Result.failure(Exception("Failed to load artist top songs: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getArtistTopSongs(artistId: Long): Flow<Result<List<Track>>> = apiFlow(
+        request = { apiService.getArtistTopSongs(ArtistTopSongsRequest(id = artistId)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { it.songs }
+    )
 
-    override fun subscribeArtist(artistId: Long, subscribe: Boolean): Flow<Result<Unit>> = flow {
-        val op = if (subscribe) "sub" else "unsub"
-        val response = apiService.subscribeArtist(
-            op = op,
-            body = ArtistSubscriptionRequest(
-                artistId = artistId,
-                artistIds = "[$artistId]"
+    override fun subscribeArtist(artistId: Long, subscribe: Boolean): Flow<Result<Unit>> = apiFlow(
+        request = {
+            apiService.subscribeArtist(
+                op = if (subscribe) "sub" else "unsub",
+                body = ArtistSubscriptionRequest(
+                    artistId = artistId,
+                    artistIds = "[$artistId]"
+                )
             )
-        )
-        if (response.isSuccess) {
-            emit(Result.success(Unit))
-        } else {
-            emit(Result.failure(Exception("操作失败: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+        },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { Unit }
+    )
 
-    override fun checkArtistFollowed(artistId: Long): Flow<Result<Boolean>> = flow {
-        val response = apiService.getArtistDetailDynamic(ArtistFollowCountRequest(id = artistId))
-        if (response.isSuccess) {
-            emit(Result.success(response.isFollow))
-        } else {
-            emit(Result.failure(Exception("Failed to check artist follow state: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun checkArtistFollowed(artistId: Long): Flow<Result<Boolean>> = apiFlow(
+        request = { apiService.getArtistDetailDynamic(ArtistFollowCountRequest(id = artistId)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { it.isFollow }
+    )
 
-    override fun getSimilarArtists(artistId: Long): Flow<Result<List<ArtistInfo>>> = flow {
-        val response = apiService.getSimiArtists(SimiArtistRequest(artistid = artistId))
-        if (response.isSuccess) {
-            val artists = response.artists.map { artist ->
+    override fun getSimilarArtists(artistId: Long): Flow<Result<List<ArtistInfo>>> = apiFlow(
+        request = { apiService.getSimiArtists(SimiArtistRequest(artistid = artistId)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { response ->
+            response.artists.map { artist ->
                 ArtistInfo(
                     id = artist.id,
                     name = artist.name,
                     avatarUrl = artist.img1v1Url.ifEmpty { artist.picUrl }
                 )
             }
-            emit(Result.success(artists))
-        } else {
-            emit(Result.failure(Exception("Failed to load similar artists: code ${response.code}")))
         }
-    }.catch { e -> emit(Result.failure(e)) }
+    )
 }

@@ -10,6 +10,8 @@ import com.lin0721.linmusic.feature.search.domain.HotSearch
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
+import com.lin0721.linmusic.core.network.ResourceProvider
+import com.lin0721.linmusic.core.network.toUserMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -35,7 +37,8 @@ data class SearchUiState(
 class SearchViewModel(
     private val repository: SearchRepository,
     val playerManager: PlayerManager,
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     val userProfile: StateFlow<UserProfile?> = userPreferences.userProfile
@@ -140,7 +143,7 @@ class SearchViewModel(
                 currentOffset += data.songs.size
                 _hasMore.value = data.hasMore
             }.onFailure { error ->
-                _toastEvent.emit(error.message ?: "搜索失败")
+                _toastEvent.emit(error.toUserMessage(resourceProvider))
             }
         }
         _searchLoading.value = false

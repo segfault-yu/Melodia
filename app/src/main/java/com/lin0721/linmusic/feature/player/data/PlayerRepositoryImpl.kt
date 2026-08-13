@@ -3,6 +3,9 @@ package com.lin0721.linmusic.feature.player.data
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.core.model.Track
+import com.lin0721.linmusic.core.network.AppError
+import com.lin0721.linmusic.core.network.apiFlow
+import com.lin0721.linmusic.core.network.mapToAppError
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.player.domain.LyricParser
@@ -33,124 +36,85 @@ class PlayerRepositoryImpl(
         }
     }
 
-    override fun getSongUrl(songId: Long): Flow<Result<String>> = flow {
-        val quality = if (isWifiConnected()) {
-            settingsPreferences.wifiQuality.first()
-        } else {
-            settingsPreferences.mobileQuality.first()
-        }
-
-        val response = apiService.getSongUrl(
-            body = SongUrlRequest(
-                ids = "[$songId]",
-                level = quality
-            )
-        )
-
-        if (response.isSuccess) {
-            val songItem = response.data.firstOrNull()
-            if (songItem != null && !songItem.url.isNullOrBlank()) {
-                emit(Result.success(songItem.url))
+    override fun getSongUrl(songId: Long): Flow<Result<String>> = apiFlow(
+        request = {
+            val quality = if (isWifiConnected()) {
+                settingsPreferences.wifiQuality.first()
             } else {
-                emit(Result.failure(Exception("无法获取播放链接：该歌曲可能需要开启 VIP 或其版权受限。")))
+                settingsPreferences.mobileQuality.first()
             }
-        } else {
-            emit(Result.failure(Exception("网易云 API 响应异常 (Code: ${response.code})，可能是风控拦截。")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
+            apiService.getSongUrl(body = SongUrlRequest(ids = "[$songId]", level = quality))
+        },
+        // 该歌曲可能需要开启 VIP 或版权受限：code=200 但 url 为空，也算失败
+        isSuccess = { it.isSuccess && !it.data.firstOrNull()?.url.isNullOrBlank() },
+        code = { it.code },
+        transform = { it.data.first().url!! }
+    )
 
-    override fun getLyrics(songId: Long): Flow<Result<List<LyricLine>>> = flow {
-        val response = apiService.getLyrics(
-            LyricRequest(
-                id = songId,
-                tv = -1,
-                lv = -1,
-                rv = -1,
-                kv = -1,
-                ytv = -1,
-                yrv = -1
+    override fun getLyrics(songId: Long): Flow<Result<List<LyricLine>>> = apiFlow(
+        request = {
+            apiService.getLyrics(
+                LyricRequest(id = songId, tv = -1, lv = -1, rv = -1, kv = -1, ytv = -1, yrv = -1)
             )
-        )
-        if (!response.isSuccess) {
-            emit(Result.failure(Exception("Failed to load lyrics: code ${response.code}")))
-            return@flow
+        },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { response ->
+            when {
+                // 纯音乐返回带标识的单行；未收录返回空列表以隐藏卡片
+                response.nolyric -> listOf(LyricLine(timeMs = 0, text = "纯音乐"))
+                response.uncollected -> emptyList()
+                else -> {
+                    val yrcText = response.yrc?.lyric
+                    val lrcText = response.lrc?.lyric
+                    // 检测歌词文本中是否包含“纯音乐”或“Instrumental”标识
+                    val isInstrumental = (!yrcText.isNullOrBlank() && (yrcText.contains("纯音乐") || yrcText.contains("Instrumental", ignoreCase = true))) ||
+                            (!lrcText.isNullOrBlank() && (lrcText.contains("纯音乐") || lrcText.contains("Instrumental", ignoreCase = true)))
+                    if (isInstrumental) {
+                        listOf(LyricLine(timeMs = 0, text = "纯音乐"))
+                    } else {
+                        val lines = if (!yrcText.isNullOrBlank()) {
+                            val parsedYrc = LyricParser.parseYrc(yrcText)
+                            if (parsedYrc.isNotEmpty()) parsedYrc else LyricParser.parseLrc(lrcText ?: "")
+                        } else {
+                            LyricParser.parseLrc(lrcText ?: "")
+                        }
+                        if (lines.isEmpty()) {
+                            emptyList()
+                        } else {
+                            // 解析翻译歌词列表（优先使用 ytlrc，其次使用 tlyric）
+                            val translationLines = LyricParser.parseLrc(response.ytlrc?.lyric ?: response.tlyric?.lyric ?: "")
+                            lines.map { line ->
+                                // 寻找在 150ms 内与原词时间戳最接近的翻译行
+                                val matchedTranslation = translationLines
+                                    .filter { kotlin.math.abs(it.timeMs - line.timeMs) < 150 }
+                                    .minByOrNull { kotlin.math.abs(it.timeMs - line.timeMs) }
+                                    ?.text
+                                line.copy(translation = matchedTranslation)
+                            }
+                        }
+                    }
+                }
+            }
         }
+    )
 
-        // 如果是纯音乐，返回带有“纯音乐”标识的单个歌词行；若是未收录，则返回空列表以隐藏卡片
-        if (response.nolyric) {
-            emit(Result.success(listOf(LyricLine(timeMs = 0, text = "纯音乐"))))
-            return@flow
-        }
-        if (response.uncollected) {
-            emit(Result.success(emptyList()))
-            return@flow
-        }
+    override fun getSongDetail(songId: Long): Flow<Result<Track>> = apiFlow(
+        request = {
+            val c = """[{"id":$songId}]"""
+            apiService.getSongDetail(SongDetailRequest(c = c))
+        },
+        isSuccess = { it.isSuccess && it.songs.isNotEmpty() },
+        code = { it.code },
+        transform = { it.songs[0] }
+    )
 
-        val yrcText = response.yrc?.lyric
-        val lrcText = response.lrc?.lyric
-
-        // 检测歌词文本内容中是否包含“纯音乐”或“Instrumental”标识，若包含则视为纯音乐并返回对应标识以隐藏卡片
-        val isInstrumental = (!yrcText.isNullOrBlank() && (yrcText.contains("纯音乐") || yrcText.contains("Instrumental", ignoreCase = true))) ||
-                (!lrcText.isNullOrBlank() && (lrcText.contains("纯音乐") || lrcText.contains("Instrumental", ignoreCase = true)))
-        if (isInstrumental) {
-            emit(Result.success(listOf(LyricLine(timeMs = 0, text = "纯音乐"))))
-            return@flow
-        }
-
-        val lines = if (!yrcText.isNullOrBlank()) {
-            val parsedYrc = LyricParser.parseYrc(yrcText)
-            if (parsedYrc.isNotEmpty()) parsedYrc else LyricParser.parseLrc(lrcText ?: "")
-        } else {
-            LyricParser.parseLrc(lrcText ?: "")
-        }
-
-        if (lines.isEmpty()) {
-            emit(Result.success(emptyList()))
-            return@flow
-        }
-
-        // 解析翻译歌词列表（优先使用 ytlrc，其次使用 tlyric）
-        val translationLines = LyricParser.parseLrc(response.ytlrc?.lyric ?: response.tlyric?.lyric ?: "")
-        val finalLines = lines.map { line ->
-            // 寻找在 150ms 内与原词时间戳最接近的翻译行
-            val matchedTranslation = translationLines
-                .filter { kotlin.math.abs(it.timeMs - line.timeMs) < 150 }
-                .minByOrNull { kotlin.math.abs(it.timeMs - line.timeMs) }
-                ?.text
-
-            line.copy(translation = matchedTranslation)
-        }
-        emit(Result.success(finalLines))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun getSongDetail(songId: Long): Flow<Result<Track>> = flow {
-        val c = """[{"id":$songId}]"""
-        val response = apiService.getSongDetail(SongDetailRequest(c = c))
-        if (response.isSuccess && response.songs.isNotEmpty()) {
-            emit(Result.success(response.songs[0]))
-        } else {
-            emit(Result.failure(Exception("Failed to load song detail: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
-
-    override fun getSimilarSongs(songId: Long): Flow<Result<List<Track>>> = flow {
-        // 传入 songId.toString()
-        val response = apiService.getSimiSongs(SimiSongRequest(songid = songId.toString()))
-        if (response.isSuccess) {
-            val filteredTracks = contentFilter.filterBlockedArtists(response.songs) { it.ar.map { a -> a.id } }
-            emit(Result.success(filteredTracks))
-        } else {
-            emit(Result.failure(Exception("获取相似歌曲失败: code ${response.code}")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }
+    override fun getSimilarSongs(songId: Long): Flow<Result<List<Track>>> = apiFlow(
+        request = { apiService.getSimiSongs(SimiSongRequest(songid = songId.toString())) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { contentFilter.filterBlockedArtists(it.songs) { song -> song.ar.map { a -> a.id } } }
+    )
 
     override fun getIntelligenceSongs(songId: Long, playlistId: Long): Flow<Result<List<Track>>> = flow {
         var success = false
@@ -196,7 +160,7 @@ class PlayerRepositoryImpl(
                     val filteredSimi = contentFilter.filterBlockedArtists(simiResponse.songs) { it.ar.map { a -> a.id } }
                     Result.success(filteredSimi)
                 } else {
-                    Result.failure(Exception("获取智能推荐与相似推荐均失败"))
+                    Result.failure(AppError.BizError(simiResponse.code, null))
                 }
             } catch (e: Exception) {
                 Result.failure(e)
@@ -204,7 +168,7 @@ class PlayerRepositoryImpl(
             emit(fallbackResult)
         }
     }.catch { e ->
-        emit(Result.failure(e))
+        emit(Result.failure(mapToAppError(e)))
     }
 
     // 获取合并后的歌曲详情与百科信息
@@ -336,6 +300,6 @@ class PlayerRepositoryImpl(
             ))
         }
     }.catch { e ->
-        emit(Result.failure(e))
+        emit(Result.failure(mapToAppError(e)))
     }
 }

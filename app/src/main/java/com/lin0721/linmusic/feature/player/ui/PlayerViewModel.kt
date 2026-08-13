@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import com.lin0721.linmusic.feature.comment.data.CommentItem
 import com.lin0721.linmusic.feature.comment.ui.CommentsState
+import com.lin0721.linmusic.core.network.ResourceProvider
+import com.lin0721.linmusic.core.network.toUserMessage
 
 // 当前播放歌曲的详情聚合状态：歌词/歌曲详情/歌手资料等异步分别到达，各自保留独立的 loading/nullable 语义
 data class PlayerSongDetailState(
@@ -58,7 +60,8 @@ class PlayerViewModel(
     private val playlistRepository: PlaylistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
-    private val settingsPreferences: SettingsPreferences
+    private val settingsPreferences: SettingsPreferences,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     // 监听 WiFi 下的播放音质设置
@@ -160,6 +163,7 @@ class PlayerViewModel(
                 }.onFailure {
                     // 回滚
                     _songDetailState.update { it.copy(isLiked = !newLiked) }
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -343,7 +347,7 @@ class PlayerViewModel(
                         total = response.total
                     )
                 }.onFailure { error ->
-                    _commentsState.value = CommentsState.Error(error.message ?: "Unknown error")
+                    _commentsState.value = CommentsState.Error(error.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -396,7 +400,7 @@ class PlayerViewModel(
             commentRepository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
                 result.onFailure { e ->
                     _commentsState.value = currentState
-                    _toastEvent.emit("操作失败: ${e.message}")
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -450,7 +454,7 @@ class PlayerViewModel(
                         _toastEvent.emit("未找到相关相似歌曲")
                     }
                 }.onFailure {
-                    _toastEvent.emit("漫游开启失败")
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -475,7 +479,7 @@ class PlayerViewModel(
                         _toastEvent.emit("暂无相似歌曲可插播")
                     }
                 }.onFailure {
-                    _toastEvent.emit("插播失败，请稍后重试")
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
             }
         }

@@ -2,54 +2,46 @@ package com.lin0721.linmusic.feature.library.data
 
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.core.model.Track
+import com.lin0721.linmusic.core.network.apiFlow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
 
 class LibraryRepositoryImpl(
     private val apiService: LibraryApi,
     private val contentFilter: ContentFilter
 ) : LibraryRepository {
 
-    override fun getUserPlaylists(uid: Long, limit: Int): Flow<Result<List<UserPlaylist>>> = flow {
-        val response = apiService.getUserPlaylists(UserPlaylistRequest(uid = uid, limit = limit))
-        if (response.isSuccess) {
-            emit(Result.success(response.playlist))
-        } else {
-            emit(Result.failure(Exception("Failed to load user playlists: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getUserPlaylists(uid: Long, limit: Int): Flow<Result<List<UserPlaylist>>> = apiFlow(
+        request = { apiService.getUserPlaylists(UserPlaylistRequest(uid = uid, limit = limit)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { it.playlist }
+    )
 
-    override fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>> = flow {
-        val response = apiService.getUserRecord(UserRecordRequest(uid = uid, type = type))
-        if (response.isSuccess) {
+    override fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>> = apiFlow(
+        request = { apiService.getUserRecord(UserRecordRequest(uid = uid, type = type)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { response ->
             val list = if (type == 1) {
                 response.weekData?.map { it.song } ?: emptyList()
             } else {
                 response.allData?.map { it.song } ?: emptyList()
             }
-            val filteredTracks = contentFilter.filterBlockedArtists(list) { it.ar.map { a -> a.id } }
-            emit(Result.success(filteredTracks))
-        } else {
-            emit(Result.failure(Exception("获取听歌排行失败: code ${response.code}")))
+            contentFilter.filterBlockedArtists(list) { it.ar.map { a -> a.id } }
         }
-    }.catch { e -> emit(Result.failure(e)) }
+    )
 
-    override fun getCollectedAlbums(limit: Int): Flow<Result<List<AlbumSubItem>>> = flow {
-        val response = apiService.getAlbumSublist(AlbumSublistRequest(limit = limit))
-        if (response.isSuccess) {
-            emit(Result.success(response.data))
-        } else {
-            emit(Result.failure(Exception("Failed to load collected albums: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getCollectedAlbums(limit: Int): Flow<Result<List<AlbumSubItem>>> = apiFlow(
+        request = { apiService.getAlbumSublist(AlbumSublistRequest(limit = limit)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { it.data }
+    )
 
-    override fun getUserSubcount(): Flow<Result<UserSubcountResponse>> = flow {
-        val response = apiService.getUserSubcount()
-        if (response.isSuccess) {
-            emit(Result.success(response))
-        } else {
-            emit(Result.failure(Exception("Failed to load user subcount: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getUserSubcount(): Flow<Result<UserSubcountResponse>> = apiFlow(
+        request = { apiService.getUserSubcount() },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { it }
+    )
 }

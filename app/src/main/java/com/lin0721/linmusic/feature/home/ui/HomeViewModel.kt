@@ -11,6 +11,9 @@ import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
+import com.lin0721.linmusic.R
+import com.lin0721.linmusic.core.network.ResourceProvider
+import com.lin0721.linmusic.core.network.toUserMessage
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -32,7 +35,8 @@ class HomeViewModel(
     private val artistRepository: ArtistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -98,11 +102,12 @@ class HomeViewModel(
                     )
                 } else {
                     _uiState.value = HomeUiState.Error(
-                        playlistsResult.exceptionOrNull()?.message ?: "加载核心数据失败"
+                        playlistsResult.exceptionOrNull()?.toUserMessage(resourceProvider)
+                            ?: resourceProvider.getString(R.string.app_error_biz_default)
                     )
                 }
             } catch (e: Exception) {
-                _uiState.value = HomeUiState.Error(e.localizedMessage ?: "未知错误")
+                _uiState.value = HomeUiState.Error(e.toUserMessage(resourceProvider))
             }
         }
     }
@@ -113,7 +118,7 @@ class HomeViewModel(
                 result.onSuccess { url ->
                     playerManager.playAudio(songId, url, title, artist, coverUrl, startPosition, playContext)
                 }.onFailure { error ->
-                    _toastEvent.emit(error.message ?: "无法获取播放链接")
+                    _toastEvent.emit(error.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -194,7 +199,7 @@ class HomeViewModel(
                             _toastEvent.emit("未找到相关相似歌曲")
                         }
                     }.onFailure {
-                        _toastEvent.emit("漫游开启失败")
+                        _toastEvent.emit(it.toUserMessage(resourceProvider))
                     }
                 }
             }
@@ -213,7 +218,7 @@ class HomeViewModel(
                             playerManager.playQueue(roamingQueue, 0, playContext = "similar_roaming")
                             _toastEvent.emit("已为您开启《${firstSong.name}》的漫游")
                         }.onFailure {
-                            _toastEvent.emit("开启漫游失败")
+                            _toastEvent.emit(it.toUserMessage(resourceProvider))
                         }
                     }
                 }
@@ -247,7 +252,7 @@ class HomeViewModel(
                             _toastEvent.emit("获取心动推荐失败")
                         }
                     }.onFailure {
-                        _toastEvent.emit("开启心动模式失败: ${it.message}")
+                        _toastEvent.emit(it.toUserMessage(resourceProvider))
                     }
                 }
             }
@@ -265,7 +270,7 @@ class HomeViewModel(
                             playerManager.playQueue(items, 0, playContext = "intelligence")
                             _toastEvent.emit("已从《${firstSong.name}》开启心动模式")
                         }.onFailure {
-                            _toastEvent.emit("开启心动模式失败")
+                            _toastEvent.emit(it.toUserMessage(resourceProvider))
                         }
                     }
                 }
