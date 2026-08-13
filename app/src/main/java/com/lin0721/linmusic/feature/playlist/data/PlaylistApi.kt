@@ -2,6 +2,7 @@ package com.lin0721.linmusic.feature.playlist.data
 
 import com.lin0721.linmusic.core.model.EmptyBody
 import com.lin0721.linmusic.core.model.PlaylistCreator
+import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.model.Track
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
@@ -53,18 +54,6 @@ data class PlaylistDetailResponse(
 ) {
     val isSuccess: Boolean get() = code == 200
 }
-
-@Serializable
-data class PlaylistDetail(
-    val id: Long = 0,
-    val name: String = "",
-    val coverImgUrl: String = "",
-    val description: String? = null,
-    val playCount: Long = 0,
-    val subscribed: Boolean = false,
-    val creator: PlaylistCreator? = null,
-    val tracks: List<Track> = emptyList()
-)
 
 // ======================= 歌单歌曲操作 DTO =======================
 

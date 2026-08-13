@@ -1,7 +1,7 @@
 package com.lin0721.linmusic.feature.playlist.ui
 
 import com.lin0721.linmusic.feature.home.data.DailySong
-import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
+import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.model.Track
 
 sealed interface PlaylistUiState {

@@ -8,6 +8,7 @@ import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.create.data.CreateRepository
+import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.network.ResourceProvider
@@ -56,6 +57,7 @@ sealed interface LibraryUiState {
 class LibraryViewModel(
     private val createRepository: CreateRepository,
     private val libraryRepository: LibraryRepository,
+    private val userPlaylistRepository: UserPlaylistRepository,
     private val artistRepository: ArtistRepository,
     private val userPreferences: UserPreferences,
     val playerManager: PlayerManager,
@@ -133,7 +135,7 @@ class LibraryViewModel(
             try {
                 // 1. 并行获取歌单
                 val playlistsDeferred = async {
-                    libraryRepository.getUserPlaylists(profile.uid).firstOrNull()?.getOrNull() ?: emptyList()
+                    userPlaylistRepository.getUserPlaylists(profile.uid).firstOrNull()?.getOrNull() ?: emptyList()
                 }
 
                 // 2. 并行获取歌手

@@ -14,6 +14,8 @@ import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.core.player.data.PlaybackRepositoryImpl
 import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.core.songlike.SongLikeRepositoryImpl
+import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
+import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepositoryImpl
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepositoryImpl
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
@@ -54,6 +56,9 @@ val repositoryModule = module {
 
     // 歌曲红心数据仓储（core/songlike 共享能力）
     singleOf(::SongLikeRepositoryImpl) { bind<SongLikeRepository>() }
+
+    // 当前用户歌单列表仓储（core/userplaylist 共享能力）
+    singleOf(::UserPlaylistRepositoryImpl) { bind<UserPlaylistRepository>() }
 
     // 歌单/专辑数据仓储（feature/playlist）
     singleOf(::PlaylistRepositoryImpl) { bind<PlaylistRepository>() }

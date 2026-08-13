@@ -2,20 +2,13 @@ package com.lin0721.linmusic.feature.library.data
 
 import com.lin0721.linmusic.core.model.Artist
 import com.lin0721.linmusic.core.model.EmptyBody
-import com.lin0721.linmusic.core.model.PlaylistCreator
 import com.lin0721.linmusic.core.model.Track
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.POST
 
-// 音乐库（我的歌单/收藏专辑/听歌排行）相关的网易云 Retrofit 接口定义。
+// 音乐库（收藏专辑/听歌排行/收藏数）相关的网易云 Retrofit 接口定义。
 interface LibraryApi {
-
-    // 获取用户歌单
-    @POST("/eapi/user/playlist")
-    suspend fun getUserPlaylists(
-        @Body body: UserPlaylistRequest
-    ): UserPlaylistResponse
 
     @POST("/weapi/v1/play/record")
     suspend fun getUserRecord(
@@ -60,33 +53,6 @@ data class UserRecordItem(
 )
 
 // ======================= 音乐库 (Library) DTOs =======================
-
-@Serializable
-data class UserPlaylistRequest(
-    val uid: Long,
-    val limit: Int = 1000,
-    val offset: Int = 0
-)
-
-@Serializable
-data class UserPlaylistResponse(
-    val code: Int = 0,
-    val playlist: List<UserPlaylist> = emptyList()
-) {
-    val isSuccess: Boolean get() = code == 200
-}
-
-@Serializable
-data class UserPlaylist(
-    val id: Long = 0,
-    val name: String = "",
-    val coverImgUrl: String = "",
-    val playCount: Long = 0,
-    val trackCount: Int = 0,
-    val userId: Long = 0,
-    val creator: PlaylistCreator? = null,
-    val updateTime: Long = 0
-)
 
 @Serializable
 data class AlbumSublistRequest(

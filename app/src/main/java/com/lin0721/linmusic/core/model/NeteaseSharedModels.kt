@@ -47,3 +47,16 @@ data class PlaylistCreator(
     val nickname: String = "",
     val avatarUrl: String = "",
 )
+
+// 歌单/专辑统一详情模型，playlist 域产出，create 域新建歌单后同样返回该结构
+@Serializable
+data class PlaylistDetail(
+    val id: Long = 0,
+    val name: String = "",
+    val coverImgUrl: String = "",
+    val description: String? = null,
+    val playCount: Long = 0,
+    val subscribed: Boolean = false,
+    val creator: PlaylistCreator? = null,
+    val tracks: List<Track> = emptyList()
+)

@@ -1,6 +1,7 @@
 package com.lin0721.linmusic.feature.playlist.data
 
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
+import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.network.apiFlow
 import kotlinx.coroutines.flow.Flow
 

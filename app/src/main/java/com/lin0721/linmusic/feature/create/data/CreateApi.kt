@@ -1,6 +1,6 @@
 package com.lin0721.linmusic.feature.create.data
 
-import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
+import com.lin0721.linmusic.core.model.PlaylistDetail
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.POST

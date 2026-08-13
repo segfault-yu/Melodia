@@ -43,7 +43,7 @@ import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
-import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
+import com.lin0721.linmusic.core.model.PlaylistDetail
 
 // TopBar 操作区高度（不含状态栏）
 private val TOP_BAR_HEIGHT = 56.dp

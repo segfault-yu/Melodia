@@ -33,7 +33,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.extractDominantColor
-import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
+import com.lin0721.linmusic.core.model.PlaylistDetail
 
 // ────────────────────────────────────────────────────────────────────────────
 // 全出血 Hero（LazyColumn Item 1）

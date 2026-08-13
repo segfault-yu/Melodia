@@ -10,13 +10,6 @@ class LibraryRepositoryImpl(
     private val contentFilter: ContentFilter
 ) : LibraryRepository {
 
-    override fun getUserPlaylists(uid: Long, limit: Int): Flow<Result<List<UserPlaylist>>> = apiFlow(
-        request = { apiService.getUserPlaylists(UserPlaylistRequest(uid = uid, limit = limit)) },
-        isSuccess = { it.isSuccess },
-        code = { it.code },
-        transform = { it.playlist }
-    )
-
     override fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>> = apiFlow(
         request = { apiService.getUserRecord(UserRecordRequest(uid = uid, type = type)) },
         isSuccess = { it.isSuccess },

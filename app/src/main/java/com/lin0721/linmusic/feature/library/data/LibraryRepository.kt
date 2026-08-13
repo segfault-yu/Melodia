@@ -6,9 +6,6 @@ import kotlinx.coroutines.flow.Flow
 // 音乐库数据仓储（library 业务域）
 interface LibraryRepository {
 
-    // 获取用户歌单
-    fun getUserPlaylists(uid: Long, limit: Int = 1000): Flow<Result<List<UserPlaylist>>>
-
     // 获取听歌排行
     fun getUserRecord(uid: Long, type: Int): Flow<Result<List<Track>>>
 

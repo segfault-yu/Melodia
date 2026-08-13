@@ -4,12 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
-import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
+import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.core.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.home.data.HomeRepository
+import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
@@ -33,6 +34,7 @@ class PlaylistViewModel(
     private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
     private val homeRepository: HomeRepository,
     private val libraryRepository: LibraryRepository,
+    private val userPlaylistRepository: UserPlaylistRepository,
     private val commentRepository: CommentRepository,
     private val playlistRepository: PlaylistRepository,
     private val songLikeRepository: SongLikeRepository,
@@ -185,7 +187,7 @@ class PlaylistViewModel(
             val profile = userPreferences.userProfile.first() ?: return@launch
             _collectState.update { it.copy(songId = songId, isLoading = true, collectItems = emptyList()) }
 
-            libraryRepository.getUserPlaylists(profile.uid).collect { result ->
+            userPlaylistRepository.getUserPlaylists(profile.uid).collect { result ->
                 result.onSuccess { playlists ->
                     val myPlaylists = playlists.filter { it.userId == profile.uid }
 
