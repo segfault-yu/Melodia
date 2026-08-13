@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.player.domain
+package com.lin0721.linmusic.core.player.domain
 
 // YRC(逐字)/LRC(逐行) 歌词文本解析为 [LyricLine] 列表的纯函数工具
 object LyricParser {

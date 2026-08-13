@@ -13,7 +13,7 @@ import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
-import com.lin0721.linmusic.feature.player.data.PlayerRepository
+import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
 import kotlinx.coroutines.async
@@ -36,7 +36,7 @@ class PlaylistViewModel(
     private val commentRepository: CommentRepository,
     private val playlistRepository: PlaylistRepository,
     private val songLikeRepository: SongLikeRepository,
-    private val playerRepository: PlayerRepository,
+    private val playbackRepository: PlaybackRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository,
@@ -304,7 +304,7 @@ class PlaylistViewModel(
 
     fun loadRecommendations(playlistId: Long, baseSongId: Long, existingTracks: List<Track>) {
         viewModelScope.launch {
-            playerRepository.getIntelligenceSongs(baseSongId, playlistId).collect { result ->
+            playbackRepository.getIntelligenceSongs(baseSongId, playlistId).collect { result ->
                 result.onSuccess { recommendedList ->
                     val filteredList = recommendedList.filter { recTrack ->
                         existingTracks.none { it.id == recTrack.id }

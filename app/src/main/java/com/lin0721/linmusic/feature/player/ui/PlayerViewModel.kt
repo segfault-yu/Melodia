@@ -9,10 +9,11 @@ import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
 import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
-import com.lin0721.linmusic.feature.player.domain.LyricLine
+import com.lin0721.linmusic.core.player.domain.LyricLine
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.core.comment.data.CommentRepository
 import com.lin0721.linmusic.core.songlike.SongLikeRepository
+import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
@@ -55,6 +56,7 @@ data class PlayerSongDetailState(
 class PlayerViewModel(
     private val context: Context,
     private val playerRepository: PlayerRepository,
+    private val playbackRepository: PlaybackRepository,
     private val artistRepository: ArtistRepository,
     private val commentRepository: CommentRepository,
     private val songLikeRepository: SongLikeRepository,
@@ -207,7 +209,7 @@ class PlayerViewModel(
     private fun loadLyrics(songId: Long) {
         viewModelScope.launch {
             _songDetailState.update { it.copy(isLyricsLoading = true) }
-            playerRepository.getLyrics(songId).collect { result ->
+            playbackRepository.getLyrics(songId).collect { result ->
                 result.onSuccess { lines ->
                     if (currentSongId == songId) _songDetailState.update { it.copy(lyrics = lines) }
                 }.onFailure {
@@ -435,7 +437,7 @@ class PlayerViewModel(
     // 开启相似歌曲漫游逻辑
     fun startSimilarSongsRoaming(songId: Long, currentTitle: String, currentArtist: String, currentCoverUrl: String) {
         viewModelScope.launch {
-            playerRepository.getSimilarSongs(songId).collect { result ->
+            playbackRepository.getSimilarSongs(songId).collect { result ->
                 result.onSuccess { simiSongs ->
                     if (simiSongs.isNotEmpty()) {
                         val currentItem = QueueItem(songId, currentTitle, currentArtist, currentCoverUrl)
@@ -463,7 +465,7 @@ class PlayerViewModel(
     // 插播一首相似歌曲到下一首位置
     fun insertSimilarSongs(songId: Long) {
         viewModelScope.launch {
-            playerRepository.getSimilarSongs(songId).collect { result ->
+            playbackRepository.getSimilarSongs(songId).collect { result ->
                 result.onSuccess { simiSongs ->
                     val firstSong = simiSongs.firstOrNull()
                     if (firstSong != null) {

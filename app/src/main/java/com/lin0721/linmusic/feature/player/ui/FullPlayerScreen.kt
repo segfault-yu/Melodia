@@ -91,7 +91,7 @@ import com.lin0721.linmusic.core.comment.data.CommentItem
 import com.lin0721.linmusic.core.comment.ui.CommentsBottomSheet
 import com.lin0721.linmusic.core.comment.ui.CommentsPreviewCard
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
-import com.lin0721.linmusic.feature.player.domain.LyricLine
+import com.lin0721.linmusic.core.player.domain.LyricLine
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.ColorPalette

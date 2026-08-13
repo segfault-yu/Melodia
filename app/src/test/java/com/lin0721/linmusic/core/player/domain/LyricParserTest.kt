@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.player.domain
+package com.lin0721.linmusic.core.player.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

@@ -31,7 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
-import com.lin0721.linmusic.feature.player.domain.LyricLine
+import com.lin0721.linmusic.core.player.domain.LyricLine
 
 // ────────────────────────────────────────────────────────────────────────────
 // 折叠播放页的歌词预览卡（流体光雾背景 + 自动滚动预览列表）

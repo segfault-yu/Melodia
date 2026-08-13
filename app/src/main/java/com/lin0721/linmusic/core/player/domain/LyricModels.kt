@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.player.domain
+package com.lin0721.linmusic.core.player.domain
 
 // 单个字符/单词的耗时元数据
 data class WordInfo(

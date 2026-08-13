@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
-import com.lin0721.linmusic.feature.player.domain.LyricLine
+import com.lin0721.linmusic.core.player.domain.LyricLine
 
 // 逐字词的物理渲染坐标缓存，避免每帧重复调用 getBoundingBox 的 JNI 开销
 private class WordLayout(
