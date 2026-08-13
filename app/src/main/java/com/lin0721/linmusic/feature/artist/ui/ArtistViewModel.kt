@@ -6,7 +6,7 @@ import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
 import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
 import com.lin0721.linmusic.core.model.Track
-import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
+import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase

@@ -8,6 +8,7 @@ import com.lin0721.linmusic.feature.artist.data.ArtistApi
 import com.lin0721.linmusic.core.comment.data.CommentApi
 import com.lin0721.linmusic.core.player.data.PlaybackApi
 import com.lin0721.linmusic.core.songlike.SongLikeApi
+import com.lin0721.linmusic.core.userartist.UserArtistApi
 import com.lin0721.linmusic.core.userplaylist.UserPlaylistApi
 import com.lin0721.linmusic.feature.create.data.CreateApi
 import com.lin0721.linmusic.feature.home.data.HomeApi
@@ -41,7 +42,7 @@ import kotlinx.coroutines.launch
  * - [Retrofit]            ： 基于 kotlinx.serialization 的转换器
  * - [NeteaseApiService]   ： 账号鉴权 Retrofit 代理接口（core/auth 跨域共用）
  * - 各业务域 Api           ： HomeApi/PlaylistApi/CreateApi/PlayerApi/ArtistApi/SearchApi/LibraryApi/SettingsApi
- * - core 共享 Api          ： CommentApi/SongLikeApi/PlaybackApi/UserPlaylistApi
+ * - core 共享 Api          ： CommentApi/SongLikeApi/PlaybackApi/UserPlaylistApi/UserArtistApi
  */
 val networkModule = module {
 
@@ -134,6 +135,7 @@ val networkModule = module {
     single<SongLikeApi> { get<Retrofit>().create(SongLikeApi::class.java) }
     single<PlaybackApi> { get<Retrofit>().create(PlaybackApi::class.java) }
     single<UserPlaylistApi> { get<Retrofit>().create(UserPlaylistApi::class.java) }
+    single<UserArtistApi> { get<Retrofit>().create(UserArtistApi::class.java) }
     single<SettingsApi> { get<Retrofit>().create(SettingsApi::class.java) }
 }
 

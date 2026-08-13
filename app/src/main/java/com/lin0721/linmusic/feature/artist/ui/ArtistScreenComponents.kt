@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
-import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
+import com.lin0721.linmusic.core.model.ArtistInfo
 import java.text.NumberFormat
 import java.util.Locale
 

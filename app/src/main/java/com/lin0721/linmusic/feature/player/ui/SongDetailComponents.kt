@@ -29,7 +29,7 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
 import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
-import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
+import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.TextGray

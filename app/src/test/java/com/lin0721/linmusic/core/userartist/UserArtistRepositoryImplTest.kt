@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.artist.data
+package com.lin0721.linmusic.core.userartist
 
 import com.lin0721.linmusic.core.model.Artist
 import kotlinx.coroutines.flow.first
@@ -7,33 +7,26 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-// 手写 Fake 代替真实网络请求，只需覆盖本测试用到的两个方法，其余方法在测试中不会被调用
-private class FakeArtistApi(
+// 手写 Fake 代替真实网络请求
+private class FakeUserArtistApi(
     private val sublist: () -> ArtistSublistResponse = { error("not used in this test") },
     private val topArtists: () -> TopArtistsResponse = { error("not used in this test") }
-) : ArtistApi {
+) : UserArtistApi {
     override suspend fun getArtistSublist(body: ArtistSublistRequest): ArtistSublistResponse = sublist()
     override suspend fun getTopArtists(body: TopArtistsRequest): TopArtistsResponse = topArtists()
-    override suspend fun getSimiArtists(body: SimiArtistRequest): SimiArtistResponse = error("not used in this test")
-    override suspend fun getArtistDetail(body: ArtistDetailRequest): ArtistDetailResponse = error("not used in this test")
-    override suspend fun getArtistDetailDynamic(body: ArtistFollowCountRequest): ArtistFollowCountResponse = error("not used in this test")
-    override suspend fun getArtistFollowCount(body: ArtistFollowCountRequest): ArtistFollowCountGetResponse = error("not used in this test")
-    override suspend fun getArtistAlbums(id: Long, body: ArtistAlbumRequest): ArtistAlbumResponse = error("not used in this test")
-    override suspend fun getArtistTopSongs(body: ArtistTopSongsRequest): ArtistTopSongsResponse = error("not used in this test")
-    override suspend fun subscribeArtist(op: String, body: ArtistSubscriptionRequest): ArtistSubscriptionResponse = error("not used in this test")
 }
 
-class ArtistRepositoryImplTest {
+class UserArtistRepositoryImplTest {
 
     private fun artist(id: Long, name: String) = Artist(id = id, name = name, picUrl = "pic/$id", img1v1Url = "avatar/$id")
 
     @Test
     fun `已关注歌手非空时直接使用已关注列表，不回退到热门歌手`() = runBlocking {
-        val api = FakeArtistApi(
+        val api = FakeUserArtistApi(
             sublist = { ArtistSublistResponse(code = 200, data = listOf(artist(1, "已关注歌手"))) },
             topArtists = { error("不应该调用热门歌手接口") }
         )
-        val repo = ArtistRepositoryImpl(api)
+        val repo = UserArtistRepositoryImpl(api)
 
         val result = repo.getFavoriteArtists().first()
 
@@ -44,11 +37,11 @@ class ArtistRepositoryImplTest {
 
     @Test
     fun `已关注歌手为空时回退到热门歌手榜单`() = runBlocking {
-        val api = FakeArtistApi(
+        val api = FakeUserArtistApi(
             sublist = { ArtistSublistResponse(code = 200, data = emptyList()) },
             topArtists = { TopArtistsResponse(code = 200, artists = listOf(artist(2, "热门歌手"))) }
         )
-        val repo = ArtistRepositoryImpl(api)
+        val repo = UserArtistRepositoryImpl(api)
 
         val result = repo.getFavoriteArtists().first()
 
@@ -58,11 +51,11 @@ class ArtistRepositoryImplTest {
 
     @Test
     fun `已关注歌手接口异常时静默捕获并回退到热门歌手榜单`() = runBlocking {
-        val api = FakeArtistApi(
+        val api = FakeUserArtistApi(
             sublist = { throw RuntimeException("网络异常") },
             topArtists = { TopArtistsResponse(code = 200, artists = listOf(artist(3, "备用歌手"))) }
         )
-        val repo = ArtistRepositoryImpl(api)
+        val repo = UserArtistRepositoryImpl(api)
 
         val result = repo.getFavoriteArtists().first()
 
@@ -72,11 +65,11 @@ class ArtistRepositoryImplTest {
 
     @Test
     fun `已关注与热门歌手均为空时返回失败结果`() = runBlocking {
-        val api = FakeArtistApi(
+        val api = FakeUserArtistApi(
             sublist = { ArtistSublistResponse(code = 200, data = emptyList()) },
             topArtists = { TopArtistsResponse(code = 200, artists = emptyList()) }
         )
-        val repo = ArtistRepositoryImpl(api)
+        val repo = UserArtistRepositoryImpl(api)
 
         val result = repo.getFavoriteArtists().first()
 
@@ -85,11 +78,11 @@ class ArtistRepositoryImplTest {
 
     @Test
     fun `热门歌手接口返回非成功状态码时返回失败结果`() = runBlocking {
-        val api = FakeArtistApi(
+        val api = FakeUserArtistApi(
             sublist = { ArtistSublistResponse(code = 200, data = emptyList()) },
             topArtists = { TopArtistsResponse(code = 400, artists = emptyList()) }
         )
-        val repo = ArtistRepositoryImpl(api)
+        val repo = UserArtistRepositoryImpl(api)
 
         val result = repo.getFavoriteArtists().first()
 
@@ -98,7 +91,7 @@ class ArtistRepositoryImplTest {
 
     @Test
     fun `优先使用已关注歌手的头像信息(img1v1Url优先于picUrl)`() = runBlocking {
-        val api = FakeArtistApi(
+        val api = FakeUserArtistApi(
             sublist = {
                 ArtistSublistResponse(
                     code = 200,
@@ -106,7 +99,7 @@ class ArtistRepositoryImplTest {
                 )
             }
         )
-        val repo = ArtistRepositoryImpl(api)
+        val repo = UserArtistRepositoryImpl(api)
 
         val result = repo.getFavoriteArtists().first()
 
@@ -115,7 +108,7 @@ class ArtistRepositoryImplTest {
 
     @Test
     fun `已关注歌手头像为空时回退使用picUrl`() = runBlocking {
-        val api = FakeArtistApi(
+        val api = FakeUserArtistApi(
             sublist = {
                 ArtistSublistResponse(
                     code = 200,
@@ -123,7 +116,7 @@ class ArtistRepositoryImplTest {
                 )
             }
         )
-        val repo = ArtistRepositoryImpl(api)
+        val repo = UserArtistRepositoryImpl(api)
 
         val result = repo.getFavoriteArtists().first()
 

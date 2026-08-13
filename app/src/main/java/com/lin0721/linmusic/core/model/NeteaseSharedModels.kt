@@ -60,3 +60,10 @@ data class PlaylistDetail(
     val creator: PlaylistCreator? = null,
     val tracks: List<Track> = emptyList()
 )
+
+// 歌手领域模型，artist/player/home 等多域共用
+data class ArtistInfo(
+    val id: Long,
+    val name: String,
+    val avatarUrl: String
+)

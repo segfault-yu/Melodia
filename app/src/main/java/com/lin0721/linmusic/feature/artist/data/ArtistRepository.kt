@@ -2,17 +2,11 @@ package com.lin0721.linmusic.feature.artist.data
 
 import com.lin0721.linmusic.core.model.Artist
 import com.lin0721.linmusic.core.model.Track
-import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
+import com.lin0721.linmusic.core.model.ArtistInfo
 import kotlinx.coroutines.flow.Flow
 
 // 歌手数据仓储（artist 业务域）
 interface ArtistRepository {
-
-    // 获取热门歌手 —— 当前无外部调用者（仅被 getFavoriteArtists 内部以 apiService 直连方式复用），保留待后续确认取舍
-    fun getTopArtists(): Flow<Result<List<Artist>>>
-
-    // 获取最爱的歌手（优先已关注，兜底热门）
-    fun getFavoriteArtists(): Flow<Result<List<ArtistInfo>>>
 
     fun getArtistDetail(artistId: Long): Flow<Result<ArtistDetailInfo>>
 

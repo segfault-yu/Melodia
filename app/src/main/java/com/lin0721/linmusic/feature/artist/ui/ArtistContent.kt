@@ -48,7 +48,7 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.extractDominantColor
 import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
 import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
-import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
+import com.lin0721.linmusic.core.model.ArtistInfo
 
 private val TOP_BAR_HEIGHT = 56.dp
 
