@@ -1,6 +1,8 @@
 package com.lin0721.linmusic.feature.artist.data
 
 import com.lin0721.linmusic.core.model.Artist
+import com.lin0721.linmusic.core.model.ArtistAlbum
+import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -85,20 +87,6 @@ data class ArtistDetailData(
     val artist: ArtistDetailInfo? = null
 )
 
-@Serializable
-data class ArtistDetailInfo(
-    val id: Long = 0,
-    val name: String = "",
-    val cover: String = "",
-    val avatar: String = "",
-    val briefDesc: String = "",
-    val albumSize: Int = 0,
-    val musicSize: Int = 0,
-    val identifyTag: List<String>? = null,
-    val trans: String? = null, // 翻译名称
-    val alias: List<String>? = null // 别名列表
-)
-
 // ======================= 艺人粉丝数量 DTO =======================
 
 @Serializable
@@ -151,15 +139,6 @@ data class ArtistAlbumResponse(
 ) {
     val isSuccess: Boolean get() = code == 200
 }
-
-@Serializable
-data class ArtistAlbum(
-    val id: Long = 0,
-    val name: String = "",
-    val picUrl: String = "",
-    val publishTime: Long = 0,
-    val size: Int = 0
-)
 
 // ======================= 艺人热门单曲 DTO =======================
 

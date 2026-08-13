@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
-import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
-import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
+import com.lin0721.linmusic.core.model.ArtistAlbum
+import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.core.player.domain.LyricLine
@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
-import com.lin0721.linmusic.core.comment.data.CommentItem
+import com.lin0721.linmusic.core.model.CommentItem
 import com.lin0721.linmusic.core.comment.ui.CommentsState
 import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.network.toUserMessage

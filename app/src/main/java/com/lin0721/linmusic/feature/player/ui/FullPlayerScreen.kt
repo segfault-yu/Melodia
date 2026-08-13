@@ -84,10 +84,10 @@ import androidx.compose.animation.core.Spring
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
-import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
+import com.lin0721.linmusic.core.model.ArtistAlbum
+import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
-import com.lin0721.linmusic.core.comment.data.CommentItem
+import com.lin0721.linmusic.core.model.CommentItem
 import com.lin0721.linmusic.core.comment.ui.CommentsBottomSheet
 import com.lin0721.linmusic.core.comment.ui.CommentsPreviewCard
 import com.lin0721.linmusic.core.model.ArtistInfo
