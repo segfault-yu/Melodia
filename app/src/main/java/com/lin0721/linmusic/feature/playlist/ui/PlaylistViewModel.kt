@@ -7,7 +7,7 @@ import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.feature.playlist.data.PlaylistDetail
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.auth.AuthRepository
-import com.lin0721.linmusic.feature.comment.data.CommentRepository
+import com.lin0721.linmusic.core.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
@@ -20,8 +20,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import com.lin0721.linmusic.feature.comment.ui.CommentsState
-import com.lin0721.linmusic.feature.comment.data.CommentItem
+import com.lin0721.linmusic.core.comment.ui.CommentsState
+import com.lin0721.linmusic.core.comment.data.CommentItem
 import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState

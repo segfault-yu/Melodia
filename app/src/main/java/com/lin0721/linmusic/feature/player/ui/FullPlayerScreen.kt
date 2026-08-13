@@ -87,9 +87,9 @@ import kotlinx.coroutines.delay
 import com.lin0721.linmusic.feature.artist.data.ArtistAlbum
 import com.lin0721.linmusic.feature.artist.data.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
-import com.lin0721.linmusic.feature.comment.data.CommentItem
-import com.lin0721.linmusic.feature.comment.ui.CommentsBottomSheet
-import com.lin0721.linmusic.feature.comment.ui.CommentsPreviewCard
+import com.lin0721.linmusic.core.comment.data.CommentItem
+import com.lin0721.linmusic.core.comment.ui.CommentsBottomSheet
+import com.lin0721.linmusic.core.comment.ui.CommentsPreviewCard
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.player.domain.SongWikiData

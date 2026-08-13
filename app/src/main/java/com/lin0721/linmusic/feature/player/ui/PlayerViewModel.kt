@@ -11,7 +11,7 @@ import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
-import com.lin0721.linmusic.feature.comment.data.CommentRepository
+import com.lin0721.linmusic.core.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.core.player.PlayerManager
@@ -32,8 +32,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
-import com.lin0721.linmusic.feature.comment.data.CommentItem
-import com.lin0721.linmusic.feature.comment.ui.CommentsState
+import com.lin0721.linmusic.core.comment.data.CommentItem
+import com.lin0721.linmusic.core.comment.ui.CommentsState
 import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.network.toUserMessage
 

@@ -1,8 +1,8 @@
-package com.lin0721.linmusic.feature.comment.data
+package com.lin0721.linmusic.core.comment.data
 
 import kotlinx.coroutines.flow.Flow
 
-// 评论数据仓储（comment 业务域，被 playlist/player 两个域的评论 Tab 共享）
+// 评论数据仓储（core 共享能力，被 playlist/player 等多个域的评论 Tab 复用）
 interface CommentRepository {
 
     fun getComments(songId: Long, limit: Int = 20, offset: Int = 0): Flow<Result<CommentsResponse>>

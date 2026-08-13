@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.comment.data
+package com.lin0721.linmusic.core.comment.data
 
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body

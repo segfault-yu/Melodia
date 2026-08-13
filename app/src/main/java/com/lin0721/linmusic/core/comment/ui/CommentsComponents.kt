@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.comment.ui
+package com.lin0721.linmusic.core.comment.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.feature.comment.data.CommentItem
+import com.lin0721.linmusic.core.comment.data.CommentItem
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.TextGray

@@ -1,4 +1,4 @@
-package com.lin0721.linmusic.feature.comment.data
+package com.lin0721.linmusic.core.comment.data
 
 import com.lin0721.linmusic.core.network.apiFlow
 import kotlinx.coroutines.flow.Flow

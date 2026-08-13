@@ -5,7 +5,7 @@ import com.lin0721.linmusic.core.network.CryptoInterceptor
 import com.lin0721.linmusic.core.network.EmptyBodyInterceptor
 import com.lin0721.linmusic.core.network.HeaderInterceptor
 import com.lin0721.linmusic.feature.artist.data.ArtistApi
-import com.lin0721.linmusic.feature.comment.data.CommentApi
+import com.lin0721.linmusic.core.comment.data.CommentApi
 import com.lin0721.linmusic.feature.create.data.CreateApi
 import com.lin0721.linmusic.feature.home.data.HomeApi
 import com.lin0721.linmusic.feature.library.data.LibraryApi
