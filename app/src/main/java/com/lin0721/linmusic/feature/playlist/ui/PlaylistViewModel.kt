@@ -25,6 +25,8 @@ import com.lin0721.linmusic.feature.comment.data.CommentItem
 import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
+import com.lin0721.linmusic.core.network.ResourceProvider
+import com.lin0721.linmusic.core.network.toUserMessage
 
 class PlaylistViewModel(
     private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
@@ -35,7 +37,8 @@ class PlaylistViewModel(
     private val playerRepository: PlayerRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     private var allRecommendedTracks = listOf<Track>()
@@ -123,7 +126,7 @@ class PlaylistViewModel(
                             allRecommendedTracks = emptyList()
                         },
                         onFailure = { error ->
-                            _uiState.value = PlaylistUiState.Error(error.message ?: "Unknown Error")
+                            _uiState.value = PlaylistUiState.Error(error.toUserMessage(resourceProvider))
                         }
                     )
                 }
@@ -145,7 +148,7 @@ class PlaylistViewModel(
                         }
                     },
                     onFailure = { error ->
-                        _uiState.value = PlaylistUiState.Error(error.message ?: "Unknown Error")
+                        _uiState.value = PlaylistUiState.Error(error.toUserMessage(resourceProvider))
                     }
                 )
             }
@@ -206,6 +209,7 @@ class PlaylistViewModel(
                     _collectState.update { it.copy(collectItems = items, isLoading = false) }
                 }.onFailure {
                     _collectState.update { it.copy(isLoading = false) }
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -228,7 +232,7 @@ class PlaylistViewModel(
                                 }
                                 _likedSongIds.value = currentLiked
                             }.onFailure { e ->
-                                _toastEvent.emit("更新喜欢状态失败: ${e.message}")
+                                _toastEvent.emit(e.toUserMessage(resourceProvider))
                             }
                         }
                     } else {
@@ -241,7 +245,7 @@ class PlaylistViewModel(
                             result.onSuccess {
                                 // 操作成功
                             }.onFailure { e ->
-                                _toastEvent.emit("收藏至 [${item.playlistName}] 失败: ${e.message}")
+                                _toastEvent.emit(e.toUserMessage(resourceProvider))
                             }
                         }
                     }
@@ -266,7 +270,7 @@ class PlaylistViewModel(
                         prepareCollectDialog(songId)
                     },
                     onFailure = { e ->
-                        _toastEvent.emit(e.message ?: "操作失败")
+                        _toastEvent.emit(e.toUserMessage(resourceProvider))
                     }
                 )
             }
@@ -307,9 +311,9 @@ class PlaylistViewModel(
                     currentRecIndex = 0
                     updateCurrentRecommendations()
                 }.onFailure { e ->
-                    // 静默失败
                     allRecommendedTracks = emptyList()
                     setRecommendedSongs(emptyList())
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -366,7 +370,7 @@ class PlaylistViewModel(
                         } else state
                     }
                 }.onFailure { e ->
-                    _toastEvent.emit("添加失败: ${e.message}")
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -384,7 +388,7 @@ class PlaylistViewModel(
                     }
                     _toastEvent.emit(if (targetSubscribe) "已收藏歌单" else "已取消收藏歌单")
                 }.onFailure { e ->
-                    _toastEvent.emit("操作失败: ${e.message}")
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -402,7 +406,7 @@ class PlaylistViewModel(
                         total = response.total
                     )
                 }.onFailure { error ->
-                    _commentsState.value = CommentsState.Error(error.message ?: "Unknown error")
+                    _commentsState.value = CommentsState.Error(error.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -448,7 +452,7 @@ class PlaylistViewModel(
             commentRepository.likeComment(threadId, comment.commentId, targetLike).collect { result ->
                 result.onFailure { e ->
                     _commentsState.value = currentState
-                    _toastEvent.emit("操作失败: ${e.message}")
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -462,7 +466,7 @@ class PlaylistViewModel(
                 result.onSuccess { dates ->
                     _historyRecommendState.update { it.copy(dates = dates) }
                 }.onFailure {
-                    _toastEvent.emit("历史日推需要黑胶会员")
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
                 _historyRecommendState.update { it.copy(datesLoading = false) }
             }
@@ -496,7 +500,7 @@ class PlaylistViewModel(
                         } else state
                     }
                 }.onFailure {
-                    _toastEvent.emit("加载失败：${it.message}")
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
                 _historyRecommendState.update { it.copy(songsLoading = false) }
             }
@@ -528,7 +532,7 @@ class PlaylistViewModel(
                         _historyRecommendState.update { it.copy(songsLoading = false) }
                     },
                     onFailure = { error ->
-                        _toastEvent.emit("获取听歌排行失败：${error.message}")
+                        _toastEvent.emit(error.toUserMessage(resourceProvider))
                         _historyRecommendState.update { it.copy(songsLoading = false) }
                     }
                 )
@@ -568,7 +572,7 @@ class PlaylistViewModel(
                         }
                     },
                     onFailure = { e ->
-                        _toastEvent.emit("操作失败: ${e.message}")
+                        _toastEvent.emit(e.toUserMessage(resourceProvider))
                     }
                 )
             }

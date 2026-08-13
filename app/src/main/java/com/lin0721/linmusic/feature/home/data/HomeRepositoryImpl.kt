@@ -1,38 +1,35 @@
 package com.lin0721.linmusic.feature.home.data
 
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
+import com.lin0721.linmusic.core.network.apiFlow
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
 
 class HomeRepositoryImpl(
     private val apiService: HomeApi,
     private val contentFilter: ContentFilter
 ) : HomeRepository {
 
-    override fun getPersonalizedPlaylists(): Flow<Result<PersonalizedData>> = flow {
-        val response = apiService.getPersonalizedPlaylists()
-        if (response.isSuccess) {
-            emit(Result.success(PersonalizedData(playlists = response.result)))
-        } else {
-            emit(Result.failure(Exception("Failed to load personalized playlists: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getPersonalizedPlaylists(): Flow<Result<PersonalizedData>> = apiFlow(
+        request = { apiService.getPersonalizedPlaylists() },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { PersonalizedData(playlists = it.result) }
+    )
 
-    override fun getRecentPlaylists(): Flow<Result<List<RecentPlayItem>>> = flow {
-        val response = apiService.getRecentPlaylists()
-        if (response.isSuccess && response.data != null) {
-            emit(Result.success(response.data.list))
-        } else {
-            emit(Result.failure(Exception("Failed to load recent playlists: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getRecentPlaylists(): Flow<Result<List<RecentPlayItem>>> = apiFlow(
+        request = { apiService.getRecentPlaylists() },
+        isSuccess = { it.isSuccess && it.data != null },
+        code = { it.code },
+        transform = { it.data!!.list }
+    )
 
-    override fun getToplistDetail(): Flow<Result<List<ToplistInfo>>> = flow {
-        val response = apiService.getToplistDetail()
-        if (response.code == 200) {
-            val domainList = response.list
+    override fun getToplistDetail(): Flow<Result<List<ToplistInfo>>> = apiFlow(
+        request = { apiService.getToplistDetail() },
+        isSuccess = { it.code == 200 },
+        code = { it.code },
+        transform = { response ->
+            response.list
                 // 过滤封面图为空的无效榜单条目
                 .filter { it.coverImgUrl.isNotBlank() && it.name.isNotBlank() }
                 .map { dto ->
@@ -44,38 +41,27 @@ class HomeRepositoryImpl(
                         topSongs = dto.tracks?.map { "${it.first} - ${it.second}" } ?: emptyList()
                     )
                 }
-            emit(Result.success(domainList))
-        } else {
-            emit(Result.failure(Exception("Failed to load toplist: code ${response.code}")))
         }
-    }.catch { e -> emit(Result.failure(e)) }
+    )
 
-    override fun getDailyRecommendSongs(): Flow<Result<List<DailySong>>> = flow {
-        val response = apiService.getDailyRecommendSongs()
-        if (response.isSuccess && response.data != null) {
-            val filteredSongs = contentFilter.filterBlockedArtists(response.data.dailySongs) { it.ar.map { a -> a.id } }
-            emit(Result.success(filteredSongs))
-        } else {
-            emit(Result.failure(Exception("Failed to load daily recommend songs: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getDailyRecommendSongs(): Flow<Result<List<DailySong>>> = apiFlow(
+        request = { apiService.getDailyRecommendSongs() },
+        isSuccess = { it.isSuccess && it.data != null },
+        code = { it.code },
+        transform = { contentFilter.filterBlockedArtists(it.data!!.dailySongs) { song -> song.ar.map { a -> a.id } } }
+    )
 
-    override fun getHistoryRecommendDates(): Flow<Result<List<String>>> = flow {
-        val response = apiService.getHistoryRecommendDates()
-        if (response.code == 200 && response.data != null) {
-            emit(Result.success(response.data.list))
-        } else {
-            emit(Result.failure(Exception("Failed to load history dates: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getHistoryRecommendDates(): Flow<Result<List<String>>> = apiFlow(
+        request = { apiService.getHistoryRecommendDates() },
+        isSuccess = { it.code == 200 && it.data != null },
+        code = { it.code },
+        transform = { it.data!!.list }
+    )
 
-    override fun getHistoryRecommendDetail(date: String): Flow<Result<List<DailySong>>> = flow {
-        val response = apiService.getHistoryRecommendDetail(HistoryDetailRequest(date = date))
-        if (response.code == 200 && response.data != null) {
-            val filteredSongs = contentFilter.filterBlockedArtists(response.data.dailySongs) { it.ar.map { a -> a.id } }
-            emit(Result.success(filteredSongs))
-        } else {
-            emit(Result.failure(Exception("Failed to load history detail: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getHistoryRecommendDetail(date: String): Flow<Result<List<DailySong>>> = apiFlow(
+        request = { apiService.getHistoryRecommendDetail(HistoryDetailRequest(date = date)) },
+        isSuccess = { it.code == 200 && it.data != null },
+        code = { it.code },
+        transform = { contentFilter.filterBlockedArtists(it.data!!.dailySongs) { song -> song.ar.map { a -> a.id } } }
+    )
 }

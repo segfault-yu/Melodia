@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Melodia</string>
+
+    <string name="app_error_network">网络连接失败，请检查网络后重试</string>
+    <string name="app_error_risk_control">网络繁忙，请稍后重试</string>
+    <string name="app_error_unauthorized">请先登录</string>
+    <string name="app_error_parse">数据解析失败</string>
+    <string name="app_error_biz_default">操作失败，请重试</string>
 </resources>
