@@ -2,29 +2,24 @@ package com.lin0721.linmusic.core.auth
 
 import com.lin0721.linmusic.core.api.AccountInfoResponse
 import com.lin0721.linmusic.core.api.NeteaseApiService
+import com.lin0721.linmusic.core.network.apiFlow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
 
 class AuthRepositoryImpl(
     private val apiService: NeteaseApiService
 ) : AuthRepository {
 
-    override fun getAccountInfo(): Flow<Result<AccountInfoResponse>> = flow {
-        val response = apiService.getAccountInfo()
-        if (response.code == 200) {
-            emit(Result.success(response))
-        } else {
-            emit(Result.failure(Exception("Failed to get account info: code ${response.code}")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getAccountInfo(): Flow<Result<AccountInfoResponse>> = apiFlow(
+        request = { apiService.getAccountInfo() },
+        isSuccess = { it.code == 200 },
+        code = { it.code },
+        transform = { it }
+    )
 
-    override fun logout(): Flow<Result<Unit>> = flow {
-        val response = apiService.logoutApi()
-        if (response.isSuccess) {
-            emit(Result.success(Unit))
-        } else {
-            emit(Result.failure(Exception("退出登录接口异常")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun logout(): Flow<Result<Unit>> = apiFlow(
+        request = { apiService.logoutApi() },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { Unit }
+    )
 }

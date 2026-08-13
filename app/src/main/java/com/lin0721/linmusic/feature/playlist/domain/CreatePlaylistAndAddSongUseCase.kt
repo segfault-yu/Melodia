@@ -18,11 +18,12 @@ class CreatePlaylistAndAddSongUseCase(
                     playlistRepository.manipulatePlaylistTracks("add", playlist.id, songId).collect { addResult ->
                         addResult.fold(
                             onSuccess = { emit(Result.success(playlist)) },
-                            onFailure = { e -> emit(Result.failure(Exception("加入新建歌单失败: ${e.message}"))) }
+                            // 透传 Repository 层的 AppError，不重新包装以免丢失错误类型
+                            onFailure = { e -> emit(Result.failure(e)) }
                         )
                     }
                 },
-                onFailure = { e -> emit(Result.failure(Exception("创建歌单失败: ${e.message}"))) }
+                onFailure = { e -> emit(Result.failure(e)) }
             )
         }
     }

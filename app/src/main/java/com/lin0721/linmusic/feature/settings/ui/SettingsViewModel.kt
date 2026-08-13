@@ -11,6 +11,8 @@ import com.lin0721.linmusic.feature.settings.data.VipInfoData
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.settings.data.SettingsRepository
 import com.lin0721.linmusic.core.player.AudioCacheManager
+import com.lin0721.linmusic.core.network.ResourceProvider
+import com.lin0721.linmusic.core.network.toUserMessage
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -21,7 +23,8 @@ class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     private val settingsPreferences: SettingsPreferences,
     private val userPreferences: UserPreferences,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     // ─── 本地偏合设置对外状态流动 ───
@@ -315,7 +318,7 @@ class SettingsViewModel(
                         _toastEvent.emit("今天已经签到过了")
                     }
                 }.onFailure {
-                    _toastEvent.emit("签到失败: ${it.message}")
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -334,7 +337,7 @@ class SettingsViewModel(
                     }
                     _toastEvent.emit("头像更新成功")
                 }.onFailure {
-                    _toastEvent.emit("头像更换失败: ${it.message}")
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
                 _isLoading.value = false
             }
@@ -364,7 +367,7 @@ class SettingsViewModel(
                     _toastEvent.emit("资料保存成功")
                     onFinished(true)
                 }.onFailure {
-                    _toastEvent.emit("资料保存失败: ${it.message}")
+                    _toastEvent.emit(it.toUserMessage(resourceProvider))
                     onFinished(false)
                 }
                 _isLoading.value = false

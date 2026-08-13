@@ -1,6 +1,9 @@
 package com.lin0721.linmusic.feature.search.data
 
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
+import com.lin0721.linmusic.core.network.AppError
+import com.lin0721.linmusic.core.network.apiFlow
+import com.lin0721.linmusic.core.network.mapToAppError
 import com.lin0721.linmusic.feature.search.domain.HotSearch
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
 import com.lin0721.linmusic.feature.search.domain.SearchSongsResult
@@ -15,32 +18,32 @@ class SearchRepositoryImpl(
     private val contentFilter: ContentFilter
 ) : SearchRepository {
 
-    override fun getDefaultSearchKeyword(): Flow<Result<String>> = flow {
-        val response = apiService.getSearchDefaultKeyword()
-        if (response.isSuccess && response.data != null) {
-            emit(Result.success(response.data.showKeyword))
-        } else {
-            emit(Result.failure(Exception("Failed to get default keyword")))
-        }
-    }.catch { e -> emit(Result.failure(e)) }
+    override fun getDefaultSearchKeyword(): Flow<Result<String>> = apiFlow(
+        request = { apiService.getSearchDefaultKeyword() },
+        isSuccess = { it.isSuccess && it.data != null },
+        code = { it.code },
+        transform = { it.data!!.showKeyword }
+    )
 
-    override fun searchSongs(keyword: String, offset: Int, limit: Int): Flow<Result<SearchSongsResult>> = flow {
-        val response = apiService.cloudSearch(CloudSearchRequest(s = keyword, offset = offset, limit = limit))
-        if (response.isSuccess && response.result != null) {
-            val songs = response.result.songs ?: emptyList()
+    override fun searchSongs(keyword: String, offset: Int, limit: Int): Flow<Result<SearchSongsResult>> = apiFlow(
+        request = { apiService.cloudSearch(CloudSearchRequest(s = keyword, offset = offset, limit = limit)) },
+        isSuccess = { it.isSuccess && it.result != null },
+        code = { it.code },
+        transform = { response ->
+            val songs = response.result!!.songs ?: emptyList()
             val total = response.result.songCount
             val filteredSongs = contentFilter.filterBlockedArtists(songs) { it.ar.map { a -> a.id } }
             val hasMore = if (filteredSongs.isEmpty()) false else (offset + songs.size < total)
-            emit(Result.success(SearchSongsResult(filteredSongs, total, hasMore)))
-        } else {
-            emit(Result.failure(Exception("搜索失败: code ${response.code}")))
+            SearchSongsResult(filteredSongs, total, hasMore)
         }
-    }.catch { e -> emit(Result.failure(e)) }
+    )
 
-    override fun getHotSearches(): Flow<Result<List<HotSearch>>> = flow {
-        val response = apiService.getHotSearchDetail()
-        if (response.isSuccess) {
-            val list = response.data.map { item ->
+    override fun getHotSearches(): Flow<Result<List<HotSearch>>> = apiFlow(
+        request = { apiService.getHotSearchDetail() },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { response ->
+            response.data.map { item ->
                 HotSearch(
                     keyword = item.searchWord,
                     score = item.score,
@@ -48,11 +51,8 @@ class SearchRepositoryImpl(
                     iconUrl = item.iconUrl
                 )
             }
-            emit(Result.success(list))
-        } else {
-            emit(Result.failure(Exception("获取热搜失败: code ${response.code}")))
         }
-    }.catch { e -> emit(Result.failure(e)) }
+    )
 
     override fun getPlaylistTags(): Flow<Result<List<PlaylistTag>>> = flow {
         val (tags, playlists) = coroutineScope {
@@ -64,7 +64,7 @@ class SearchRepositoryImpl(
         }
 
         if (!tags.isSuccess) {
-            emit(Result.failure(Exception("获取标签失败: code ${tags.code}")))
+            emit(Result.failure(AppError.BizError(tags.code, null)))
             return@flow
         }
 
@@ -89,5 +89,5 @@ class SearchRepositoryImpl(
             }
 
         emit(Result.success(result))
-    }.catch { e -> emit(Result.failure(e)) }
+    }.catch { e -> emit(Result.failure(mapToAppError(e))) }
 }

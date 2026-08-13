@@ -10,6 +10,8 @@ import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.core.player.PlayerManager
+import com.lin0721.linmusic.core.network.ResourceProvider
+import com.lin0721.linmusic.core.network.toUserMessage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -58,7 +60,8 @@ class LibraryViewModel(
     private val userPreferences: UserPreferences,
     val playerManager: PlayerManager,
     private val context: Context,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     private val sharedPrefs = context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE)
@@ -223,9 +226,9 @@ class LibraryViewModel(
 
             } catch (e: Exception) {
                 if (isRefresh) {
-                    _toastEvent.emit(e.localizedMessage ?: "刷新音乐库失败")
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 } else {
-                    _uiState.value = LibraryUiState.Error(e.localizedMessage ?: "获取音乐库数据失败")
+                    _uiState.value = LibraryUiState.Error(e.toUserMessage(resourceProvider))
                 }
             }
         }
@@ -318,7 +321,7 @@ class LibraryViewModel(
                     loadLibraryData()
                     _toastEvent.emit("歌单创建成功！")
                 }.onFailure { e ->
-                    _toastEvent.emit(e.localizedMessage ?: "创建歌单失败")
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
             }
         }
