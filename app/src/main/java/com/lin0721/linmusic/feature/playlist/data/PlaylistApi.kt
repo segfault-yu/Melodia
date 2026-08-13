@@ -8,7 +8,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-// 歌单/专辑详情与红心相关的网易云 Retrofit 接口定义。
+// 歌单/专辑详情相关的网易云 Retrofit 接口定义。
 interface PlaylistApi {
 
     @POST("/eapi/v6/playlist/detail")
@@ -22,16 +22,6 @@ interface PlaylistApi {
         @Path("id") id: Long,
         @Body body: EmptyBody = EmptyBody()
     ): AlbumDetailResponse
-
-    @POST("/eapi/song/like")
-    suspend fun likeSong(
-        @Body body: LikeSongRequest
-    ): LikeSongResponse
-
-    @POST("/eapi/song/like/get")
-    suspend fun getLikedSongIds(
-        @Body body: LikeSongListRequest
-    ): LikeSongListResponse
 
     // ================== 歌单歌曲操作 (添加/删除) ==================
     @POST("/eapi/playlist/manipulate/tracks")
@@ -75,36 +65,6 @@ data class PlaylistDetail(
     val creator: PlaylistCreator? = null,
     val tracks: List<Track> = emptyList()
 )
-
-// ======================= 红心/喜欢 =======================
-
-@Serializable
-data class LikeSongRequest(
-    val trackId: Long,
-    val like: Boolean = true
-)
-
-@Serializable
-data class LikeSongResponse(
-    val code: Int = 0,
-    val playlistId: Long = 0
-) {
-    val isSuccess: Boolean get() = code == 200
-}
-
-@Serializable
-data class LikeSongListRequest(
-    val uid: Long
-)
-
-@Serializable
-data class LikeSongListResponse(
-    val code: Int = 0,
-    val ids: List<Long> = emptyList(),
-    val checkPoint: Long = 0
-) {
-    val isSuccess: Boolean get() = code == 200
-}
 
 // ======================= 歌单歌曲操作 DTO =======================
 

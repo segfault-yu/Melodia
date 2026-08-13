@@ -18,7 +18,7 @@ import androidx.media3.session.CommandButton
 import com.lin0721.linmusic.R
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
-import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
+import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,7 +33,7 @@ class MelodiaPlaybackService : MediaSessionService() {
     private val playerManager: PlayerManager by inject()
     private val settingsPreferences: SettingsPreferences by inject()
     private val userPreferences: UserPreferences by inject()
-    private val playlistRepository: PlaylistRepository by inject()
+    private val songLikeRepository: SongLikeRepository by inject()
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val likedSongIdsCache = mutableSetOf<Long>()
@@ -167,7 +167,7 @@ class MelodiaPlaybackService : MediaSessionService() {
             val profile = userPreferences.userProfile.first()
             if (profile != null) {
                 if (!isLikedListLoaded) {
-                    playlistRepository.getLikedSongIds(profile.uid).collect { result ->
+                    songLikeRepository.getLikedSongIds(profile.uid).collect { result ->
                         result.onSuccess { ids ->
                             likedSongIdsCache.clear()
                             likedSongIdsCache.addAll(ids)
@@ -198,7 +198,7 @@ class MelodiaPlaybackService : MediaSessionService() {
             }
             updateCustomLayout()
 
-            playlistRepository.likeSong(songId, targetLiked).collect { result ->
+            songLikeRepository.likeSong(songId, targetLiked).collect { result ->
                 result.onFailure {
                     // 回滚
                     if (targetLiked) {

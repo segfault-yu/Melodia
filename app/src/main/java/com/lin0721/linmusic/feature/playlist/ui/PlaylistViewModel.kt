@@ -11,6 +11,7 @@ import com.lin0721.linmusic.core.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
+import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.core.player.PlayerManager
@@ -34,6 +35,7 @@ class PlaylistViewModel(
     private val libraryRepository: LibraryRepository,
     private val commentRepository: CommentRepository,
     private val playlistRepository: PlaylistRepository,
+    private val songLikeRepository: SongLikeRepository,
     private val playerRepository: PlayerRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
@@ -79,7 +81,7 @@ class PlaylistViewModel(
     fun loadLikedSongIds() {
         viewModelScope.launch {
             val profile = userPreferences.userProfile.first() ?: return@launch
-            playlistRepository.getLikedSongIds(profile.uid).collect { result ->
+            songLikeRepository.getLikedSongIds(profile.uid).collect { result ->
                 result.onSuccess { ids ->
                     _likedSongIds.value = ids.toSet()
                 }
@@ -222,7 +224,7 @@ class PlaylistViewModel(
                 if (item.isContains != item.isInitiallyContains) {
                     val isLikedPlaylist = profile != null && (item.playlistName.contains("喜欢的音乐") || item.playlistId == profile.uid)
                     if (isLikedPlaylist) {
-                        playlistRepository.likeSong(songId, item.isContains).collect { result ->
+                        songLikeRepository.likeSong(songId, item.isContains).collect { result ->
                             result.onSuccess {
                                 val currentLiked = _likedSongIds.value.toMutableSet()
                                 if (item.isContains) {
@@ -551,7 +553,7 @@ class PlaylistViewModel(
 
     fun toggleLikeSong(songId: Long, isLike: Boolean) {
         viewModelScope.launch {
-            playlistRepository.likeSong(songId, isLike).collect { result ->
+            songLikeRepository.likeSong(songId, isLike).collect { result ->
                 result.fold(
                     onSuccess = {
                         _toastEvent.emit(if (isLike) "已添加到我喜欢的音乐" else "已从我喜欢的音乐中移除")

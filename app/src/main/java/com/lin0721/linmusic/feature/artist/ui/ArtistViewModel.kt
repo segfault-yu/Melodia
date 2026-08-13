@@ -11,6 +11,7 @@ import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
+import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
@@ -41,6 +42,7 @@ class ArtistViewModel(
     private val libraryRepository: LibraryRepository,
     private val artistRepository: ArtistRepository,
     private val playlistRepository: PlaylistRepository,
+    private val songLikeRepository: SongLikeRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val authRepository: AuthRepository,
@@ -87,7 +89,7 @@ class ArtistViewModel(
     fun loadLikedSongIds() {
         viewModelScope.launch {
             val profile = userPreferences.userProfile.first() ?: return@launch
-            playlistRepository.getLikedSongIds(profile.uid).collect { result ->
+            songLikeRepository.getLikedSongIds(profile.uid).collect { result ->
                 result.onSuccess { ids ->
                     _likedSongIds.value = ids.toSet()
                 }
@@ -210,7 +212,7 @@ class ArtistViewModel(
                 if (item.isContains != item.isInitiallyContains) {
                     val isLikedPlaylist = profile != null && (item.playlistName.contains("喜欢的音乐") || item.playlistId == profile.uid)
                     if (isLikedPlaylist) {
-                        playlistRepository.likeSong(songId, item.isContains).collect { result ->
+                        songLikeRepository.likeSong(songId, item.isContains).collect { result ->
                             result.onSuccess {
                                 // 操作成功
                             }.onFailure { e ->

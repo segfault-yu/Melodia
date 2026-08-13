@@ -66,17 +66,4 @@ class PlaylistRepositoryImpl(
         transform = { Unit }
     )
 
-    override fun getLikedSongIds(uid: Long): Flow<Result<List<Long>>> = apiFlow(
-        request = { apiService.getLikedSongIds(LikeSongListRequest(uid = uid)) },
-        isSuccess = { it.isSuccess },
-        code = { it.code },
-        transform = { it.ids }
-    )
-
-    override fun likeSong(songId: Long, like: Boolean): Flow<Result<Unit>> = apiFlow(
-        request = { apiService.likeSong(LikeSongRequest(trackId = songId, like = like)) },
-        isSuccess = { it.isSuccess },
-        code = { it.code },
-        transform = { Unit }
-    )
 }

@@ -6,6 +6,7 @@ import com.lin0721.linmusic.core.network.EmptyBodyInterceptor
 import com.lin0721.linmusic.core.network.HeaderInterceptor
 import com.lin0721.linmusic.feature.artist.data.ArtistApi
 import com.lin0721.linmusic.core.comment.data.CommentApi
+import com.lin0721.linmusic.core.songlike.SongLikeApi
 import com.lin0721.linmusic.feature.create.data.CreateApi
 import com.lin0721.linmusic.feature.home.data.HomeApi
 import com.lin0721.linmusic.feature.library.data.LibraryApi
@@ -37,7 +38,8 @@ import kotlinx.coroutines.launch
  * - [OkHttpClient]        ： 含加密拦截器 + 日志拦截器
  * - [Retrofit]            ： 基于 kotlinx.serialization 的转换器
  * - [NeteaseApiService]   ： 账号鉴权 Retrofit 代理接口（core/auth 跨域共用）
- * - 各业务域 Api           ： HomeApi/PlaylistApi/CreateApi/PlayerApi/ArtistApi/SearchApi/LibraryApi/CommentApi/SettingsApi
+ * - 各业务域 Api           ： HomeApi/PlaylistApi/CreateApi/PlayerApi/ArtistApi/SearchApi/LibraryApi/SettingsApi
+ * - core 共享 Api          ： CommentApi/SongLikeApi
  */
 val networkModule = module {
 
@@ -127,6 +129,7 @@ val networkModule = module {
     single<SearchApi> { get<Retrofit>().create(SearchApi::class.java) }
     single<LibraryApi> { get<Retrofit>().create(LibraryApi::class.java) }
     single<CommentApi> { get<Retrofit>().create(CommentApi::class.java) }
+    single<SongLikeApi> { get<Retrofit>().create(SongLikeApi::class.java) }
     single<SettingsApi> { get<Retrofit>().create(SettingsApi::class.java) }
 }
 

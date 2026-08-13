@@ -2,7 +2,7 @@ package com.lin0721.linmusic.feature.playlist.data
 
 import kotlinx.coroutines.flow.Flow
 
-// 歌单/专辑/红心数据仓储（playlist 业务域）
+// 歌单/专辑数据仓储（playlist 业务域）
 interface PlaylistRepository {
 
     // 获取歌单详情
@@ -16,8 +16,4 @@ interface PlaylistRepository {
 
     // 歌单歌曲添加/删除操作
     fun manipulatePlaylistTracks(op: String, playlistId: Long, trackId: Long): Flow<Result<Unit>>
-
-    fun getLikedSongIds(uid: Long): Flow<Result<List<Long>>>
-
-    fun likeSong(songId: Long, like: Boolean): Flow<Result<Unit>>
 }

@@ -12,7 +12,7 @@ import com.lin0721.linmusic.feature.artist.domain.ArtistInfo
 import com.lin0721.linmusic.feature.player.domain.LyricLine
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.core.comment.data.CommentRepository
-import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
+import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
@@ -57,7 +57,7 @@ class PlayerViewModel(
     private val playerRepository: PlayerRepository,
     private val artistRepository: ArtistRepository,
     private val commentRepository: CommentRepository,
-    private val playlistRepository: PlaylistRepository,
+    private val songLikeRepository: SongLikeRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val settingsPreferences: SettingsPreferences,
@@ -136,7 +136,7 @@ class PlayerViewModel(
     private fun loadLikedSongIds() {
         viewModelScope.launch {
             val profile = userPreferences.userProfile.first() ?: return@launch
-            playlistRepository.getLikedSongIds(profile.uid).collect { result ->
+            songLikeRepository.getLikedSongIds(profile.uid).collect { result ->
                 result.onSuccess { ids ->
                     likedSongIds.clear()
                     likedSongIds.addAll(ids)
@@ -157,7 +157,7 @@ class PlayerViewModel(
         _songDetailState.update { it.copy(isLiked = newLiked) }
 
         viewModelScope.launch {
-            playlistRepository.likeSong(songId, newLiked).collect { result ->
+            songLikeRepository.likeSong(songId, newLiked).collect { result ->
                 result.onSuccess {
                     if (newLiked) likedSongIds.add(songId) else likedSongIds.remove(songId)
                 }.onFailure {
