@@ -24,19 +24,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-sealed class ArtistUiState {
-    object Loading : ArtistUiState()
-    data class Success(
-        val artist: ArtistDetailInfo,
-        val isFollowed: Boolean,
-        val fansCount: Long,
-        val topSongs: List<Track>,
-        val albums: List<ArtistAlbum>,
-        val similarArtists: List<ArtistInfo>
-    ) : ArtistUiState()
-    data class Error(val message: String) : ArtistUiState()
-}
-
 class ArtistViewModel(
     private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
     private val userPlaylistRepository: UserPlaylistRepository,
