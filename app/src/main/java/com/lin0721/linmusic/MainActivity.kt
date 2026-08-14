@@ -1,93 +1,20 @@
 package com.lin0721.linmusic
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.exponentialDecay
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.AnchoredDraggableState
-import androidx.compose.foundation.gestures.DraggableAnchors
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.anchoredDraggable
-import androidx.compose.foundation.gestures.animateTo
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToDown
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lin0721.linmusic.core.ui.components.MelodiaNavigationBar
-import com.lin0721.linmusic.core.ui.components.MiniPlayerCard
-import com.lin0721.linmusic.core.ui.components.ProfileSidebar
-import com.lin0721.linmusic.feature.create.ui.CreatePopupMenu
-import com.lin0721.linmusic.feature.home.ui.HomeScreen
-import com.lin0721.linmusic.feature.home.ui.HomeViewModel
-import com.lin0721.linmusic.feature.player.ui.FullPlayerScreen
-import com.lin0721.linmusic.core.ui.theme.BackgroundDark
-import com.lin0721.linmusic.core.ui.theme.SurfaceDark
-import com.lin0721.linmusic.core.ui.theme.MelodiaTheme
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
-import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
-import android.content.Intent
 import androidx.lifecycle.lifecycleScope
-import com.lin0721.linmusic.core.preferences.SettingsPreferences
+import com.lin0721.linmusic.core.log.AppLogger
+import com.lin0721.linmusic.core.log.CrashHandler
 import com.lin0721.linmusic.core.player.FloatingLyricService
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
+import com.lin0721.linmusic.core.ui.theme.MelodiaTheme
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
-
-enum class Screen {
-    Home, Playlist, Search, Library, Settings, Artist
-}
-
-enum class AppSidebarState {
-    Closed, Open
-}
-
-
 
 class MainActivity : ComponentActivity() {
 
@@ -96,24 +23,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 初始化日志与崩溃收集系统
-        com.lin0721.linmusic.core.log.AppLogger.init(this)
-        com.lin0721.linmusic.core.log.CrashHandler.init(this)
+        AppLogger.init(this)
+        CrashHandler.init(this)
         enableEdgeToEdge()
 
         // 监听悬浮歌词开关
         lifecycleScope.launch {
             settingsPreferences.showDesktopLrc.collectLatest { enabled ->
                 if (enabled) {
-                    if (android.provider.Settings.canDrawOverlays(this@MainActivity)) {
-                        startService(Intent(this@MainActivity, FloatingLyricService::class.java))
-                    } else {
-                        android.widget.Toast.makeText(this@MainActivity, "请开启悬浮窗权限以显示桌面歌词", android.widget.Toast.LENGTH_LONG).show()
-                        val intent = Intent(
-                            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            android.net.Uri.parse("package:$packageName")
-                        )
-                        startActivity(intent)
-                    }
+                    startFloatingLyricOrRequestPermission()
                 } else {
                     stopService(Intent(this@MainActivity, FloatingLyricService::class.java))
                 }
@@ -136,365 +54,23 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
-@Composable
-fun MelodiaApp() {
-    val viewModel: HomeViewModel = koinViewModel()
-    val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
-    val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
-    val currentPositionState = viewModel.playerManager.currentPosition.collectAsStateWithLifecycle()
-    val currentPositionProvider = { currentPositionState.value }
-    val duration by viewModel.playerManager.duration.collectAsStateWithLifecycle()
-    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
-
-    var isPlayerOpen by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    // 初始化为极大值，屏幕尺寸测量前 FullPlayerScreen 始终在屏幕外不可见
-    var playerOffsetY by remember { mutableStateOf(10000f) }
-    var screenHeightPx by remember { mutableStateOf(0f) }
-    // springJob 不用 mutableStateOf，避免写入时触发不必要的 recomposition
-    val springJobRef = remember { arrayOfNulls<kotlinx.coroutines.Job>(1) }
-
-    // 统一管理播放界面展开和收起的弹簧动画
-    fun animatePlayerTo(open: Boolean, velocity: Float, initialOffset: Float = Float.NaN) {
-        springJobRef[0]?.cancel()
-        if (open) {
-            isPlayerOpen = true
-            springJobRef[0] = scope.launch {
-                animate(
-                    initialValue = playerOffsetY,
-                    targetValue = 0f,
-                    initialVelocity = velocity,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                ) { value, _ -> playerOffsetY = value.coerceIn(0f, screenHeightPx) }
-            }
-        } else {
-            if (!initialOffset.isNaN()) {
-                playerOffsetY = initialOffset
-            }
-            springJobRef[0] = scope.launch {
-                animate(
-                    initialValue = playerOffsetY,
-                    targetValue = screenHeightPx,
-                    initialVelocity = velocity,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                ) { value, _ -> playerOffsetY = value.coerceIn(0f, screenHeightPx) }
-                playerOffsetY = screenHeightPx
-                isPlayerOpen = false
-            }
+    // 有悬浮窗权限则直接启动桌面歌词，否则引导用户前往系统设置授权
+    private fun startFloatingLyricOrRequestPermission() {
+        if (android.provider.Settings.canDrawOverlays(this)) {
+            startService(Intent(this, FloatingLyricService::class.java))
+            return
         }
-    }
-
-    // 屏幕高度首次测量完成后将播放器初始化到屏幕底部
-    LaunchedEffect(screenHeightPx) {
-        if (screenHeightPx > 0f && !isPlayerOpen) {
-            playerOffsetY = screenHeightPx
-        }
-    }
-
-
-    // 全局自定义 Toast 状态管理
-    var toastMessage by remember { mutableStateOf<String?>(null) }
-    var toastTrigger by remember { mutableStateOf(0) }
-
-    LaunchedEffect(Unit) {
-        com.lin0721.linmusic.core.ui.components.ToastManager.toastFlow.collect { msg ->
-            toastMessage = msg
-            toastTrigger++
-        }
-    }
-
-    LaunchedEffect(toastTrigger) {
-        if (toastMessage != null) {
-            kotlinx.coroutines.delay(2000)
-            toastMessage = null
-        }
-    }
-
-    // 导航历史栈与当前屏幕状态
-    val backStack = remember { mutableStateListOf<Screen>(Screen.Home) }
-    val currentScreen by remember { derivedStateOf { backStack.lastOrNull() ?: Screen.Home } }
-
-    // 页面跳转函数
-    val navigateTo: (Screen) -> Unit = { screen ->
-        if (backStack.lastOrNull() != screen) {
-            if (screen == Screen.Home) {
-                backStack.clear()
-                backStack.add(Screen.Home)
-            } else if (screen == Screen.Search || screen == Screen.Library) {
-                backStack.clear()
-                backStack.add(Screen.Home)
-                backStack.add(screen)
-            } else {
-                backStack.add(screen)
-            }
-        }
-    }
-
-    // 页面回退函数
-    val navigateBack: () -> Unit = {
-        if (backStack.size > 1) {
-            backStack.removeAt(backStack.lastIndex)
-        }
-    }
-
-    var activePlaylistId by remember { mutableStateOf<Long?>(null) }
-    var activePlaylistIsAlbum by remember { mutableStateOf(false) }
-    var activeArtistId by remember { mutableStateOf<Long?>(null) }
-    var searchAutoFocus by remember { mutableStateOf(false) }
-    var showCreateSheet by remember { mutableStateOf(false) }
-    // 网页登录界面可见性状态
-    var isLoginScreenVisible by remember { mutableStateOf(false) }
-
-    val hazeState = remember { HazeState() }
-
-    val density = LocalDensity.current
-    val drawerWidth = 310.dp
-    val drawerWidthPx = with(density) { drawerWidth.toPx() }
-
-    val drawerState = remember {
-        AnchoredDraggableState<AppSidebarState>(
-            initialValue = AppSidebarState.Closed,
-            positionalThreshold = { distance: Float -> distance * 0.5f },
-            velocityThreshold = { with(density) { 100.dp.toPx() } },
-            snapAnimationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-            decayAnimationSpec = exponentialDecay()
-        )
-    }
-
-    // 侧边栏边缘滑动判断：避免抽屉打开手势与列表左右滑动冲突
-    var isTouchStartingAtEdge by remember { mutableStateOf(false) }
-
-    LaunchedEffect(drawerWidthPx) {
-        drawerState.updateAnchors(
-            DraggableAnchors {
-                AppSidebarState.Closed at 0f
-                AppSidebarState.Open at drawerWidthPx
-            }
-        )
-    }
-
-    val openSidebar: () -> Unit = {
-        scope.launch { drawerState.animateTo(AppSidebarState.Open) }
-    }
-
-    // 系统返回键与侧滑返回拦截逻辑：按优先级关闭或返回上一级
-    val isAnyOverlayOpen = isPlayerOpen ||
-            (drawerState.currentValue == AppSidebarState.Open) ||
-            showCreateSheet ||
-            (backStack.size > 1)
-
-    BackHandler(enabled = isAnyOverlayOpen) {
-        when {
-            isPlayerOpen -> {
-                animatePlayerTo(false, 0f)
-            }
-            drawerState.currentValue == AppSidebarState.Open -> {
-                scope.launch { drawerState.animateTo(AppSidebarState.Closed) }
-            }
-            showCreateSheet -> {
-                showCreateSheet = false
-            }
-            backStack.size > 1 -> {
-                navigateBack()
-            }
-        }
-    }
-
-    val isDrawerDraggable = userProfile != null && (drawerState.currentValue == AppSidebarState.Open || isTouchStartingAtEdge)
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .onSizeChanged { screenHeightPx = it.height.toFloat() }
-            .pointerInput(drawerState.currentValue) {
-                val edgeWidthPx = with(density) { 32.dp.toPx() }
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        val down = event.changes.firstOrNull { it.changedToDown() }
-                        if (down != null) {
-                            // 侧边栏已打开时允许在任意位置向左滑动关闭；侧边栏关闭时，仅允许在左边缘向右拉出
-                            isTouchStartingAtEdge = drawerState.currentValue == AppSidebarState.Open || down.position.x < edgeWidthPx
-                        }
-                        val allUp = event.changes.all { !it.pressed }
-                        if (allUp) {
-                            isTouchStartingAtEdge = false
-                        }
-                    }
-                }
-            }
-            .anchoredDraggable(
-                state = drawerState,
-                orientation = Orientation.Horizontal,
-                enabled = isDrawerDraggable
+        android.widget.Toast.makeText(
+            this,
+            "请开启悬浮窗权限以显示桌面歌词",
+            android.widget.Toast.LENGTH_LONG
+        ).show()
+        startActivity(
+            Intent(
+                android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                android.net.Uri.parse("package:$packageName")
             )
-            .background(BackgroundDark)
-    ) {
-        // 1. 侧边栏层 (位于最底层或同步移动)
-        userProfile?.let { profile ->
-            Box(
-                modifier = Modifier
-                    .width(drawerWidth)
-                    .fillMaxHeight()
-                    .graphicsLayer {
-                        val offset = drawerState.offset
-                        val progress = if (offset.isNaN()) 0f else (offset / drawerWidthPx).coerceIn(0f, 1f)
-                        
-                        translationX = (if (offset.isNaN()) 0f else offset) - drawerWidthPx
-                        alpha = 0.5f + (0.5f * progress)
-                    }
-            ) {
-                ProfileSidebar(
-                    userProfile = profile,
-                    onLogout = {
-                        viewModel.logout()
-                        scope.launch { drawerState.animateTo(AppSidebarState.Closed) }
-                    },
-                    onDismiss = {
-                        scope.launch { drawerState.animateTo(AppSidebarState.Closed) }
-                    },
-                    onNavigateToSettings = {
-                        navigateTo(Screen.Settings)
-                    }
-                )
-            }
-        }
-
-        // 2. 主页面内容层
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    val offset = drawerState.offset
-                    val progress = if (offset.isNaN()) 0f else (offset / drawerWidthPx).coerceIn(0f, 1f)
-                    
-                    translationX = if (offset.isNaN()) 0f else offset
-                    clip = true
-                    shape = RoundedCornerShape((progress * 32).dp)
-                    shadowElevation = (progress * 30f)
-                }
-                .background(BackgroundDark)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (isPlayerOpen) Modifier.haze(hazeState) else Modifier)
-            ) {
-                MelodiaNavHost(
-                    currentScreen = currentScreen,
-                    homeViewModel = viewModel,
-                    activePlaylistId = activePlaylistId,
-                    activePlaylistIsAlbum = activePlaylistIsAlbum,
-                    activeArtistId = activeArtistId,
-                    searchAutoFocus = searchAutoFocus,
-                    onOpenSidebar = openSidebar,
-                    onLoginScreenVisibilityChanged = { isLoginScreenVisible = it },
-                    onNavigateToPlaylist = { id, isAlbum ->
-                        activePlaylistId = id
-                        activePlaylistIsAlbum = isAlbum
-                        navigateTo(Screen.Playlist)
-                    },
-                    onNavigateToArtist = { id ->
-                        activeArtistId = id
-                        navigateTo(Screen.Artist)
-                    },
-                    onNavigateToSearch = {
-                        searchAutoFocus = true
-                        navigateTo(Screen.Search)
-                    },
-                    onBack = navigateBack
-                )
-            }
-
-            // 创建菜单遮罩
-            if (showCreateSheet) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clickable { showCreateSheet = false }
-                )
-            }
-
-            // 放置在应用了平移 graphicsLayer 的主 Box 内部的底部
-            MelodiaBottomOverlay(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                currentScreen = currentScreen,
-                showCreateSheet = showCreateSheet,
-                isLoginScreenVisible = isLoginScreenVisible,
-                currentTrack = currentTrack,
-                isPlaying = isPlaying,
-                currentPositionProvider = currentPositionProvider,
-                duration = duration,
-                hazeState = hazeState,
-                onTogglePlay = { viewModel.togglePlayPause() },
-                onNext = { viewModel.playerManager.playNext() },
-                onMiniPlayerClick = { animatePlayerTo(true, 0f) },
-                onMiniPlayerDrag = { delta ->
-                    springJobRef[0]?.cancel()
-                    if (!isPlayerOpen) isPlayerOpen = true
-                    playerOffsetY = (playerOffsetY + delta).coerceIn(0f, screenHeightPx)
-                },
-                onMiniPlayerDragEnd = { velocity ->
-                    val shouldOpen = playerOffsetY < screenHeightPx * 0.80f || velocity < -1000f
-                    animatePlayerTo(shouldOpen, velocity)
-                },
-                onCreateDismiss = { showCreateSheet = false },
-                onNavigate = { searchAutoFocus = false; navigateTo(it) },
-                onCreateClick = { showCreateSheet = !showCreateSheet }
-            )
-
-            // 侧边栏打开时的遮罩与点击收起事件
-            val currentOffset = drawerState.offset
-            if (!currentOffset.isNaN() && currentOffset > 0f) {
-                val progress = currentOffset / drawerWidthPx
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f * progress))
-                        .clickable(
-                            enabled = drawerState.currentValue == AppSidebarState.Open,
-                            onClick = { scope.launch { drawerState.animateTo(AppSidebarState.Closed) } }
-                        )
-                )
-            }
-        }
-
-        MelodiaFullPlayerOverlay(
-            currentTrack = currentTrack,
-            screenHeightPx = screenHeightPx,
-            isPlayerOpen = isPlayerOpen,
-            playerOffsetY = playerOffsetY,
-            isPlaying = isPlaying,
-            currentPositionProvider = currentPositionProvider,
-            duration = duration,
-            onTogglePlay = { viewModel.togglePlayPause() },
-            onSeek = { viewModel.playerManager.seekTo(it) },
-            onClose = { animatePlayerTo(false, 0f) },
-            onDragClose = { offset, velocity -> animatePlayerTo(false, velocity, offset) },
-            onArtistClick = { artistId ->
-                animatePlayerTo(false, 0f)
-                activeArtistId = artistId
-                navigateTo(Screen.Artist)
-            },
-            onAlbumClick = { albumId ->
-                animatePlayerTo(false, 0f)
-                activePlaylistId = albumId
-                activePlaylistIsAlbum = true
-                navigateTo(Screen.Playlist)
-            }
         )
-
-        // 4. 全局自定义 Toast 提示
-        MelodiaToastHost(toastMessage = toastMessage)
     }
 }

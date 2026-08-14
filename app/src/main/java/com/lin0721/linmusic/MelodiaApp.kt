@@ -1,0 +1,255 @@
+package com.lin0721.linmusic
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.core.ui.components.ProfileSidebar
+import com.lin0721.linmusic.core.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.feature.home.ui.HomeViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import org.koin.androidx.compose.koinViewModel
+
+private val SidebarWidth = 310.dp
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun MelodiaApp() {
+    val viewModel: HomeViewModel = koinViewModel()
+    val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
+    val currentPositionState = viewModel.playerManager.currentPosition.collectAsStateWithLifecycle()
+    val currentPositionProvider = { currentPositionState.value }
+    val duration by viewModel.playerManager.duration.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+
+    val playerSheet = rememberMelodiaPlayerSheetState()
+    val navigation = rememberMelodiaNavigationState()
+    val sidebar = rememberMelodiaSidebarState(SidebarWidth)
+
+    var showCreateSheet by remember { mutableStateOf(false) }
+    // 网页登录界面可见性状态
+    var isLoginScreenVisible by remember { mutableStateOf(false) }
+
+    val hazeState = remember { HazeState() }
+    val density = LocalDensity.current
+
+    val toastMessage = rememberGlobalToastMessage()
+
+    // 系统返回键与侧滑返回拦截：按优先级关闭浮层或返回上一级
+    val isAnyOverlayOpen = playerSheet.isOpen || sidebar.isOpen || showCreateSheet || navigation.canNavigateBack
+
+    BackHandler(enabled = isAnyOverlayOpen) {
+        when {
+            playerSheet.isOpen -> playerSheet.animateTo(false, 0f)
+            sidebar.isOpen -> sidebar.close()
+            showCreateSheet -> showCreateSheet = false
+            navigation.canNavigateBack -> navigation.navigateBack()
+        }
+    }
+
+    val isDrawerDraggable = userProfile != null && (sidebar.isOpen || sidebar.isTouchStartingAtEdge)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { playerSheet.onScreenSizeChanged(it.height.toFloat()) }
+            .pointerInput(sidebar.isOpen) {
+                val edgeWidthPx = with(density) { 32.dp.toPx() }
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val down = event.changes.firstOrNull { it.changedToDown() }
+                        if (down != null) {
+                            sidebar.onPointerDown(down.position.x, edgeWidthPx)
+                        }
+                        if (event.changes.all { !it.pressed }) {
+                            sidebar.onPointerUp()
+                        }
+                    }
+                }
+            }
+            .anchoredDraggable(
+                state = sidebar.draggableState,
+                orientation = Orientation.Horizontal,
+                enabled = isDrawerDraggable
+            )
+            .background(BackgroundDark)
+    ) {
+        // 1. 侧边栏层 (位于最底层或同步移动)
+        userProfile?.let { profile ->
+            Box(
+                modifier = Modifier
+                    .width(SidebarWidth)
+                    .fillMaxHeight()
+                    .graphicsLayer {
+                        translationX = sidebar.offsetX - sidebar.widthPx
+                        alpha = 0.5f + (0.5f * sidebar.progress)
+                    }
+            ) {
+                ProfileSidebar(
+                    userProfile = profile,
+                    onLogout = {
+                        viewModel.logout()
+                        sidebar.close()
+                    },
+                    onDismiss = { sidebar.close() },
+                    onNavigateToSettings = { navigation.navigateTo(Screen.Settings) }
+                )
+            }
+        }
+
+        // 2. 主页面内容层
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    translationX = sidebar.offsetX
+                    clip = true
+                    shape = RoundedCornerShape((sidebar.progress * 32).dp)
+                    shadowElevation = (sidebar.progress * 30f)
+                }
+                .background(BackgroundDark)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (playerSheet.isOpen) Modifier.haze(hazeState) else Modifier)
+            ) {
+                MelodiaNavHost(
+                    currentScreen = navigation.currentScreen,
+                    homeViewModel = viewModel,
+                    activePlaylistId = navigation.activePlaylistId,
+                    activePlaylistIsAlbum = navigation.activePlaylistIsAlbum,
+                    activeArtistId = navigation.activeArtistId,
+                    searchAutoFocus = navigation.searchAutoFocus,
+                    onOpenSidebar = { sidebar.open() },
+                    onLoginScreenVisibilityChanged = { isLoginScreenVisible = it },
+                    onNavigateToPlaylist = { id, isAlbum -> navigation.openPlaylist(id, isAlbum) },
+                    onNavigateToArtist = { id -> navigation.openArtist(id) },
+                    onNavigateToSearch = { navigation.openSearch(autoFocus = true) },
+                    onBack = { navigation.navigateBack() }
+                )
+            }
+
+            // 创建菜单遮罩
+            if (showCreateSheet) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable { showCreateSheet = false }
+                )
+            }
+
+            // 放置在应用了平移 graphicsLayer 的主 Box 内部的底部
+            MelodiaBottomOverlay(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                currentScreen = navigation.currentScreen,
+                showCreateSheet = showCreateSheet,
+                isLoginScreenVisible = isLoginScreenVisible,
+                currentTrack = currentTrack,
+                isPlaying = isPlaying,
+                currentPositionProvider = currentPositionProvider,
+                duration = duration,
+                hazeState = hazeState,
+                onTogglePlay = { viewModel.togglePlayPause() },
+                onNext = { viewModel.playerManager.playNext() },
+                onMiniPlayerClick = { playerSheet.animateTo(true, 0f) },
+                onMiniPlayerDrag = { delta -> playerSheet.onDrag(delta) },
+                onMiniPlayerDragEnd = { velocity -> playerSheet.onDragEnd(velocity) },
+                onCreateDismiss = { showCreateSheet = false },
+                onNavigate = { navigation.openTab(it) },
+                onCreateClick = { showCreateSheet = !showCreateSheet }
+            )
+
+            // 侧边栏打开时的遮罩与点击收起事件
+            if (sidebar.progress > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f * sidebar.progress))
+                        .clickable(
+                            enabled = sidebar.isOpen,
+                            onClick = { sidebar.close() }
+                        )
+                )
+            }
+        }
+
+        MelodiaFullPlayerOverlay(
+            currentTrack = currentTrack,
+            screenHeightPx = playerSheet.screenHeightPx,
+            isPlayerOpen = playerSheet.isOpen,
+            playerOffsetY = playerSheet.offsetY,
+            isPlaying = isPlaying,
+            currentPositionProvider = currentPositionProvider,
+            duration = duration,
+            onTogglePlay = { viewModel.togglePlayPause() },
+            onSeek = { viewModel.playerManager.seekTo(it) },
+            onClose = { playerSheet.animateTo(false, 0f) },
+            onDragClose = { offset, velocity -> playerSheet.animateTo(false, velocity, offset) },
+            onArtistClick = { artistId ->
+                playerSheet.animateTo(false, 0f)
+                navigation.openArtist(artistId)
+            },
+            onAlbumClick = { albumId ->
+                playerSheet.animateTo(false, 0f)
+                navigation.openPlaylist(albumId, isAlbum = true)
+            }
+        )
+
+        // 4. 全局自定义 Toast 提示
+        MelodiaToastHost(toastMessage = toastMessage)
+    }
+}
+
+// 订阅全局 Toast 事件，展示 2 秒后自动清空
+@Composable
+private fun rememberGlobalToastMessage(): String? {
+    var message by remember { mutableStateOf<String?>(null) }
+    var trigger by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        ToastManager.toastFlow.collect { msg ->
+            message = msg
+            trigger++
+        }
+    }
+
+    LaunchedEffect(trigger) {
+        if (message != null) {
+            kotlinx.coroutines.delay(2000)
+            message = null
+        }
+    }
+
+    return message
+}
