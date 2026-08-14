@@ -4,8 +4,10 @@ import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.model.Track
 
+// 歌单/专辑详情页 UI 状态
 sealed interface PlaylistUiState {
-    object Loading : PlaylistUiState
+    data object Loading : PlaylistUiState
+
     data class Success(
         val playlist: PlaylistDetail,
         val recommendedSongs: List<Track> = emptyList(),

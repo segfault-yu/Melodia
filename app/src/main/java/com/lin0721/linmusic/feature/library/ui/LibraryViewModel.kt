@@ -42,18 +42,6 @@ enum class LibrarySortOrder {
     RECENTLY_PLAYED, CREATE_TIME, NAME
 }
 
-sealed interface LibraryUiState {
-    data object Loading : LibraryUiState
-    data class Success(
-        val allItems: List<LibraryItem>,
-        val filteredItems: List<LibraryItem>,
-        val artistCount: Int,
-        val playlistCount: Int,
-        val albumCount: Int
-    ) : LibraryUiState
-    data class Error(val message: String) : LibraryUiState
-}
-
 class LibraryViewModel(
     private val createRepository: CreateRepository,
     private val libraryRepository: LibraryRepository,
