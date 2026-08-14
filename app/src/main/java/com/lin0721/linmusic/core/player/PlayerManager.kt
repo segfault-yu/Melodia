@@ -1,36 +1,23 @@
 package com.lin0721.linmusic.core.player
 
-import android.content.ComponentName
 import android.content.Context
-import android.net.Uri
-import android.os.Bundle
-import androidx.core.content.ContextCompat
+import android.widget.Toast
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
-import com.lin0721.linmusic.core.player.PlaybackPreferences
-import com.lin0721.linmusic.core.player.PlaybackState
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import coil.Coil
-import coil.request.ImageRequest
-
-import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
+// 播放门面：对外暴露播放状态与控制入口，队列、控制器、进度、持久化等职责交由协作者承担
 class PlayerManager(
     private val context: Context,
     private val playbackPreferences: PlaybackPreferences,
@@ -39,7 +26,6 @@ class PlayerManager(
 ) : Player.Listener {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private var controller: MediaController? = null
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -47,386 +33,177 @@ class PlayerManager(
     private val _currentTrack = MutableStateFlow<MediaItem?>(null)
     val currentTrack: StateFlow<MediaItem?> = _currentTrack.asStateFlow()
 
-    private val _currentPosition = MutableStateFlow(0L)
-    val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
+    private val controllerHolder = MediaControllerHolder(context)
+    private val playbackQueue = PlaybackQueue()
+    private val progress = PlaybackProgressTracker(scope, controllerHolder)
+    private val stateStore = PlaybackStateStore(scope, playbackPreferences)
+    private val coverPreloader = TrackCoverPreloader(context)
+    private val sleepTimer = SleepTimer(scope) { pause() }
+    private val roaming = SimilarRoamingController(scope, repository, settingsPreferences, playbackQueue, stateStore)
+    private val networkGuard = PlaybackNetworkGuard(
+        context = context,
+        scope = scope,
+        settingsPreferences = settingsPreferences,
+        isPlaying = { _isPlaying.value },
+        onPauseRequested = { pause() }
+    )
 
-    private val _duration = MutableStateFlow(0L)
-    val duration: StateFlow<Long> = _duration.asStateFlow()
-
-    private val _positionUpdateInterval = MutableStateFlow(1000L)
-    val positionUpdateInterval: StateFlow<Long> = _positionUpdateInterval.asStateFlow()
-
-    fun setPositionUpdateInterval(intervalMs: Long) {
-        _positionUpdateInterval.value = intervalMs
-    }
-
-    private val _sleepTimerRemaining = MutableStateFlow(0L)
-    val sleepTimerRemaining: StateFlow<Long> = _sleepTimerRemaining.asStateFlow()
-
-    private var sleepTimerJob: Job? = null
-
-    fun setSleepTimer(minutes: Int) {
-        sleepTimerJob?.cancel()
-        if (minutes <= 0) {
-            _sleepTimerRemaining.value = 0L
-            return
-        }
-        _sleepTimerRemaining.value = minutes * 60 * 1000L
-        sleepTimerJob = scope.launch {
-            while (_sleepTimerRemaining.value > 0L) {
-                delay(1000L)
-                val currentVal = _sleepTimerRemaining.value
-                val nextVal = currentVal - 1000L
-                if (nextVal <= 0L) {
-                    _sleepTimerRemaining.value = 0L
-                    pause()
-                    break
-                } else {
-                    _sleepTimerRemaining.value = nextVal
-                }
-            }
-        }
-    }
-
-    private val _playContext = MutableStateFlow<String?>(null)
-    val playContext: StateFlow<String?> = _playContext.asStateFlow()
-
-    // 队列管理
-    private var originalQueue: List<QueueItem> = emptyList()
-    private var playQueue: List<QueueItem> = emptyList()
-
-    private val _currentIndex = MutableStateFlow(-1)
-    val currentIndex: StateFlow<Int> = _currentIndex.asStateFlow()
-
-    private val _playMode = MutableStateFlow(PlayMode.LIST_LOOP)
-    val playMode: StateFlow<PlayMode> = _playMode.asStateFlow()
-
-    private val _queue = MutableStateFlow<List<QueueItem>>(emptyList())
-    val queue: StateFlow<List<QueueItem>> = _queue.asStateFlow()
+    val currentPosition: StateFlow<Long> = progress.currentPosition
+    val duration: StateFlow<Long> = progress.duration
+    val positionUpdateInterval: StateFlow<Long> = progress.updateInterval
+    val sleepTimerRemaining: StateFlow<Long> = sleepTimer.remaining
+    val playContext: StateFlow<String?> = playbackQueue.playContext
+    val currentIndex: StateFlow<Int> = playbackQueue.currentIndex
+    val playMode: StateFlow<PlayMode> = playbackQueue.playMode
+    val queue: StateFlow<List<QueueItem>> = playbackQueue.items
 
     private var activePlayJob: Job? = null
     private var consecutiveErrors = 0
-    private var roamingJob: Job? = null
-    private var backupQueue: List<QueueItem> = emptyList()
-    private var backupIndex: Int = -1
-
-    private var lastWasWifi = false
-    private var lastRoamingTriggeredSongId = -1L
-
-    private val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
-        override fun onCapabilitiesChanged(network: android.net.Network, capabilities: android.net.NetworkCapabilities) {
-            super.onCapabilitiesChanged(network, capabilities)
-            val isWifi = capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
-            val isMobile = capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR)
-
-            if (lastWasWifi && isMobile && !isWifi) {
-                scope.launch(Dispatchers.Main) {
-                    val alertEnabled = settingsPreferences.mobileAlert.first()
-                    val wifiOnly = settingsPreferences.wifiOnlyPlay.first()
-
-                    if (wifiOnly) {
-                        pause()
-                        android.widget.Toast.makeText(context, "已为暂停播放（开启了“仅Wi-Fi联网播放”）", android.widget.Toast.LENGTH_LONG).show()
-                    } else if (alertEnabled && _isPlaying.value) {
-                        android.widget.Toast.makeText(context, "已切换至移动网络播放", android.widget.Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-            if (isWifi) {
-                lastWasWifi = true
-            } else if (isMobile) {
-                lastWasWifi = false
-            }
-        }
-    }
-
-    private fun isMobileNetwork(): Boolean {
-        return kotlin.runCatching {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager ?: return false
-            val activeNetwork = cm.activeNetwork ?: return false
-            val capabilities = cm.getNetworkCapabilities(activeNetwork) ?: return false
-            capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR)
-        }.getOrDefault(false)
-    }
 
     init {
-        // 注册网络回调
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
-        val request = android.net.NetworkRequest.Builder()
-            .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-        cm?.registerNetworkCallback(request, networkCallback)
+        networkGuard.register()
 
         scope.launch {
-            _playMode.value = playbackPreferences.playMode.first()
+            playbackQueue.setPlayMode(stateStore.loadPlayMode())
             // 恢复队列
-            val qs = playbackPreferences.queueState.first()
-            if (qs.queue.isNotEmpty()) {
-                originalQueue = qs.queue
-                playQueue = qs.queue
-                _currentIndex.value = qs.currentIndex.coerceIn(0, qs.queue.size - 1)
-                _queue.value = playQueue
-                _playContext.value = qs.playContext
-            }
+            val qs = stateStore.loadQueueState()
+            playbackQueue.restore(qs.queue, qs.currentIndex, qs.playContext)
         }
 
         // 监听 playMode 同步，newValue != oldValue 判定防止死循环写入
         scope.launch {
-            playbackPreferences.playMode.collectLatest { newMode ->
-                if (_playMode.value != newMode) {
-                    val currentItem = playQueue.getOrNull(_currentIndex.value)
-                    applyMode(newMode, currentItem)
+            stateStore.playModeChanges.collectLatest { newMode ->
+                if (playbackQueue.playMode.value != newMode) {
+                    applyMode(newMode, playbackQueue.currentItem())
                 }
             }
         }
 
-        scope.launch {
-            while (true) {
-                // 只有当播放器处于就绪播放状态时，才去轮询更新当前进度，防止在切歌缓冲时读到残留或脏进度值
-                val isReady = controller?.playbackState == Player.STATE_READY
-                if (_isPlaying.value && isReady) {
-                    val curPos = controller?.currentPosition ?: 0L
-                    _currentPosition.value = curPos
-
-                    val dur = _duration.value
-                    val curTrack = _currentTrack.value
-                    val songId = curTrack?.mediaId?.toLongOrNull() ?: -1L
-                    if (dur > 0L && songId != -1L) {
-                        val remainingMs = dur - curPos
-                        val curIdx = _currentIndex.value
-                        if (curIdx == playQueue.size - 1 && remainingMs <= 15000L && lastRoamingTriggeredSongId != songId) {
-                            val autoPlay = settingsPreferences.autoPlayNext.first()
-                            if (autoPlay) {
-                                lastRoamingTriggeredSongId = songId
-                                _playContext.value = "similar_roaming"
-                                fetchAndAppendSimilarSongs(songId, curIdx)
-                            }
-                        }
-                    }
+        progress.start(
+            isPlaying = { _isPlaying.value },
+            onTick = { positionMs ->
+                val dur = progress.duration.value
+                val songId = _currentTrack.value?.mediaId?.toLongOrNull() ?: -1L
+                if (dur > 0L && songId != -1L) {
+                    roaming.onProgressTick(songId, dur - positionMs)
                 }
-                delay(_positionUpdateInterval.value)
             }
-        }
+        )
+    }
+
+    fun setPositionUpdateInterval(intervalMs: Long) {
+        progress.setUpdateInterval(intervalMs)
+    }
+
+    fun setSleepTimer(minutes: Int) {
+        sleepTimer.start(minutes)
     }
 
     suspend fun initController() {
-        if (controller != null) return
+        if (controllerHolder.isConnected) return
 
-        val lastState = playbackPreferences.playbackState.first()
-        if (lastState.songId != -1L && _currentTrack.value == null) {
-            val bundle = Bundle().apply { putLong("songId", lastState.songId) }
-            val metadata = MediaMetadata.Builder()
-                .setTitle(lastState.title)
-                .setArtist(lastState.artist)
-                .setArtworkUri(Uri.parse(lastState.coverUrl))
-                .setExtras(bundle)
-                .build()
-
-            val mediaItem = MediaItem.Builder()
-                .setMediaId(lastState.songId.toString())
-                .setMediaMetadata(metadata)
-                .build()
-
-            _currentTrack.value = mediaItem
-            _currentPosition.value = lastState.lastPositionMs
+        val lastTrack = stateStore.loadLastTrack()
+        if (lastTrack != null && _currentTrack.value == null) {
+            _currentTrack.value = lastTrack.mediaItem
+            progress.setPosition(lastTrack.positionMs)
         }
 
-        val sessionToken = SessionToken(
-            context,
-            ComponentName(context, MelodiaPlaybackService::class.java)
-        )
-
-        controller = suspendCancellableCoroutine { continuation ->
-            val factory = MediaController.Builder(context, sessionToken).buildAsync()
-            factory.addListener(
-                {
-                    val mediaController = factory.get()
-                    mediaController.addListener(this@PlayerManager)
-
-                    if (mediaController.currentMediaItem != null) {
-                        _currentTrack.value = mediaController.currentMediaItem
-                        _isPlaying.value = mediaController.isPlaying
-                        _currentPosition.value = mediaController.currentPosition
-                        _duration.value = mediaController.duration
-                    }
-
-                    mediaController.repeatMode = if (_playMode.value == PlayMode.SINGLE_LOOP)
-                        Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
-
-                    continuation.resume(mediaController)
-                },
-                ContextCompat.getMainExecutor(context)
-            )
-
-            continuation.invokeOnCancellation {
-                factory.cancel(true)
+        controllerHolder.connect(this) { mediaController ->
+            if (mediaController.currentMediaItem != null) {
+                _currentTrack.value = mediaController.currentMediaItem
+                _isPlaying.value = mediaController.isPlaying
+                progress.setPosition(mediaController.currentPosition)
+                progress.setDuration(mediaController.duration)
             }
+
+            mediaController.repeatMode = if (playbackQueue.playMode.value == PlayMode.SINGLE_LOOP)
+                Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
         }
     }
 
     // 设置队列并从指定位置开始播放
     fun playQueue(items: List<QueueItem>, startIndex: Int, playContext: String? = null) {
         if (items.isEmpty()) return
-        
-        if (playContext == "similar_roaming") {
-            backupQueue = originalQueue
-            backupIndex = _currentIndex.value
-            _playMode.value = PlayMode.LIST_LOOP
-            scope.launch { playbackPreferences.savePlayMode(PlayMode.LIST_LOOP) }
-        }
-        
-        originalQueue = items
-        _playContext.value = playContext
 
-        if (_playMode.value == PlayMode.SHUFFLE) {
-            playQueue = shufflePreservingCurrent(items, startIndex)
-            _currentIndex.value = 0
-        } else {
-            playQueue = items
-            _currentIndex.value = startIndex.coerceIn(0, items.size - 1)
+        if (playContext == SimilarRoamingController.CONTEXT_ROAMING) {
+            roaming.prepare()
         }
-        _queue.value = playQueue
+
+        playbackQueue.setPlayContext(playContext)
+        playbackQueue.replaceAll(items, startIndex)
         consecutiveErrors = 0
         saveQueueState()
-        fetchUrlAndPlay(_currentIndex.value)
+        fetchUrlAndPlay(playbackQueue.currentIndex.value)
     }
 
     // 单曲播放（向后兼容，创建 1 项队列）
     fun playAudio(songId: Long, url: String, title: String, artist: String, coverUrl: String, startPosition: Long = 0, playContext: String? = null) {
         val item = QueueItem(songId, title, artist, coverUrl)
-        originalQueue = listOf(item)
-        playQueue = listOf(item)
-        _currentIndex.value = 0
-        _queue.value = playQueue
-        _playContext.value = playContext
+        playbackQueue.replaceWithSingle(item)
+        playbackQueue.setPlayContext(playContext)
         consecutiveErrors = 0
 
-        val mediaItem = item.toMediaItem(url, playContext)
-        controller?.apply {
-            repeatMode = if (_playMode.value == PlayMode.SINGLE_LOOP)
-                Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
-            setMediaItem(mediaItem)
-            prepare()
-            if (startPosition > 0) seekTo(startPosition)
-            play()
-        }
+        controllerHolder.playItem(item.toMediaItem(url, playContext), playbackQueue.playMode.value, startPosition)
     }
 
     // 批量插播歌曲到“下一首”播放位置
     fun addToPlayNext(items: List<QueueItem>) {
         if (items.isEmpty()) return
-        if (playQueue.isEmpty()) {
+        if (playbackQueue.isEmpty) {
             playQueue(items, 0)
             return
         }
-        
-        val curIndex = _currentIndex.value
-        val targetInsertIndex = curIndex + 1
-        
-        // 1. 插入到当前的活动播放队列中
-        val mutablePlay = playQueue.toMutableList()
-        mutablePlay.addAll(targetInsertIndex.coerceIn(0, mutablePlay.size), items)
-        playQueue = mutablePlay
-        
-        // 2. 插入到备份的原始队列中以支持防丢
-        val currentItem = playQueue.getOrNull(curIndex)
-        val mutableOrig = originalQueue.toMutableList()
-        if (currentItem != null) {
-            val origIdx = mutableOrig.indexOfFirst { it.songId == currentItem.songId }
-            if (origIdx >= 0) {
-                mutableOrig.addAll(origIdx + 1, items)
-            } else {
-                mutableOrig.addAll(items)
-            }
-        } else {
-            mutableOrig.addAll(items)
-        }
-        originalQueue = mutableOrig
-        
-        _queue.value = playQueue
+
+        playbackQueue.insertNext(items)
         saveQueueState()
     }
 
     fun playNext() {
-        if (playQueue.isEmpty()) return
+        if (playbackQueue.isEmpty) return
         consecutiveErrors = 0
-        val nextIndex = (_currentIndex.value + 1) % playQueue.size
-        fetchUrlAndPlay(nextIndex)
+        fetchUrlAndPlay(playbackQueue.nextIndex())
     }
 
     fun playPrevious() {
-        if (playQueue.isEmpty()) return
-        val position = controller?.currentPosition ?: 0L
+        if (playbackQueue.isEmpty) return
+        val position = controllerHolder.currentPosition
         if (position > 3000) {
             seekTo(0)
             return
         }
         consecutiveErrors = 0
-        val prevIndex = if (_currentIndex.value - 1 < 0) playQueue.size - 1 else _currentIndex.value - 1
-        fetchUrlAndPlay(prevIndex)
+        fetchUrlAndPlay(playbackQueue.previousIndex())
     }
 
     fun playAtIndex(index: Int) {
-        if (index < 0 || index >= playQueue.size) return
+        if (index < 0 || index >= playbackQueue.size) return
         consecutiveErrors = 0
         fetchUrlAndPlay(index)
     }
 
     fun removeFromQueue(index: Int) {
-        if (index < 0 || index >= playQueue.size || playQueue.size <= 1) return
-        val removedItem = playQueue[index]
-        val mutablePlay = playQueue.toMutableList()
-        mutablePlay.removeAt(index)
-        playQueue = mutablePlay
-
-        val mutableOrig = originalQueue.toMutableList()
-        val origIdx = mutableOrig.indexOfFirst { it.songId == removedItem.songId }
-        if (origIdx >= 0) mutableOrig.removeAt(origIdx)
-        originalQueue = mutableOrig
-
-        when {
-            index < _currentIndex.value -> _currentIndex.value -= 1
-            index == _currentIndex.value -> {
-                val newIdx = _currentIndex.value.coerceAtMost(playQueue.size - 1)
-                _currentIndex.value = newIdx
-                fetchUrlAndPlay(newIdx)
-            }
-        }
-        _queue.value = playQueue
+        if (index < 0 || index >= playbackQueue.size || playbackQueue.size <= 1) return
+        val replayIndex = playbackQueue.removeAt(index)
+        if (replayIndex >= 0) fetchUrlAndPlay(replayIndex)
         saveQueueState()
     }
 
     fun moveInQueue(from: Int, to: Int) {
-        if (from == to) return
-        if (from < 0 || from >= playQueue.size || to < 0 || to >= playQueue.size) return
-        val mutable = playQueue.toMutableList()
-        val item = mutable.removeAt(from)
-        mutable.add(to, item)
-        playQueue = mutable
-        originalQueue = mutable.toList()
-
-        val cur = _currentIndex.value
-        _currentIndex.value = when (cur) {
-            from -> to
-            in (minOf(from, to)..maxOf(from, to)) ->
-                if (from < to) cur - 1 else cur + 1
-            else -> cur
-        }
-        _queue.value = playQueue
+        if (!playbackQueue.move(from, to)) return
         saveQueueState()
     }
 
     fun toggleShuffle() {
-        val currentItem = playQueue.getOrNull(_currentIndex.value)
-        when (_playMode.value) {
+        val currentItem = playbackQueue.currentItem()
+        when (playbackQueue.playMode.value) {
             PlayMode.SHUFFLE -> applyMode(PlayMode.LIST_LOOP, currentItem)
             else -> applyMode(PlayMode.SHUFFLE, currentItem)
         }
     }
 
     fun toggleRepeat() {
-        val currentItem = playQueue.getOrNull(_currentIndex.value)
-        when (_playMode.value) {
+        val currentItem = playbackQueue.currentItem()
+        when (playbackQueue.playMode.value) {
             PlayMode.LIST_LOOP -> applyMode(PlayMode.SINGLE_LOOP, currentItem)
             PlayMode.SINGLE_LOOP -> applyMode(PlayMode.LIST_LOOP, currentItem)
             PlayMode.SHUFFLE -> applyMode(PlayMode.SINGLE_LOOP, currentItem)
@@ -434,8 +211,8 @@ class PlayerManager(
     }
 
     fun rotatePlayMode() {
-        val currentItem = playQueue.getOrNull(_currentIndex.value)
-        val nextMode = when (_playMode.value) {
+        val currentItem = playbackQueue.currentItem()
+        val nextMode = when (playbackQueue.playMode.value) {
             PlayMode.LIST_LOOP -> PlayMode.SHUFFLE
             PlayMode.SHUFFLE -> PlayMode.SINGLE_LOOP
             PlayMode.SINGLE_LOOP -> PlayMode.LIST_LOOP
@@ -444,53 +221,31 @@ class PlayerManager(
     }
 
     private fun applyMode(newMode: PlayMode, currentItem: QueueItem?) {
-        _playMode.value = newMode
-
-        when (newMode) {
-            PlayMode.SINGLE_LOOP -> {
-                controller?.repeatMode = Player.REPEAT_MODE_ONE
-            }
-            PlayMode.SHUFFLE -> {
-                controller?.repeatMode = Player.REPEAT_MODE_OFF
-                if (currentItem != null && originalQueue.isNotEmpty()) {
-                    val origIdx = originalQueue.indexOfFirst { it.songId == currentItem.songId }.coerceAtLeast(0)
-                    playQueue = shufflePreservingCurrent(originalQueue, origIdx)
-                    _currentIndex.value = 0
-                    _queue.value = playQueue
-                }
-            }
-            PlayMode.LIST_LOOP -> {
-                controller?.repeatMode = Player.REPEAT_MODE_OFF
-                if (currentItem != null && originalQueue.isNotEmpty()) {
-                    playQueue = originalQueue
-                    _currentIndex.value = originalQueue.indexOfFirst { it.songId == currentItem.songId }.coerceAtLeast(0)
-                    _queue.value = playQueue
-                }
-            }
-        }
-        scope.launch { playbackPreferences.savePlayMode(newMode) }
+        playbackQueue.applyMode(newMode, currentItem)
+        controllerHolder.setRepeatMode(newMode)
+        stateStore.savePlayMode(newMode)
         saveQueueState()
     }
 
     fun pause() {
-        controller?.pause()
+        controllerHolder.pause()
         saveState()
     }
 
     fun resume() {
-        controller?.play()
+        controllerHolder.play()
     }
 
     fun seekTo(positionMs: Long) {
-        controller?.seekTo(positionMs)
-        _currentPosition.value = positionMs
+        controllerHolder.seekTo(positionMs)
+        progress.setPosition(positionMs)
     }
 
     fun togglePlayPause() {
         val item = _currentTrack.value ?: return
         if (!_isPlaying.value && item.localConfiguration == null) {
             // 重启后队列为空，从恢复的 track 元数据重建 1 项队列
-            if (playQueue.isEmpty()) {
+            if (playbackQueue.isEmpty) {
                 val songId = item.mediaId.toLongOrNull() ?: return
                 val qi = QueueItem(
                     songId = songId,
@@ -498,12 +253,9 @@ class PlayerManager(
                     artist = item.mediaMetadata.artist?.toString() ?: "",
                     coverUrl = item.mediaMetadata.artworkUri?.toString() ?: ""
                 )
-                originalQueue = listOf(qi)
-                playQueue = listOf(qi)
-                _currentIndex.value = 0
-                _queue.value = playQueue
+                playbackQueue.replaceWithSingle(qi)
             }
-            fetchUrlAndPlay(_currentIndex.value, _currentPosition.value)
+            fetchUrlAndPlay(playbackQueue.currentIndex.value, progress.currentPosition.value)
             return
         }
         if (_isPlaying.value) pause() else resume()
@@ -514,119 +266,83 @@ class PlayerManager(
         val songId = item.mediaId.toLongOrNull() ?: -1L
         if (songId == -1L) return
 
-        scope.launch {
-            playbackPreferences.savePlaybackState(
-                PlaybackState(
-                    songId = songId,
-                    title = item.mediaMetadata.title?.toString() ?: "",
-                    artist = item.mediaMetadata.artist?.toString() ?: "",
-                    coverUrl = item.mediaMetadata.artworkUri?.toString() ?: "",
-                    lastPositionMs = controller?.currentPosition ?: _currentPosition.value
-                )
+        stateStore.savePlaybackState {
+            PlaybackState(
+                songId = songId,
+                title = item.mediaMetadata.title?.toString() ?: "",
+                artist = item.mediaMetadata.artist?.toString() ?: "",
+                coverUrl = item.mediaMetadata.artworkUri?.toString() ?: "",
+                lastPositionMs = controllerHolder.currentPositionOrNull ?: progress.currentPosition.value
             )
         }
     }
 
     // 清空播放队列中除当前播放歌曲外的其他歌曲，重置播放状态并同步本地持久化状态
     fun clearQueue() {
-        val curIndex = _currentIndex.value
-        val currentTrackItem = if (curIndex in playQueue.indices) playQueue[curIndex] else null
+        val currentTrackItem = playbackQueue.keepOnlyCurrent()
 
         if (currentTrackItem != null) {
-            originalQueue = listOf(currentTrackItem)
-            playQueue = listOf(currentTrackItem)
-            _currentIndex.value = 0
-            _queue.value = playQueue
             _isPlaying.value = false
-            _currentPosition.value = 0L
+            progress.setPosition(0L)
 
-            controller?.pause()
-            controller?.seekTo(0)
+            controllerHolder.pauseAndRewind()
 
             saveQueueState()
-            scope.launch {
-                playbackPreferences.savePlaybackState(
-                    PlaybackState(
-                        songId = currentTrackItem.songId,
-                        title = currentTrackItem.title,
-                        artist = currentTrackItem.artist,
-                        coverUrl = currentTrackItem.coverUrl,
-                        lastPositionMs = 0L
-                    )
+            stateStore.savePlaybackState {
+                PlaybackState(
+                    songId = currentTrackItem.songId,
+                    title = currentTrackItem.title,
+                    artist = currentTrackItem.artist,
+                    coverUrl = currentTrackItem.coverUrl,
+                    lastPositionMs = 0L
                 )
             }
         } else {
-            originalQueue = emptyList()
-            playQueue = emptyList()
-            _currentIndex.value = -1
-            _queue.value = emptyList()
             _currentTrack.value = null
             _isPlaying.value = false
-            _currentPosition.value = 0L
-            _duration.value = 0L
+            progress.setPosition(0L)
+            progress.setDuration(0L)
 
-            controller?.stop()
-            controller?.clearMediaItems()
+            controllerHolder.stopAndClear()
 
             saveQueueState()
-            scope.launch {
-                playbackPreferences.savePlaybackState(
-                    PlaybackState(
-                        songId = -1L,
-                        title = "",
-                        artist = "",
-                        coverUrl = "",
-                        lastPositionMs = 0L
-                    )
+            stateStore.savePlaybackState {
+                PlaybackState(
+                    songId = -1L,
+                    title = "",
+                    artist = "",
+                    coverUrl = "",
+                    lastPositionMs = 0L
                 )
             }
         }
     }
 
     private fun saveQueueState() {
-        scope.launch(Dispatchers.Default) {
-            playbackPreferences.saveQueueState(originalQueue, _currentIndex.value, _playContext.value)
-        }
+        stateStore.saveQueue(playbackQueue)
     }
 
     private fun fetchUrlAndPlay(index: Int, startPosition: Long = 0) {
-        if (index < 0 || index >= playQueue.size) return
-        val item = playQueue[index]
+        val item = playbackQueue.itemAt(index) ?: return
 
         activePlayJob?.cancel()
-        roamingJob?.cancel()
+        roaming.cancel()
 
         activePlayJob = scope.launch {
-            val wifiOnly = settingsPreferences.wifiOnlyPlay.first()
-            if (wifiOnly && isMobileNetwork()) {
-                android.widget.Toast.makeText(context, "当前处于移动网络，已开启“仅Wi-Fi下联网播放”", android.widget.Toast.LENGTH_SHORT).show()
-                return@launch
-            }
+            if (networkGuard.blockPlaybackOnMobile()) return@launch
 
-            _currentIndex.value = index
+            playbackQueue.setCurrentIndex(index)
             saveQueueState()
 
             // 立即重置当前进度与时长，避免上一首歌曲的数据在加载新歌期间残留导致进度条闪烁
-            _currentPosition.value = startPosition
-            _duration.value = 0L
+            progress.resetTo(startPosition)
 
-            if (_playContext.value == "similar_roaming") {
-                roamingJob = scope.launch {
-                    fetchAndAppendSimilarSongs(item.songId, index)
-                }
-            }
+            roaming.prefetchOnPlay(item.songId, index)
 
             repository.getSongUrl(item.songId).collect { result ->
                 result.onSuccess { url ->
-                    val mediaItem = item.toMediaItem(url, _playContext.value)
-                    controller?.apply {
-                        repeatMode = if (_playMode.value == PlayMode.SINGLE_LOOP)
-                            Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
-                        setMediaItem(mediaItem)
-                        prepare()
-                        if (startPosition > 0) seekTo(startPosition)
-                        play()
-                    }
+                    val mediaItem = item.toMediaItem(url, playbackQueue.playContext.value)
+                    controllerHolder.playItem(mediaItem, playbackQueue.playMode.value, startPosition)
                 }.onFailure {
                     skipToNextOnError(index)
                 }
@@ -635,45 +351,35 @@ class PlayerManager(
     }
 
     fun release() {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
-        kotlin.runCatching { cm?.unregisterNetworkCallback(networkCallback) }
-        sleepTimerJob?.cancel()
+        networkGuard.unregister()
+        sleepTimer.cancel()
         activePlayJob?.cancel()
-        roamingJob?.cancel()
+        roaming.cancel()
     }
 
     private fun skipToNextOnError(failedIndex: Int) {
         consecutiveErrors++
-        if (consecutiveErrors >= 3 || playQueue.size <= 1) {
+        if (consecutiveErrors >= 3 || playbackQueue.size <= 1) {
             scope.launch {
-                android.widget.Toast.makeText(context, "无法获取该歌曲的播放链接", android.widget.Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "无法获取该歌曲的播放链接", Toast.LENGTH_SHORT).show()
             }
             return
         }
-        val nextIndex = (failedIndex + 1) % playQueue.size
-        fetchUrlAndPlay(nextIndex)
-    }
-
-    private fun shufflePreservingCurrent(items: List<QueueItem>, currentIndex: Int): List<QueueItem> {
-        if (items.size <= 1) return items
-        val mutable = items.toMutableList()
-        val safeIdx = currentIndex.coerceIn(0, mutable.size - 1)
-        val current = mutable.removeAt(safeIdx)
-        for (i in mutable.size - 1 downTo 1) {
-            val j = (0..i).random()
-            mutable[i] = mutable[j].also { mutable[j] = mutable[i] }
-        }
-        mutable.add(0, current)
-        return mutable
+        fetchUrlAndPlay(playbackQueue.nextIndexFrom(failedIndex))
     }
 
     // 重新加载当前歌曲（用于切换音质时立即生效）
     fun reloadCurrentTrack() {
-        val index = _currentIndex.value
-        if (index >= 0 && index < playQueue.size) {
-            val currentPos = controller?.currentPosition ?: 0L
+        val index = playbackQueue.currentIndex.value
+        if (index >= 0 && index < playbackQueue.size) {
+            val currentPos = controllerHolder.currentPosition
             fetchUrlAndPlay(index, currentPos)
         }
+    }
+
+    // 关闭漫游并还原备份的队列数据
+    fun disableRoaming() {
+        roaming.disable()
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -684,109 +390,33 @@ class PlayerManager(
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
         _currentTrack.value = mediaItem
-        _playContext.value = mediaItem?.mediaMetadata?.extras?.getString("playContext")
+        playbackQueue.setPlayContext(mediaItem?.mediaMetadata?.extras?.getString("playContext"))
         if (mediaItem != null) {
             // 切歌过渡时，应当立即将当前进度重置，防止读取上一首残留位置或缓冲位置
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
-                _currentPosition.value = 0L
+                progress.setPosition(0L)
             }
-            val dur = controller?.duration ?: 0L
-            _duration.value = if (dur > 0L) dur else 0L
+            progress.updateDurationFromController()
             saveState()
         }
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
         if (playbackState == Player.STATE_READY) {
-            val dur = controller?.duration ?: 0L
-            _duration.value = if (dur > 0L) dur else 0L
-            preloadNextTrackCover()
+            progress.updateDurationFromController()
+            playbackQueue.nextItemByMode()?.let { coverPreloader.preload(it.coverUrl) }
         }
         // 单曲循环由 ExoPlayer REPEAT_MODE_ONE 处理，不会到达 STATE_ENDED
-        if (playbackState == Player.STATE_ENDED && _playMode.value != PlayMode.SINGLE_LOOP) {
+        if (playbackState == Player.STATE_ENDED && playbackQueue.playMode.value != PlayMode.SINGLE_LOOP) {
             playNext()
         }
     }
 
-    // 异步拉取相似歌曲并替换后继播放队列
-    private suspend fun fetchAndAppendSimilarSongs(songId: Long, index: Int) {
-        repository.getSimilarSongs(songId).collect { result ->
-            result.onSuccess { simiSongs ->
-                if (simiSongs.isNotEmpty() && _playContext.value == "similar_roaming") {
-                    val simiItems = simiSongs.map { track ->
-                        QueueItem(
-                            songId = track.id,
-                            title = track.name,
-                            artist = track.ar.joinToString("/") { it.name },
-                            coverUrl = track.al.picUrl
-                        )
-                    }
-                    val newOriginalQueue = originalQueue.take(index + 1) + simiItems
-                    originalQueue = newOriginalQueue
-                    playQueue = newOriginalQueue
-                    _queue.value = playQueue
-                    saveQueueState()
-                }
-            }
-        }
-    }
-
-    // 关闭漫游并还原备份的队列数据
-    fun disableRoaming() {
-        if (_playContext.value == "similar_roaming") {
-            roamingJob?.cancel()
-            _playContext.value = null
-            
-            if (backupQueue.isNotEmpty()) {
-                originalQueue = backupQueue
-                val currentTrackItem = playQueue.getOrNull(_currentIndex.value)
-                val newIndex = if (currentTrackItem != null) {
-                    val idx = backupQueue.indexOfFirst { it.songId == currentTrackItem.songId }
-                    if (idx != -1) idx else backupIndex.coerceIn(0, backupQueue.size - 1)
-                } else {
-                    backupIndex.coerceIn(0, backupQueue.size - 1)
-                }
-                
-                if (_playMode.value == PlayMode.SHUFFLE) {
-                    playQueue = shufflePreservingCurrent(backupQueue, newIndex)
-                    _currentIndex.value = 0
-                } else {
-                    playQueue = backupQueue
-                    _currentIndex.value = newIndex
-                }
-                
-                _queue.value = playQueue
-                backupQueue = emptyList()
-                backupIndex = -1
-            }
-            saveQueueState()
-        }
-    }
-
-    override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+    override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
         scope.launch {
-            android.widget.Toast.makeText(context, "当前歌曲无法播放，已自动跳过", android.widget.Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "当前歌曲无法播放，已自动跳过", Toast.LENGTH_SHORT).show()
         }
-        skipToNextOnError(_currentIndex.value)
-    }
-
-    private fun preloadNextTrackCover() {
-        val size = playQueue.size
-        if (size <= 1) return
-        val nextIndex = when (_playMode.value) {
-            PlayMode.SINGLE_LOOP -> _currentIndex.value
-            else -> (_currentIndex.value + 1) % size
-        }
-        if (nextIndex in playQueue.indices) {
-            val nextItem = playQueue[nextIndex]
-            val coverUrl = nextItem.coverUrl
-            if (coverUrl.isNotBlank()) {
-                val imageRequest = ImageRequest.Builder(context)
-                    .data(coverUrl)
-                    .build()
-                Coil.imageLoader(context).enqueue(imageRequest)
-            }
-        }
+        skipToNextOnError(playbackQueue.currentIndex.value)
     }
 }
