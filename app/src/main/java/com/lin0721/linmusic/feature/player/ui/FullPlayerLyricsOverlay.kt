@@ -1,0 +1,80 @@
+package com.lin0721.linmusic.feature.player.ui
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.lin0721.linmusic.core.player.PlayMode
+import dev.chrisbanes.haze.HazeState
+
+// 全屏歌词覆盖层，从底部滑入滑出
+@Composable
+fun FullPlayerLyricsOverlay(
+    visible: Boolean,
+    songState: PlayerSongDetailState,
+    colors: FullPlayerColors,
+    currentLyricIndex: Int,
+    title: String,
+    artist: String,
+    hazeState: HazeState,
+    isPlaying: Boolean,
+    currentPositionProvider: () -> Long,
+    duration: Long,
+    playMode: PlayMode,
+    onSeek: (Long) -> Unit,
+    onClose: () -> Unit,
+    onTogglePlay: () -> Unit,
+    onPlayNext: () -> Unit,
+    onPlayPrevious: () -> Unit,
+    onToggleShuffle: () -> Unit,
+    onToggleRepeat: () -> Unit,
+    onMoreClick: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically(
+            initialOffsetY = { it },
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow
+            )
+        ),
+        exit = slideOutVertically(
+            targetOffsetY = { it },
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow
+            )
+        ),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        FullScreenLyricsView(
+            lyrics = songState.lyrics,
+            currentIndex = currentLyricIndex,
+            isLoading = songState.isLyricsLoading,
+            title = title,
+            artist = artist,
+            gradientStart = colors.gradientStart,
+            gradientEnd = colors.gradientEnd,
+            accentColor = colors.accent,
+            highlightColor = colors.lyricsHighlight,
+            onSeek = onSeek,
+            hazeState = hazeState,
+            onClose = onClose,
+            isPlaying = isPlaying,
+            currentPositionProvider = currentPositionProvider,
+            duration = duration,
+            onTogglePlay = onTogglePlay,
+            onPlayNext = onPlayNext,
+            onPlayPrevious = onPlayPrevious,
+            playMode = playMode,
+            onToggleShuffle = onToggleShuffle,
+            onToggleRepeat = onToggleRepeat,
+            onMoreClick = onMoreClick
+        )
+    }
+}
