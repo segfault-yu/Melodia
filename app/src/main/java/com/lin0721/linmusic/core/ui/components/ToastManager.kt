@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import com.lin0721.linmusic.core.ui.theme.ToastBackground
 
 object ToastManager {
     private val _toastFlow = MutableSharedFlow<String>(extraBufferCapacity = 64)
@@ -37,7 +38,7 @@ fun CustomToast(message: String) {
             .wrapContentWidth()
             .heightIn(min = 40.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(Color(0xFF2E2E2E))
+            .background(ToastBackground)
             .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,

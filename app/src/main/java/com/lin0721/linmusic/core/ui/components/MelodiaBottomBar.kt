@@ -47,6 +47,9 @@ import coil.request.ImageRequest
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import com.lin0721.linmusic.core.ui.theme.FallbackDominant
+import com.lin0721.linmusic.core.ui.theme.FallbackSecondary
+import com.lin0721.linmusic.core.ui.theme.NavPillSelected
 
 //悬浮播放控制卡片
 
@@ -83,7 +86,7 @@ fun MiniPlayerCard(
     // 缓存并提取主色调，优先从缓存中获取，无缓存则默认为深灰色
     var colorPalette by remember(currentTrack.mediaId) {
         mutableStateOf(
-            PaletteMemoryCache.get(currentTrack.mediaId) ?: ColorPalette(Color(0xFF333333), Color(0xFF222222))
+            PaletteMemoryCache.get(currentTrack.mediaId) ?: ColorPalette(FallbackDominant, FallbackSecondary)
         )
     }
     
@@ -281,7 +284,7 @@ fun MelodiaNavigationBar(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) Color(0xFF383A4A) else Color.Transparent)
+                            .background(if (isSelected) NavPillSelected else Color.Transparent)
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {

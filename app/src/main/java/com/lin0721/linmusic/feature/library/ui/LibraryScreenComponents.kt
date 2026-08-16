@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.LibraryVioletGradient
+import com.lin0721.linmusic.core.ui.theme.LibraryBlueGreenGradient
+import com.lin0721.linmusic.core.ui.theme.DownloadedGreen
 
 // ────────────────────────────────────────────────────────────────────────────
 // 未登录占位页
@@ -124,11 +127,7 @@ fun LibraryItemRow(
                     .clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF6366F1), // 紫罗兰
-                                Color(0xFFA855F7), // 紫色
-                                Color(0xFFEC4899)  // 粉色
-                            )
+                            colors = LibraryVioletGradient
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -147,10 +146,7 @@ fun LibraryItemRow(
                     .clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF3B82F6), // 蓝色
-                                Color(0xFF10B981)  // 绿色
-                            )
+                            colors = LibraryBlueGreenGradient
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -196,7 +192,7 @@ fun LibraryItemRow(
                     Icon(
                         imageVector = Icons.Default.PushPin,
                         contentDescription = "已置顶",
-                        tint = Color(0xFF10B981), // Emerald 绿，高档耐看
+                        tint = DownloadedGreen,
                         modifier = Modifier
                             .size(13.dp)
                             .padding(end = MelodiaSpacing.xs)
@@ -240,11 +236,7 @@ fun LibraryGridItem(
                     .clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF6366F1),
-                                Color(0xFFA855F7),
-                                Color(0xFFEC4899)
-                            )
+                            colors = LibraryVioletGradient
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -264,10 +256,7 @@ fun LibraryGridItem(
                     .clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF3B82F6),
-                                Color(0xFF10B981)
-                            )
+                            colors = LibraryBlueGreenGradient
                         )
                     ),
                 contentAlignment = Alignment.Center

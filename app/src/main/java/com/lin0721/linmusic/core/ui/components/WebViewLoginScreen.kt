@@ -27,6 +27,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.lin0721.linmusic.core.ui.theme.BackgroundBlack
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.WebLoginBackground
 
 /**
  * 沉浸式网页授权登录界面
@@ -76,13 +77,13 @@ fun WebViewLoginScreen(
 				)
 			)
 		},
-        containerColor = Color(0xFFF5F5F7) // 容器底色改为网页同款浅灰，彻底避免键盘弹出或加载时闪黑屏/白屏
+        containerColor = WebLoginBackground // 容器底色改为网页同款浅灰，彻底避免键盘弹出或加载时闪黑屏/白屏
 	) { paddingValues ->
 		Box(
 			modifier = Modifier
 				.fillMaxSize()
 				.padding(paddingValues)
-                .background(Color(0xFFF5F5F7)) // 外层容器底色一致
+                .background(WebLoginBackground) // 外层容器底色一致
 		) {
 			AndroidView(
 				factory = { context ->
@@ -140,7 +141,7 @@ fun WebViewLoginScreen(
 				modifier = Modifier.fillMaxSize()
 			) {
                 // 加载页背景也改成网页同款浅灰，保持视觉过渡一致
-                Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F7)), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize().background(WebLoginBackground), contentAlignment = Alignment.Center) {
 					CircularProgressIndicator(color = NeteaseRed)
 				}
 			}

@@ -31,6 +31,8 @@ import dev.chrisbanes.haze.haze
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import com.lin0721.linmusic.core.ui.theme.FallbackDominant
+import com.lin0721.linmusic.core.ui.theme.FallbackSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +108,7 @@ fun FullPlayerScreen(
 
     var colorPalette by remember(currentTrack.mediaId) {
         mutableStateOf(
-            PaletteMemoryCache.get(currentTrack.mediaId) ?: ColorPalette(Color(0xFF333333), Color(0xFF222222))
+            PaletteMemoryCache.get(currentTrack.mediaId) ?: ColorPalette(FallbackDominant, FallbackSecondary)
         )
     }
     val colors = rememberFullPlayerColors(colorPalette)
