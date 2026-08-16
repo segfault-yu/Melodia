@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun PlaybackDownloadSettingsView(viewModel: SettingsViewModel) {
@@ -16,7 +17,7 @@ fun PlaybackDownloadSettingsView(viewModel: SettingsViewModel) {
 
     // 渲染播放与下载的子设置项
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
         contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
     ) {
         item {

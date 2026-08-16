@@ -38,6 +38,7 @@ import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 
  // 侧边栏 
@@ -59,7 +60,7 @@ fun ProfileSidebar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .padding(horizontal = 20.dp, vertical = MelodiaSpacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 头像
@@ -157,7 +158,7 @@ fun ProfileSidebar(
                 text = "直接在 Melodia 上与好友分享你的心头好。",
                 color = TextGray,
                 fontSize = 13.sp,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm)
             )
         }
 

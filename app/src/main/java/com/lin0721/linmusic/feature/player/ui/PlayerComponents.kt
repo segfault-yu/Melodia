@@ -21,6 +21,7 @@ import androidx.media3.common.MediaItem
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun MiniPlayer(
@@ -37,7 +38,7 @@ fun MiniPlayer(
         shape = RoundedCornerShape(8.dp),
         modifier = modifier.fillMaxWidth().height(64.dp).clickable { onClick() }
     ) {
-        Row(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxSize().padding(horizontal = MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = currentTrack.mediaMetadata.artworkUri,
                 contentDescription = "Now Playing",

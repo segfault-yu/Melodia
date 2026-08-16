@@ -36,6 +36,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.window.Dialog
 import com.lin0721.linmusic.core.model.getQualityDisplayName
 import kotlinx.coroutines.launch
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +69,7 @@ fun SongMoreOptionsSheet(
         dragHandle = {
             Box(
                 modifier = Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
+                    .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                     .width(36.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
@@ -80,7 +81,7 @@ fun SongMoreOptionsSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp)
+                .padding(bottom = MelodiaSpacing.md)
         ) {
             // 头部：封面 + 歌曲名 + 歌手名
             Row(
@@ -120,7 +121,7 @@ fun SongMoreOptionsSheet(
 
             HorizontalDivider(
                 color = Color.White.copy(alpha = 0.08f),
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm)
             )
 
 
@@ -243,7 +244,7 @@ fun SongMoreOptionsSheet(
                         dragHandle = {
                             Box(
                                 modifier = Modifier
-                                    .padding(top = 12.dp, bottom = 4.dp)
+                                    .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                                     .width(36.dp)
                                     .height(4.dp)
                                     .clip(RoundedCornerShape(2.dp))
@@ -255,14 +256,14 @@ fun SongMoreOptionsSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .navigationBarsPadding()
-                                .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+                                .padding(start = MelodiaSpacing.lg, end = MelodiaSpacing.lg, bottom = MelodiaSpacing.lg)
                         ) {
                             Text(
                                 text = "选择播放音质",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                modifier = Modifier.padding(bottom = 16.dp)
+                                modifier = Modifier.padding(bottom = MelodiaSpacing.md)
                             )
                             qualities.forEach { pair ->
                                 val key = pair.first

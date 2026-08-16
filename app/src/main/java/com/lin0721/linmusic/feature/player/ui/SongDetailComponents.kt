@@ -33,6 +33,7 @@ import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun SongDetailCard(
@@ -43,7 +44,7 @@ fun SongDetailCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
         shape = RoundedCornerShape(16.dp),
         color = cardColor
     ) {
@@ -146,7 +147,7 @@ fun SongDetailRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp),
+            .padding(vertical = MelodiaSpacing.xxs),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -174,7 +175,7 @@ fun SongDetailRow(
                 tint = TextGray.copy(alpha = 0.5f),
                 modifier = Modifier
                     .size(20.dp)
-                    .padding(start = 4.dp)
+                    .padding(start = MelodiaSpacing.xs)
             )
         }
     }
@@ -192,7 +193,7 @@ fun SimilarArtistsCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
         shape = RoundedCornerShape(16.dp),
         color = cardColor
     ) {
@@ -275,7 +276,7 @@ fun AboutArtistCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         color = cardColor
@@ -310,7 +311,7 @@ fun AboutArtistCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(16.dp)
+                        .padding(MelodiaSpacing.md)
                 )
             }
 
@@ -320,7 +321,7 @@ fun AboutArtistCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Column(modifier = Modifier.weight(1f).padding(end = MelodiaSpacing.md)) {
                         Text(
                             text = artistDetail.name,
                             color = Color.White,
@@ -425,7 +426,7 @@ fun ArtistAlbumsCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
         shape = RoundedCornerShape(16.dp),
         color = cardColor
     ) {

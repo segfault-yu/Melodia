@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun StorageSettingsView(viewModel: SettingsViewModel, context: Context) {
@@ -34,7 +35,7 @@ fun StorageSettingsView(viewModel: SettingsViewModel, context: Context) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
             contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
         ) {
             item {

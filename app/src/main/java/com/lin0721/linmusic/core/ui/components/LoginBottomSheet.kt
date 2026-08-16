@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 /**
  * 登录方式选择底部弹窗
@@ -35,7 +36,7 @@ fun LoginBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = MelodiaSpacing.lg)
                 .padding(bottom = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -45,13 +46,13 @@ fun LoginBottomSheet(
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = MelodiaSpacing.sm)
             )
             Text(
                 text = "登录后享受完整体验",
                 fontSize = 13.sp,
                 color = Color.Gray,
-                modifier = Modifier.padding(bottom = 32.dp)
+                modifier = Modifier.padding(bottom = MelodiaSpacing.xl)
             )
 
             // 网页登录

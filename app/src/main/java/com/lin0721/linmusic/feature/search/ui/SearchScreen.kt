@@ -44,6 +44,7 @@ import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import org.koin.androidx.compose.koinViewModel
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 private val tagFallbackColors = listOf(
     Color(0xFFE13300),
@@ -107,7 +108,7 @@ fun SearchScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (userProfile != null) {
@@ -148,8 +149,8 @@ fun SearchScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 8.dp)
+                .padding(horizontal = MelodiaSpacing.md)
+                .padding(bottom = MelodiaSpacing.sm)
                 .height(36.dp)
                 .clip(RoundedCornerShape(18.dp))
                 .background(SurfaceDark)
@@ -270,7 +271,7 @@ private fun SearchResultsList(
                 "找到 ${results.size} 首歌曲",
                 color = TextGray,
                 fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
             )
         }
 
@@ -298,7 +299,7 @@ private fun SearchResultsList(
         if (isLoading && results.isNotEmpty()) {
             item(key = "loading") {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(MelodiaSpacing.md),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = NeteaseRed, modifier = Modifier.size(24.dp))
@@ -335,9 +336,9 @@ private fun DiscoveryContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = MelodiaSpacing.md)
+                        .padding(bottom = MelodiaSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
                 ) {
                     pair.forEachIndexed { colIndex, item ->
                         val rank = rowIndex * 2 + colIndex + 1
@@ -367,7 +368,7 @@ private fun DiscoveryContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = MelodiaSpacing.md),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     pair.forEachIndexed { colIndex, tag ->
@@ -396,7 +397,7 @@ private fun SectionHeader(title: String) {
         color = Color.White,
         fontSize = 20.sp,
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+        modifier = Modifier.padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.md)
     )
 }
 

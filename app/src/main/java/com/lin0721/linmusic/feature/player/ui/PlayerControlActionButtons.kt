@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 控件区底部次级入口：定时关闭、插播相似歌曲、播放队列
 @Composable
@@ -23,8 +24,8 @@ fun ActionButtons(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp)
-            .padding(top = 8.dp, bottom = 16.dp),
+            .padding(horizontal = MelodiaSpacing.xl)
+            .padding(top = MelodiaSpacing.sm, bottom = MelodiaSpacing.md),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

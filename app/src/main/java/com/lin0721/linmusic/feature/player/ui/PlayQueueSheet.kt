@@ -44,6 +44,7 @@ import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import kotlinx.coroutines.launch
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,7 +117,7 @@ fun PlayQueueSheet(
         dragHandle = {
             Box(
                 modifier = Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
+                    .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                     .width(36.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
@@ -144,7 +145,7 @@ fun PlayQueueSheet(
 
             HorizontalDivider(
                 color = Color.White.copy(alpha = 0.08f),
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = MelodiaSpacing.md)
             )
 
             LazyColumn(
@@ -370,7 +371,7 @@ private fun QueueHeader(
             "共 $queueSize 首",
             color = TextGray,
             fontSize = 13.sp,
-            modifier = Modifier.padding(end = 8.dp)
+            modifier = Modifier.padding(end = MelodiaSpacing.sm)
         )
         IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
             Icon(Icons.Rounded.Close, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
@@ -388,7 +389,7 @@ private fun PlayModeInfoRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val isRoaming = playContext == "similar_roaming"
@@ -450,7 +451,7 @@ private fun BottomActionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = MelodiaSpacing.md, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         val isRoaming = playContext == "similar_roaming"

@@ -50,6 +50,7 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import com.lin0721.linmusic.core.ui.theme.FallbackDominant
 import com.lin0721.linmusic.core.ui.theme.FallbackSecondary
 import com.lin0721.linmusic.core.ui.theme.NavPillSelected
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 //悬浮播放控制卡片
 
@@ -285,7 +286,7 @@ fun MelodiaNavigationBar(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
                             .background(if (isSelected) NavPillSelected else Color.Transparent)
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.xs),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

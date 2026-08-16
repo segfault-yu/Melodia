@@ -204,7 +204,7 @@ fun DraggableSongRow(
             )
             .background(bgColor)
             .clickable(onClick = onClick)
-            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
+            .padding(start = 20.dp, end = MelodiaSpacing.sm, top = MelodiaSpacing.sm, bottom = MelodiaSpacing.sm)
             .then(if (isPlayed) Modifier.alpha(0.5f) else Modifier),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -272,7 +272,7 @@ fun DraggableSongRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(36.dp)
-                .padding(8.dp)
+                .padding(MelodiaSpacing.sm)
                 .pointerInput(Unit) {
                     detectDragGesturesAfterLongPress(
                         onDragStart = { onDragStart() },

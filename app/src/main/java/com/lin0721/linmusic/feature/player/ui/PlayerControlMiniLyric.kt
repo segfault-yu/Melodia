@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.player.domain.LyricLine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 控件区上方的单行歌词，无歌词时退化为加载动画
 @Composable
@@ -44,7 +45,7 @@ fun MiniLyricLine(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp)
+            .padding(horizontal = MelodiaSpacing.xl)
             .padding(vertical = 6.dp),
         contentAlignment = Alignment.CenterStart
     ) {
