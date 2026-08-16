@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 封面下方的歌名歌手行，右侧带收藏按钮
 @Composable
@@ -31,12 +32,12 @@ fun SongInfo(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp)
+            .padding(horizontal = MelodiaSpacing.xl)
             .padding(top = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(end = MelodiaSpacing.md)) {
             Text(
                 text = title,
                 color = Color.White,

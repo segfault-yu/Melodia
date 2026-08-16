@@ -29,6 +29,7 @@ import com.lin0721.linmusic.core.model.CommentItem
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun CommentsPreviewCard(
@@ -43,7 +44,7 @@ fun CommentsPreviewCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
             .height(cardHeight),
         shape = RoundedCornerShape(16.dp),
         color = cardColor
@@ -102,9 +103,9 @@ fun CommentsPreviewCard(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 16.dp),
+                            .padding(vertical = MelodiaSpacing.md),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
                     ) {
                         Text(
                             text = "加载评论失败: ${commentsState.message}",
@@ -130,7 +131,7 @@ fun CommentsPreviewCard(
                             text = "暂无评论",
                             color = TextGray,
                             fontSize = 14.sp,
-                            modifier = Modifier.padding(vertical = 16.dp)
+                            modifier = Modifier.padding(vertical = MelodiaSpacing.md)
                         )
                     } else {
                         Column(modifier = Modifier.fillMaxSize()) {
@@ -138,7 +139,7 @@ fun CommentsPreviewCard(
                                 modifier = Modifier
                                     .weight(1f)
                                     .verticalScroll(rememberScrollState()),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)
                             ) {
                                 allComments.forEachIndexed { index, comment ->
                                     CommentRowItem(comment = comment)
@@ -160,7 +161,7 @@ fun CommentsPreviewCard(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier
                                     .align(Alignment.CenterHorizontally)
-                                    .padding(vertical = 4.dp)
+                                    .padding(vertical = MelodiaSpacing.xs)
                             )
                         }
                     }
@@ -194,7 +195,7 @@ fun CommentRowItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                Column(modifier = Modifier.weight(1f).padding(end = MelodiaSpacing.sm)) {
                     Text(
                         text = comment.user.nickname,
                         color = Color.White.copy(alpha = 0.9f),
@@ -213,11 +214,11 @@ fun CommentRowItem(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.xs),
                     modifier = Modifier
                         .clip(CircleShape)
                         .clickable { onLikeClick() }
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .padding(horizontal = MelodiaSpacing.sm, vertical = 6.dp)
                 ) {
                     Text(
                         text = formatLikedCount(comment.likedCount),
@@ -277,7 +278,7 @@ fun CommentsBottomSheet(
         containerColor = SurfaceDark,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         dragHandle = {
-            Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+            Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
                 Surface(
                     modifier = Modifier.width(40.dp).height(4.dp),
                     shape = RoundedCornerShape(2.dp),
@@ -298,7 +299,7 @@ fun CommentsBottomSheet(
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = MelodiaSpacing.md)
             )
 
             when (commentsState) {
@@ -355,7 +356,7 @@ fun CommentsBottomSheet(
                     } else {
                         LazyColumn(
                             modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
                             contentPadding = PaddingValues(bottom = 24.dp)
                         ) {
                             items(allComments, key = { it.commentId }) { comment ->

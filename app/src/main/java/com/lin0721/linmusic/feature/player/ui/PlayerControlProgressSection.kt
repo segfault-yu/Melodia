@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 进度条与两端时间：拖动期间用本地进度接管，松手才真正 seek
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,8 +45,8 @@ fun ProgressSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(top = 8.dp)
+            .padding(horizontal = MelodiaSpacing.lg)
+            .padding(top = MelodiaSpacing.sm)
     ) {
         Slider(
             value = progress.coerceIn(0f, 1f),
@@ -93,7 +94,7 @@ fun ProgressSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = MelodiaSpacing.sm),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             val displayPosition = if (isSeeking) (seekPosition * duration).toLong() else currentPosition

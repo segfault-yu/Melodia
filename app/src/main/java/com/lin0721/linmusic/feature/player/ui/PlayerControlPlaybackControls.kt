@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.lin0721.linmusic.core.player.PlayMode
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 主控件行：随机/漫游、上一曲、播放暂停、下一曲、循环模式
 @Composable
@@ -47,8 +48,8 @@ fun PlaybackControls(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp)
-            .padding(top = 4.dp),
+            .padding(horizontal = MelodiaSpacing.xl)
+            .padding(top = MelodiaSpacing.xs),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

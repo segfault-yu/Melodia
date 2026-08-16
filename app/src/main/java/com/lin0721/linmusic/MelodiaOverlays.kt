@@ -25,6 +25,7 @@ import com.lin0721.linmusic.core.ui.components.MiniPlayerCard
 import com.lin0721.linmusic.feature.create.ui.CreatePopupMenu
 import com.lin0721.linmusic.feature.player.ui.FullPlayerScreen
 import dev.chrisbanes.haze.HazeState
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // ────────────────────────────────────────────────────────────────────────────
 // 底部浮层：创建菜单弹出层 + 悬浮播放卡片 + M3 导航栏
@@ -67,7 +68,7 @@ fun MelodiaBottomOverlay(
         ) {
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = MelodiaSpacing.md)
                     .padding(bottom = 12.dp)
             ) {
                 CreatePopupMenu(
@@ -96,7 +97,7 @@ fun MelodiaBottomOverlay(
                 onClick = onMiniPlayerClick,
                 onDrag = onMiniPlayerDrag,
                 onDragEnd = onMiniPlayerDragEnd,
-                modifier = Modifier.padding(horizontal = 8.dp)
+                modifier = Modifier.padding(horizontal = MelodiaSpacing.sm)
             )
         }
 

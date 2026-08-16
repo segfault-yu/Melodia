@@ -26,6 +26,7 @@ import com.lin0721.linmusic.R
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun AboutSettingsView() {
@@ -33,7 +34,7 @@ fun AboutSettingsView() {
 
     // 渲染“关于”子设置项
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
         contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

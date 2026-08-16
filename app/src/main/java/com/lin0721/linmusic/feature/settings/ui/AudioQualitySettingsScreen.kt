@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lin0721.linmusic.core.model.getQualityDisplayName
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun AudioQualitySettingsView(viewModel: SettingsViewModel) {
@@ -30,7 +31,7 @@ fun AudioQualitySettingsView(viewModel: SettingsViewModel) {
 
     // 渲染音质的子设置项
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
         contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
     ) {
         item {
@@ -69,18 +70,18 @@ fun AudioQualitySettingsView(viewModel: SettingsViewModel) {
                 color = SurfaceDark,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = MelodiaSpacing.md)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
                 ) {
                     Text(
                         text = if (isWifi) "选择 Wi-Fi 播放音质" else "选择移动网络播放音质",
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(bottom = MelodiaSpacing.sm)
                     )
                     
                     qualities.forEach { pair ->

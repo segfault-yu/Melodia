@@ -29,6 +29,7 @@ import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import org.koin.androidx.compose.koinViewModel
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +55,7 @@ fun CreatePopupMenu(
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(SurfaceDark)
-            .padding(vertical = 8.dp)
+            .padding(vertical = MelodiaSpacing.sm)
     ) {
         CreateMenuItem(
             icon = Icons.AutoMirrored.Rounded.QueueMusic,
@@ -165,7 +166,7 @@ private fun CreatePlaylistDialog(
         containerColor = SurfaceDark,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         dragHandle = {
-            Box(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+            Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
                 Surface(
                     modifier = Modifier.width(40.dp).height(4.dp),
                     shape = RoundedCornerShape(2.dp),
@@ -179,14 +180,14 @@ private fun CreatePlaylistDialog(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(horizontal = MelodiaSpacing.lg, vertical = MelodiaSpacing.md)
         ) {
             Text(
                 text = "新建歌单",
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = MelodiaSpacing.md)
             )
 
             Box(

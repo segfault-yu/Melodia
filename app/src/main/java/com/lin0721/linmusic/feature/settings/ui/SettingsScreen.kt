@@ -28,6 +28,7 @@ import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 定义多级菜单类型
 enum class SettingsSubMenu(val title: String) {
@@ -147,8 +148,8 @@ private fun MainSettingsMenu(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = MelodiaSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
         contentPadding = PaddingValues(bottom = 32.dp, top = 8.dp)
     ) {
         // 多级设置菜单入口组
@@ -172,7 +173,7 @@ private fun MainSettingsMenu(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
+                    .padding(top = MelodiaSpacing.md),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // 退出登录按钮
@@ -232,7 +233,7 @@ private fun SubMenuContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = MelodiaSpacing.md)
     ) {
         when (subMenu) {
             SettingsSubMenu.PLAYBACK_DOWNLOAD -> PlaybackDownloadSettingsView(viewModel)
@@ -260,7 +261,7 @@ fun SettingsGroupCard(
             color = TextGray,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            modifier = Modifier.padding(start = MelodiaSpacing.xs, bottom = MelodiaSpacing.sm)
         )
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -268,7 +269,7 @@ fun SettingsGroupCard(
             color = SurfaceDark
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.xs)
             ) {
                 content()
             }
@@ -290,7 +291,7 @@ fun SettingsRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(end = MelodiaSpacing.sm)) {
             Text(title, color = Color.White, fontSize = 15.sp)
             if (subtitle.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -319,7 +320,7 @@ fun SettingsSwitchRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(end = MelodiaSpacing.md)) {
             Text(title, color = Color.White, fontSize = 15.sp)
             if (subtitle.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))

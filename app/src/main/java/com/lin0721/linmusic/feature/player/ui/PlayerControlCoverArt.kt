@@ -24,6 +24,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.ColorPalette
 import com.lin0721.linmusic.core.ui.theme.extractColorPalette
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 封面区：播放来源标题栏 + 方形封面，加载成功后回传取色结果
 @Composable
@@ -41,8 +42,8 @@ fun CoverArt(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp)
-            .padding(top = 16.dp, bottom = 8.dp),
+            .padding(horizontal = MelodiaSpacing.xl)
+            .padding(top = MelodiaSpacing.md, bottom = MelodiaSpacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(

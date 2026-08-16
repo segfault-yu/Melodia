@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun NetworkSettingsView(viewModel: SettingsViewModel) {
@@ -30,7 +31,7 @@ fun NetworkSettingsView(viewModel: SettingsViewModel) {
     val useProxy by viewModel.useProxy.collectAsStateWithLifecycle()
 
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
         contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
     ) {
         item {
@@ -69,7 +70,7 @@ fun NetworkSettingsView(viewModel: SettingsViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                        Column(modifier = Modifier.weight(1f).padding(end = MelodiaSpacing.md)) {
                             Text("真实 IP 地址", color = Color.White, fontSize = 15.sp)
                             Spacer(modifier = Modifier.height(2.dp))
                             Text("可在此处输入国内 IP，不填写则为随机", color = TextGray, fontSize = 12.sp)

@@ -8,13 +8,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
 fun PrivacySettingsView(viewModel: SettingsViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(MelodiaSpacing.md),
         contentAlignment = Alignment.Center
     ) {
         Text(

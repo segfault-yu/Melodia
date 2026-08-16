@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 播放页顶栏，仅在封面滚出视野后显示歌名与快捷操作
 @Composable
@@ -44,7 +45,7 @@ fun TopBar(
                 .fillMaxWidth()
                 .background(backgroundColor)
                 .statusBarsPadding()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = MelodiaSpacing.sm, vertical = MelodiaSpacing.sm),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -80,7 +81,7 @@ fun TopBar(
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
             ) {
                 IconButton(onClick = onToggleLike) {
                     Icon(
