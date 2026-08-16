@@ -27,102 +27,50 @@ class SettingsViewModel(
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
-    // ─── 本地偏合设置对外状态流动 ───
-    val wifiQuality = settingsPreferences.wifiQuality.stateIn(
+    // DataStore 的偏好流统一以相同策略转为 StateFlow，避免每项重复五行样板
+    private fun <T> Flow<T>.asState(initial: T): StateFlow<T> = stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = "lossless"
+        initialValue = initial
     )
 
-    val mobileQuality = settingsPreferences.mobileQuality.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = "standard"
-    )
+    // 偏好写入均为即发即忘，无需回传结果
+    private fun launchSave(block: suspend () -> Unit) {
+        viewModelScope.launch { block() }
+    }
 
-    val useRealIp = settingsPreferences.useRealIp.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
+    // ─── 本地偏好设置对外状态流 ───
+    val wifiQuality = settingsPreferences.wifiQuality.asState("lossless")
 
-    val realIpValue = settingsPreferences.realIpValue.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ""
-    )
+    val mobileQuality = settingsPreferences.mobileQuality.asState("standard")
 
-    val defaultPlaylistPrivate = settingsPreferences.defaultPlaylistPrivate.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
+    val useRealIp = settingsPreferences.useRealIp.asState(false)
 
-    val streamCacheEnabled = settingsPreferences.streamCacheEnabled.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
+    val realIpValue = settingsPreferences.realIpValue.asState("")
 
-    val audioCacheMaxSize = settingsPreferences.audioCacheMaxSize.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 512 * 1024 * 1024L
-    )
+    val defaultPlaylistPrivate = settingsPreferences.defaultPlaylistPrivate.asState(false)
 
-    val autoPlayNext = settingsPreferences.autoPlayNext.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
+    val streamCacheEnabled = settingsPreferences.streamCacheEnabled.asState(true)
 
-    val wifiOnlyPlay = settingsPreferences.wifiOnlyPlay.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
+    val audioCacheMaxSize = settingsPreferences.audioCacheMaxSize.asState(512 * 1024 * 1024L)
 
-    val mobileAlert = settingsPreferences.mobileAlert.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
+    val autoPlayNext = settingsPreferences.autoPlayNext.asState(true)
 
-    val useProxy = settingsPreferences.useProxy.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
+    val wifiOnlyPlay = settingsPreferences.wifiOnlyPlay.asState(false)
 
-    val showDesktopLrc = settingsPreferences.showDesktopLrc.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
+    val mobileAlert = settingsPreferences.mobileAlert.asState(true)
 
-    val showLockscreen = settingsPreferences.showLockscreen.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
+    val useProxy = settingsPreferences.useProxy.asState(false)
 
-    val carMode = settingsPreferences.carMode.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
+    val showDesktopLrc = settingsPreferences.showDesktopLrc.asState(false)
 
-    val lyricTextSize = settingsPreferences.lyricTextSize.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 14
-    )
+    val showLockscreen = settingsPreferences.showLockscreen.asState(true)
 
-    val lyricTextColor = settingsPreferences.lyricTextColor.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = "#FFFFFF"
-    )
+    val carMode = settingsPreferences.carMode.asState(false)
+
+    val lyricTextSize = settingsPreferences.lyricTextSize.asState(14)
+
+    val lyricTextColor = settingsPreferences.lyricTextColor.asState("#FFFFFF")
 
     // ─── 服务端拉取数据状态 ───
     private val _userLevel = MutableStateFlow<UserLevelData?>(null)
@@ -176,41 +124,17 @@ class SettingsViewModel(
 
     // ─── 核心设置修改方法 ───
 
-    fun updateWifiQuality(quality: String) {
-        viewModelScope.launch {
-            settingsPreferences.saveWifiQuality(quality)
-        }
-    }
+    fun updateWifiQuality(quality: String) = launchSave { settingsPreferences.saveWifiQuality(quality) }
 
-    fun updateMobileQuality(quality: String) {
-        viewModelScope.launch {
-            settingsPreferences.saveMobileQuality(quality)
-        }
-    }
+    fun updateMobileQuality(quality: String) = launchSave { settingsPreferences.saveMobileQuality(quality) }
 
-    fun updateUseRealIp(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveUseRealIp(enabled)
-        }
-    }
+    fun updateUseRealIp(enabled: Boolean) = launchSave { settingsPreferences.saveUseRealIp(enabled) }
 
-    fun updateRealIpValue(ip: String) {
-        viewModelScope.launch {
-            settingsPreferences.saveRealIpValue(ip)
-        }
-    }
+    fun updateRealIpValue(ip: String) = launchSave { settingsPreferences.saveRealIpValue(ip) }
 
-    fun updateDefaultPlaylistPrivate(private: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveDefaultPlaylistPrivate(private)
-        }
-    }
+    fun updateDefaultPlaylistPrivate(private: Boolean) = launchSave { settingsPreferences.saveDefaultPlaylistPrivate(private) }
 
-    fun updateStreamCacheEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveStreamCacheEnabled(enabled)
-        }
-    }
+    fun updateStreamCacheEnabled(enabled: Boolean) = launchSave { settingsPreferences.saveStreamCacheEnabled(enabled) }
 
     fun updateAudioCacheMaxSize(context: Context, size: Long) {
         viewModelScope.launch {
@@ -219,59 +143,23 @@ class SettingsViewModel(
         }
     }
 
-    fun updateAutoPlayNext(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveAutoPlayNext(enabled)
-        }
-    }
+    fun updateAutoPlayNext(enabled: Boolean) = launchSave { settingsPreferences.saveAutoPlayNext(enabled) }
 
-    fun updateWifiOnlyPlay(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveWifiOnlyPlay(enabled)
-        }
-    }
+    fun updateWifiOnlyPlay(enabled: Boolean) = launchSave { settingsPreferences.saveWifiOnlyPlay(enabled) }
 
-    fun updateMobileAlert(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveMobileAlert(enabled)
-        }
-    }
+    fun updateMobileAlert(enabled: Boolean) = launchSave { settingsPreferences.saveMobileAlert(enabled) }
 
-    fun updateUseProxy(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveUseProxy(enabled)
-        }
-    }
+    fun updateUseProxy(enabled: Boolean) = launchSave { settingsPreferences.saveUseProxy(enabled) }
 
-    fun updateShowDesktopLrc(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveShowDesktopLrc(enabled)
-        }
-    }
+    fun updateShowDesktopLrc(enabled: Boolean) = launchSave { settingsPreferences.saveShowDesktopLrc(enabled) }
 
-    fun updateShowLockscreen(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveShowLockscreen(enabled)
-        }
-    }
+    fun updateShowLockscreen(enabled: Boolean) = launchSave { settingsPreferences.saveShowLockscreen(enabled) }
 
-    fun updateCarMode(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsPreferences.saveCarMode(enabled)
-        }
-    }
+    fun updateCarMode(enabled: Boolean) = launchSave { settingsPreferences.saveCarMode(enabled) }
 
-    fun updateLyricTextSize(size: Int) {
-        viewModelScope.launch {
-            settingsPreferences.saveLyricTextSize(size)
-        }
-    }
+    fun updateLyricTextSize(size: Int) = launchSave { settingsPreferences.saveLyricTextSize(size) }
 
-    fun updateLyricTextColor(color: String) {
-        viewModelScope.launch {
-            settingsPreferences.saveLyricTextColor(color)
-        }
-    }
+    fun updateLyricTextColor(color: String) = launchSave { settingsPreferences.saveLyricTextColor(color) }
 
     fun onNicknameInputChanged(name: String) {
         _nicknameInput.value = name
