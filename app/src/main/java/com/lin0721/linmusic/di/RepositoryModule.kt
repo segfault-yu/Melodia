@@ -26,12 +26,14 @@ import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepositoryImpl
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
+import com.lin0721.linmusic.feature.playlist.domain.SongCollectDelegate
 import com.lin0721.linmusic.feature.settings.data.SettingsRepository
 import com.lin0721.linmusic.feature.settings.data.SettingsRepositoryImpl
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepositoryImpl
 import com.lin0721.linmusic.feature.search.data.SearchRepository
 import com.lin0721.linmusic.feature.search.data.SearchRepositoryImpl
 import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
@@ -84,6 +86,9 @@ val repositoryModule = module {
 
     // 新建歌单并加入当前歌曲（跨 artist/library/playlist 域共用）
     singleOf(::CreatePlaylistAndAddSongUseCase)
+
+    // “收藏到歌单”弹窗状态与操作，artist/playlist 各持有独立实例
+    factoryOf(::SongCollectDelegate)
 
     // 登录成功后同步账号资料（跨 home/library/artist/playlist 域共用）
     singleOf(::SyncProfileAfterLoginUseCase)
