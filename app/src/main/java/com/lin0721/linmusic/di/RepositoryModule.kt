@@ -2,6 +2,8 @@ package com.lin0721.linmusic.di
 
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.core.auth.AuthRepositoryImpl
+import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
+import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.feature.create.data.CreateRepositoryImpl
 import com.lin0721.linmusic.feature.home.data.HomeRepository
@@ -82,5 +84,11 @@ val repositoryModule = module {
 
     // 新建歌单并加入当前歌曲（跨 artist/library/playlist 域共用）
     singleOf(::CreatePlaylistAndAddSongUseCase)
+
+    // 登录成功后同步账号资料（跨 home/library/artist/playlist 域共用）
+    singleOf(::SyncProfileAfterLoginUseCase)
+
+    // 拉取已红心歌曲 ID（跨 artist/player/playlist 域共用）
+    singleOf(::LoadLikedSongIdsUseCase)
 
 }

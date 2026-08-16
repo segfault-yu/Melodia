@@ -6,7 +6,8 @@ import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.model.Track
-import com.lin0721.linmusic.core.auth.AuthRepository
+import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
+import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.core.comment.data.CommentRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.home.data.HomeRepository
@@ -32,6 +33,8 @@ import com.lin0721.linmusic.core.network.toUserMessage
 
 class PlaylistViewModel(
     private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
+    private val syncProfileAfterLoginUseCase: SyncProfileAfterLoginUseCase,
+    private val loadLikedSongIdsUseCase: LoadLikedSongIdsUseCase,
     private val homeRepository: HomeRepository,
     private val libraryRepository: LibraryRepository,
     private val userPlaylistRepository: UserPlaylistRepository,
@@ -41,7 +44,6 @@ class PlaylistViewModel(
     private val playbackRepository: PlaybackRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
-    private val authRepository: AuthRepository,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -82,12 +84,7 @@ class PlaylistViewModel(
 
     fun loadLikedSongIds() {
         viewModelScope.launch {
-            val profile = userPreferences.userProfile.first() ?: return@launch
-            songLikeRepository.getLikedSongIds(profile.uid).collect { result ->
-                result.onSuccess { ids ->
-                    _likedSongIds.value = ids.toSet()
-                }
-            }
+            loadLikedSongIdsUseCase()?.let { _likedSongIds.value = it }
         }
     }
 
@@ -284,22 +281,8 @@ class PlaylistViewModel(
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
             _toastEvent.emit("登录成功，正在同步数据...")
-            userPreferences.saveCookies(cookies)
-            authRepository.getAccountInfo().collect { result ->
-                val response = result.getOrNull()
-                if (response != null) {
-                    val remoteProfile = response.profile
-                    if (remoteProfile != null) {
-                        userPreferences.saveUserProfile(
-                            UserProfile(
-                                uid = remoteProfile.userId,
-                                nickname = remoteProfile.nickname,
-                                avatarUrl = remoteProfile.avatarUrl
-                            )
-                        )
-                        loadLikedSongIds()
-                    }
-                }
+            if (syncProfileAfterLoginUseCase(cookies) != null) {
+                loadLikedSongIds()
             }
         }
     }

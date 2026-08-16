@@ -12,6 +12,7 @@ import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.core.player.domain.LyricLine
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.core.comment.data.CommentRepository
+import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
@@ -54,6 +55,7 @@ data class PlayerSongDetailState(
 )
 
 class PlayerViewModel(
+    private val loadLikedSongIdsUseCase: LoadLikedSongIdsUseCase,
     private val context: Context,
     private val playerRepository: PlayerRepository,
     private val playbackRepository: PlaybackRepository,
@@ -137,16 +139,12 @@ class PlayerViewModel(
 
     private fun loadLikedSongIds() {
         viewModelScope.launch {
-            val profile = userPreferences.userProfile.first() ?: return@launch
-            songLikeRepository.getLikedSongIds(profile.uid).collect { result ->
-                result.onSuccess { ids ->
-                    likedSongIds.clear()
-                    likedSongIds.addAll(ids)
-                    likedListLoaded = true
-                    if (currentSongId != -1L) {
-                        _songDetailState.update { it.copy(isLiked = currentSongId in likedSongIds) }
-                    }
-                }
+            val ids = loadLikedSongIdsUseCase() ?: return@launch
+            likedSongIds.clear()
+            likedSongIds.addAll(ids)
+            likedListLoaded = true
+            if (currentSongId != -1L) {
+                _songDetailState.update { it.copy(isLiked = currentSongId in likedSongIds) }
             }
         }
     }

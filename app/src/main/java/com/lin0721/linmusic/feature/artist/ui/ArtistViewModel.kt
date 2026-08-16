@@ -7,7 +7,8 @@ import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.model.ArtistInfo
-import com.lin0721.linmusic.core.auth.AuthRepository
+import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
+import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
@@ -26,13 +27,14 @@ import kotlinx.coroutines.launch
 
 class ArtistViewModel(
     private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
+    private val syncProfileAfterLoginUseCase: SyncProfileAfterLoginUseCase,
+    private val loadLikedSongIdsUseCase: LoadLikedSongIdsUseCase,
     private val userPlaylistRepository: UserPlaylistRepository,
     private val artistRepository: ArtistRepository,
     private val playlistRepository: PlaylistRepository,
     private val songLikeRepository: SongLikeRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
-    private val authRepository: AuthRepository,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -75,12 +77,7 @@ class ArtistViewModel(
 
     fun loadLikedSongIds() {
         viewModelScope.launch {
-            val profile = userPreferences.userProfile.first() ?: return@launch
-            songLikeRepository.getLikedSongIds(profile.uid).collect { result ->
-                result.onSuccess { ids ->
-                    _likedSongIds.value = ids.toSet()
-                }
-            }
+            loadLikedSongIdsUseCase()?.let { _likedSongIds.value = it }
         }
     }
 
@@ -246,27 +243,12 @@ class ArtistViewModel(
 
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
-            userPreferences.saveCookies(cookies)
-            authRepository.getAccountInfo().collect { result ->
-                val response = result.getOrNull()
-                if (response != null) {
-                    val remoteProfile = response.profile
-                    if (remoteProfile != null) {
-                        userPreferences.saveUserProfile(
-                            com.lin0721.linmusic.core.auth.UserProfile(
-                                uid = remoteProfile.userId,
-                                nickname = remoteProfile.nickname,
-                                avatarUrl = remoteProfile.avatarUrl
-                            )
-                        )
-                        _toastEvent.emit("登录成功，正在同步数据...")
-                        // 保存用户登录状态并同步加载喜欢的歌曲 ID，更新歌手界面状态
-                        loadLikedSongIds()
-                        (uiState.value as? ArtistUiState.Success)?.let { successState ->
-                            loadArtistData(successState.artist.id)
-                        }
-                    }
-                }
+            if (syncProfileAfterLoginUseCase(cookies) == null) return@launch
+            _toastEvent.emit("登录成功，正在同步数据...")
+            // 同步红心列表并刷新歌手页，使关注态与红心态即时生效
+            loadLikedSongIds()
+            (uiState.value as? ArtistUiState.Success)?.let { successState ->
+                loadArtistData(successState.artist.id)
             }
         }
     }
