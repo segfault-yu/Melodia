@@ -6,11 +6,11 @@ import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.model.Track
-import com.lin0721.linmusic.core.auth.AuthRepository
+import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
+import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.core.comment.data.CommentRepository
-import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
+import com.lin0721.linmusic.feature.playlist.domain.SongCollectDelegate
 import com.lin0721.linmusic.feature.home.data.HomeRepository
-import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
@@ -31,17 +31,17 @@ import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.network.toUserMessage
 
 class PlaylistViewModel(
-    private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
+    private val songCollectDelegate: SongCollectDelegate,
+    private val syncProfileAfterLoginUseCase: SyncProfileAfterLoginUseCase,
+    private val loadLikedSongIdsUseCase: LoadLikedSongIdsUseCase,
     private val homeRepository: HomeRepository,
     private val libraryRepository: LibraryRepository,
-    private val userPlaylistRepository: UserPlaylistRepository,
     private val commentRepository: CommentRepository,
     private val playlistRepository: PlaylistRepository,
     private val songLikeRepository: SongLikeRepository,
     private val playbackRepository: PlaybackRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
-    private val authRepository: AuthRepository,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -66,8 +66,7 @@ class PlaylistViewModel(
     private val _likedSongIds = MutableStateFlow<Set<Long>>(emptySet())
     val likedSongIds: StateFlow<Set<Long>> = _likedSongIds.asStateFlow()
 
-    private val _collectState = MutableStateFlow(PlaylistCollectState())
-    val collectState: StateFlow<PlaylistCollectState> = _collectState.asStateFlow()
+    val collectState: StateFlow<PlaylistCollectState> = songCollectDelegate.state
 
     private val _commentsState = MutableStateFlow<CommentsState>(CommentsState.Loading)
     val commentsState: StateFlow<CommentsState> = _commentsState.asStateFlow()
@@ -82,12 +81,7 @@ class PlaylistViewModel(
 
     fun loadLikedSongIds() {
         viewModelScope.launch {
-            val profile = userPreferences.userProfile.first() ?: return@launch
-            songLikeRepository.getLikedSongIds(profile.uid).collect { result ->
-                result.onSuccess { ids ->
-                    _likedSongIds.value = ids.toSet()
-                }
-            }
+            loadLikedSongIdsUseCase()?.let { _likedSongIds.value = it }
         }
     }
 
@@ -184,122 +178,39 @@ class PlaylistViewModel(
 
     fun prepareCollectDialog(songId: Long) {
         viewModelScope.launch {
-            val profile = userPreferences.userProfile.first() ?: return@launch
-            _collectState.update { it.copy(songId = songId, isLoading = true, collectItems = emptyList()) }
-
-            userPlaylistRepository.getUserPlaylists(profile.uid).collect { result ->
-                result.onSuccess { playlists ->
-                    val myPlaylists = playlists.filter { it.userId == profile.uid }
-
-                    val items = myPlaylists.map { playlist ->
-                        async {
-                            // 直接使用 _likedSongIds 判断
-                            val isInitiallyContains = if (playlist.name.contains("喜欢的音乐") || playlist.id == profile.uid) {
-                                _likedSongIds.value.contains(songId)
-                            } else {
-                                val detail = playlistRepository.getPlaylistDetail(playlist.id).firstOrNull()?.getOrNull()
-                                detail?.tracks?.any { it.id == songId } ?: false
-                            }
-                            PlaylistCollectItem(
-                                playlistId = playlist.id,
-                                playlistName = playlist.name,
-                                coverUrl = playlist.coverImgUrl,
-                                isInitiallyContains = isInitiallyContains,
-                                isContains = isInitiallyContains
-                            )
-                        }
-                    }.awaitAll()
-
-                    _collectState.update { it.copy(collectItems = items, isLoading = false) }
-                }.onFailure {
-                    _collectState.update { it.copy(isLoading = false) }
-                    _toastEvent.emit(it.toUserMessage(resourceProvider))
-                }
-            }
+            songCollectDelegate.prepare(songId, _likedSongIds.value) { _toastEvent.emit(it) }
         }
     }
 
     fun savePlaylistCollection(songId: Long, items: List<PlaylistCollectItem>) {
         viewModelScope.launch {
-            val profile = userPreferences.userProfile.first()
-            items.forEach { item ->
-                if (item.isContains != item.isInitiallyContains) {
-                    val isLikedPlaylist = profile != null && (item.playlistName.contains("喜欢的音乐") || item.playlistId == profile.uid)
-                    if (isLikedPlaylist) {
-                        songLikeRepository.likeSong(songId, item.isContains).collect { result ->
-                            result.onSuccess {
-                                val currentLiked = _likedSongIds.value.toMutableSet()
-                                if (item.isContains) {
-                                    currentLiked.add(songId)
-                                } else {
-                                    currentLiked.remove(songId)
-                                }
-                                _likedSongIds.value = currentLiked
-                            }.onFailure { e ->
-                                _toastEvent.emit(e.toUserMessage(resourceProvider))
-                            }
-                        }
-                    } else {
-                        val op = if (item.isContains) {
-                            "add"
-                        } else {
-                            "del"
-                        }
-                        playlistRepository.manipulatePlaylistTracks(op, item.playlistId, songId).collect { result ->
-                            result.onSuccess {
-                                // 操作成功
-                            }.onFailure { e ->
-                                _toastEvent.emit(e.toUserMessage(resourceProvider))
-                            }
-                        }
-                    }
-                }
-            }
-            _toastEvent.emit("歌单收藏更新成功")
+            songCollectDelegate.save(
+                songId = songId,
+                items = items,
+                likedSongIds = _likedSongIds.value,
+                onToast = { _toastEvent.emit(it) },
+                onLikedChanged = { _likedSongIds.value = it }
+            )
+            // 停留在“我喜欢的音乐”歌单时需重新拉取列表，使被取消红心的歌曲从当前页消失
             val successState = _uiState.value as? PlaylistUiState.Success
-            if (successState != null) {
-                if (profile != null && successState.playlist.id == profile.uid) {
-                    loadPlaylist(successState.playlist.id, isAlbumMode)
-                }
+            val profile = userPreferences.userProfile.first()
+            if (successState != null && profile != null && successState.playlist.id == profile.uid) {
+                loadPlaylist(successState.playlist.id, isAlbumMode)
             }
         }
     }
 
     fun createPlaylistAndAddSong(name: String, songId: Long) {
         viewModelScope.launch {
-            createPlaylistAndAddSongUseCase(name, songId).collect { result ->
-                result.fold(
-                    onSuccess = {
-                        _toastEvent.emit("创建并加入歌单成功")
-                        prepareCollectDialog(songId)
-                    },
-                    onFailure = { e ->
-                        _toastEvent.emit(e.toUserMessage(resourceProvider))
-                    }
-                )
-            }
+            songCollectDelegate.createAndAdd(name, songId, _likedSongIds.value) { _toastEvent.emit(it) }
         }
     }
 
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
             _toastEvent.emit("登录成功，正在同步数据...")
-            userPreferences.saveCookies(cookies)
-            authRepository.getAccountInfo().collect { result ->
-                val response = result.getOrNull()
-                if (response != null) {
-                    val remoteProfile = response.profile
-                    if (remoteProfile != null) {
-                        userPreferences.saveUserProfile(
-                            UserProfile(
-                                uid = remoteProfile.userId,
-                                nickname = remoteProfile.nickname,
-                                avatarUrl = remoteProfile.avatarUrl
-                            )
-                        )
-                        loadLikedSongIds()
-                    }
-                }
+            if (syncProfileAfterLoginUseCase(cookies) != null) {
+                loadLikedSongIds()
             }
         }
     }

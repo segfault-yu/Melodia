@@ -6,7 +6,7 @@ import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.api.AccountInfoResponse
 import com.lin0721.linmusic.feature.home.data.DailySong
-import com.lin0721.linmusic.core.auth.AuthRepository
+import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
 import com.lin0721.linmusic.core.userartist.UserArtistRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
@@ -30,12 +30,12 @@ import com.lin0721.linmusic.core.player.QueueItem
 
 // 首页 ViewModel
 class HomeViewModel(
+    private val syncProfileAfterLoginUseCase: SyncProfileAfterLoginUseCase,
     private val playbackRepository: PlaybackRepository,
     private val homeRepository: HomeRepository,
     private val userArtistRepository: UserArtistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
-    private val authRepository: AuthRepository,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -142,24 +142,9 @@ class HomeViewModel(
 
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
-            userPreferences.saveCookies(cookies)
-            authRepository.getAccountInfo().collect { result ->
-                val response = result.getOrNull()
-                if (response != null) {
-                    val remoteProfile = response.profile
-                    if (remoteProfile != null) {
-                        userPreferences.saveUserProfile(
-                            UserProfile(
-                                uid = remoteProfile.userId,
-                                nickname = remoteProfile.nickname,
-                                avatarUrl = remoteProfile.avatarUrl
-                            )
-                        )
-                        _toastEvent.emit("登录成功，欢迎回来，${remoteProfile.nickname}！")
-                        loadHomeData()
-                    }
-                }
-            }
+            val profile = syncProfileAfterLoginUseCase(cookies) ?: return@launch
+            _toastEvent.emit("登录成功，欢迎回来，${profile.nickname}！")
+            loadHomeData()
         }
     }
 

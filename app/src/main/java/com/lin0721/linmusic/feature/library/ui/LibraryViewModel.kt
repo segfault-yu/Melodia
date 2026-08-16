@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
-import com.lin0721.linmusic.core.auth.AuthRepository
+import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
 import com.lin0721.linmusic.core.userartist.UserArtistRepository
 import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
@@ -43,6 +43,7 @@ enum class LibrarySortOrder {
 }
 
 class LibraryViewModel(
+    private val syncProfileAfterLoginUseCase: SyncProfileAfterLoginUseCase,
     private val createRepository: CreateRepository,
     private val libraryRepository: LibraryRepository,
     private val userPlaylistRepository: UserPlaylistRepository,
@@ -50,7 +51,6 @@ class LibraryViewModel(
     private val userPreferences: UserPreferences,
     val playerManager: PlayerManager,
     private val context: Context,
-    private val authRepository: AuthRepository,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -335,22 +335,8 @@ class LibraryViewModel(
     fun handleLoginSuccess(cookies: String) {
         viewModelScope.launch {
             _toastEvent.emit("登录成功，正在同步乐库...")
-            userPreferences.saveCookies(cookies)
-            authRepository.getAccountInfo().collect { result ->
-                val response = result.getOrNull()
-                if (response != null) {
-                    val remoteProfile = response.profile
-                    if (remoteProfile != null) {
-                        val profile = UserProfile(
-                            uid = remoteProfile.userId,
-                            nickname = remoteProfile.nickname,
-                            avatarUrl = remoteProfile.avatarUrl
-                        )
-                        userPreferences.saveUserProfile(profile)
-                        loadLibraryData(profile)
-                    }
-                }
-            }
+            val profile = syncProfileAfterLoginUseCase(cookies) ?: return@launch
+            loadLibraryData(profile)
         }
     }
 
