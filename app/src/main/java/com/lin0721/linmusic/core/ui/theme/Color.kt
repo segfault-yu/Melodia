@@ -10,3 +10,41 @@ val TextGray = Color(0xFFB3B3B3)
 val NeteaseRed = Color(0xFFC20C0C)
 val GradientStart = Color(0xFF3a1515)
 val BackgroundBlack = Color(0xFF0a0a0a)
+
+// 底栏选中项的药丸指示器底色
+val NavPillSelected = Color(0xFF383A4A)
+
+// 全局 Toast 底色
+val ToastBackground = Color(0xFF2E2E2E)
+
+// 网页登录容器底色，与网页自身背景一致以避免键盘弹出时闪屏
+val WebLoginBackground = Color(0xFFF5F5F7)
+
+// 排行榜卡片底色，兼作其渐变蒙版的终点色
+val ToplistCardBackground = Color(0xFF1A1F2E)
+
+// 封面取色未命中缓存时的兜底主色，迷你播放器与全屏播放器共用以保证配色一致
+val FallbackDominant = Color(0xFF333333)
+val FallbackSecondary = Color(0xFF222222)
+
+// 歌单/歌手页在取色完成前的初始底色
+val CoverPlaceholderDark = Color(0xFF2C2C2C)
+
+// 定时关闭中的剩余时间告警色
+val TimerWarningRed = Color(0xFFFF5252)
+
+// 音乐库卡片的装饰渐变：紫罗兰 → 紫 → 粉
+val LibraryVioletGradient = listOf(
+    Color(0xFF6366F1),
+    Color(0xFFA855F7),
+    Color(0xFFEC4899)
+)
+
+// 音乐库卡片的装饰渐变：蓝 → 翠绿
+val LibraryBlueGreenGradient = listOf(
+    Color(0xFF3B82F6),
+    Color(0xFF10B981)
+)
+
+// 已下载标识的翠绿色，取自上面渐变的终点色
+val DownloadedGreen = Color(0xFF10B981)

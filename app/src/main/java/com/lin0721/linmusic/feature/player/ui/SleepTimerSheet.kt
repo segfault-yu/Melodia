@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.TimerWarningRed
 
 // ────────────────────────────────────────────────────────────────────────────
 // "定时关闭"睡眠定时器弹层（预设选项 + 自定义时间滚轮）
@@ -347,7 +348,7 @@ fun SleepTimerSheet(
                                 Brush.horizontalGradient(
                                     colors = listOf(
                                         MaterialTheme.colorScheme.primary,
-                                        Color(0xFFFF5252)
+                                        TimerWarningRed
                                     )
                                 )
                             } else {

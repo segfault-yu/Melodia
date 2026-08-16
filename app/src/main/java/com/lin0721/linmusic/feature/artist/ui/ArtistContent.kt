@@ -20,6 +20,7 @@ import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.ArtistInfo
+import com.lin0721.linmusic.core.ui.theme.CoverPlaceholderDark
 
 // 歌手详情页骨架：持有折叠进度与弹层状态，按 Tab 装配各内容区块
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,7 +55,7 @@ fun ArtistContent(
 
     var showMoreMenuSheet by remember { mutableStateOf(false) }
 
-    var dominantColor by remember { mutableStateOf(Color(0xFF2C2C2C)) }
+    var dominantColor by remember { mutableStateOf(CoverPlaceholderDark) }
 
     // 背景折叠临界点
     val collapseThresholdPx = with(density) { 320.dp.toPx() }

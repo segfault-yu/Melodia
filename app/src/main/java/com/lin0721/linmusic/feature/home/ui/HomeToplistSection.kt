@@ -32,6 +32,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
+import com.lin0721.linmusic.core.ui.theme.ToplistCardBackground
 
 // 排行榜横向轮播
 @Composable
@@ -60,7 +61,7 @@ private fun ToplistCard(item: ToplistInfo) {
         modifier = Modifier
             .width(150.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF1A1F2E))
+            .background(ToplistCardBackground)
     ) {
         Box(
             modifier = Modifier
@@ -80,7 +81,7 @@ private fun ToplistCard(item: ToplistInfo) {
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color(0xFF1A1F2E))
+                            colors = listOf(Color.Transparent, ToplistCardBackground)
                         )
                     )
             )
