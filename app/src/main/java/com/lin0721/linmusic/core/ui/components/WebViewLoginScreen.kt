@@ -28,6 +28,7 @@ import com.lin0721.linmusic.core.ui.theme.BackgroundBlack
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.WebLoginBackground
+import com.lin0721.linmusic.core.network.NeteaseEndpoints
 
 /**
  * 沉浸式网页授权登录界面
@@ -45,7 +46,7 @@ fun WebViewLoginScreen(
     // 1. 深度伪装：净化 UA（剔除 wv/WebView 关键字）
     val baseUA = "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36"
     
-    val loginUrl = "https://music.163.com/m/login"
+    val loginUrl = NeteaseEndpoints.LOGIN_URL
     val extraHeaders = mapOf(
         "X-Real-IP" to "116.25.250.66",
         "X-Forwarded-For" to "116.25.250.66"
@@ -151,7 +152,7 @@ fun WebViewLoginScreen(
 
 private fun checkCookies(onLoginSuccess: (String) -> Unit) {
     val cookieManager = CookieManager.getInstance()
-    val cookies = cookieManager.getCookie("https://music.163.com")
+    val cookies = cookieManager.getCookie(NeteaseEndpoints.WEB_BASE_URL)
     
     // 状态同步：一旦检测到 MUSIC_U= 则视为成功
     if (cookies != null && cookies.contains("MUSIC_U=")) {
