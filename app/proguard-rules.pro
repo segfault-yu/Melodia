@@ -1,21 +1,50 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# Melodia R8 混淆规则
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# 本项目对混淆敏感的只有两处：Retrofit 接口（动态代理在运行时读注解）与
+# kotlinx.serialization 的 DTO（依赖编译期生成的 serializer）。二者失效的表现
+# 都是接口静默解析失败而非崩溃，因此规则写显式声明，不单纯依赖各库自带的
+# consumer rules。
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ===== 崩溃栈可读性 =====
+# 项目内置 CrashHandler 收集崩溃，保留行号否则上报的堆栈无法定位
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ===== 泛型签名与运行时注解 =====
+# Retrofit 解析 suspend 方法的返回类型、kotlinx.serialization 读取 @SerialName
+# 均依赖这些属性，剥掉会导致运行时解析失败
+-keepattributes Signature,InnerClasses,EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ===== Retrofit 接口 =====
+# 接口本身由 Proxy 实现，方法签名与 @POST/@Body/@Path 注解必须完整保留
+-keep,allowobfuscation interface com.lin0721.linmusic.core.api.NeteaseApiService { *; }
+-keep,allowobfuscation interface com.lin0721.linmusic.**.data.*Api { *; }
+-keep,allowobfuscation interface com.lin0721.linmusic.core.songlike.SongLikeApi { *; }
+-keep,allowobfuscation interface com.lin0721.linmusic.core.userplaylist.UserPlaylistApi { *; }
+-keep,allowobfuscation interface com.lin0721.linmusic.core.userartist.UserArtistApi { *; }
+
+# suspend 方法的 Continuation 参数不能被裁剪
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# ===== kotlinx.serialization =====
+# 编译期生成的 serializer 与 Companion 是反序列化入口，被裁剪后 DTO 无法构造
+-keepclassmembers class com.lin0721.linmusic.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.lin0721.linmusic.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-if @kotlinx.serialization.Serializable class com.lin0721.linmusic.**
+-keepclassmembers class com.lin0721.linmusic.<1> {
+    static <1>$Companion Companion;
+}
+-if @kotlinx.serialization.Serializable class com.lin0721.linmusic.**
+-keep class com.lin0721.linmusic.<1>$$serializer { *; }
+
+# ===== 网易云加密 =====
+# NeteaseCrypto 走标准 javax.crypto，无反射，无需 keep；此处仅声明以备查
+
+# ===== Media3 / Coil / Koin =====
+# 三者均随包提供 consumer rules：Media3 保留 Player 相关回调，Coil 保留解码器，
+# Koin 的构造函数 DSL（::X 函数引用）为编译期解析，均无需额外声明
