@@ -43,7 +43,7 @@ class HeaderInterceptor(
         val realIpValue = runBlocking { settingsPreferences.realIpValue.first() }
 
         // 域名白名单控制
-        if (useRealIp && url.host.contains("163.com")) {
+        if (useRealIp && url.host.contains(NeteaseEndpoints.DOMAIN_SUFFIX)) {
             val ipAddress = if (realIpValue.isNotBlank() && isValidIpv4(realIpValue)) {
                 realIpValue.trim()
             } else {
@@ -55,7 +55,7 @@ class HeaderInterceptor(
 
         if (urlString.contains("/eapi/")) {
             val newUrl = url.newBuilder()
-                .host("interface.music.163.com")
+                .host(NeteaseEndpoints.EAPI_HOST)
                 .build()
             newRequestBuilder.url(newUrl)
 
@@ -72,7 +72,7 @@ class HeaderInterceptor(
             newRequestBuilder.header("Cookie", if (filteredCookies.isEmpty()) mobileCookies else "$filteredCookies; $mobileCookies")
         } else {
             newRequestBuilder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-            newRequestBuilder.header("Referer", "https://music.163.com")
+            newRequestBuilder.header("Referer", NeteaseEndpoints.WEB_BASE_URL)
             
             val requestCookies = originalRequest.headers("Cookie").toMutableList()
             if (storedCookies != null) requestCookies.add(storedCookies)

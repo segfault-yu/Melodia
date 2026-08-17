@@ -4,6 +4,7 @@ import com.lin0721.linmusic.core.api.NeteaseApiService
 import com.lin0721.linmusic.core.network.CryptoInterceptor
 import com.lin0721.linmusic.core.network.EmptyBodyInterceptor
 import com.lin0721.linmusic.core.network.HeaderInterceptor
+import com.lin0721.linmusic.core.network.NeteaseEndpoints
 import com.lin0721.linmusic.feature.artist.data.ArtistApi
 import com.lin0721.linmusic.core.comment.data.CommentApi
 import com.lin0721.linmusic.core.player.data.PlaybackApi
@@ -112,7 +113,7 @@ val networkModule = module {
         val contentType = "application/json".toMediaType()
 
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(NeteaseEndpoints.WEB_BASE_URL)
             .client(get())
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
@@ -138,8 +139,6 @@ val networkModule = module {
     single<UserArtistApi> { get<Retrofit>().create(UserArtistApi::class.java) }
     single<SettingsApi> { get<Retrofit>().create(SettingsApi::class.java) }
 }
-
-private const val BASE_URL = "https://music.163.com"
 
 object NetworkConfig {
     @Volatile
