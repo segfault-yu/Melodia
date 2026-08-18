@@ -117,6 +117,7 @@ dependencies {
     implementation(libs.haze)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation("org.json:json:20230227")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
