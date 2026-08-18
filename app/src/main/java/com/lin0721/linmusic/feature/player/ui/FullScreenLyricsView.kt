@@ -73,115 +73,10 @@ fun FullScreenLyricsView(
     var timerJob by remember { mutableStateOf<Job?>(null) }
     var viewportHeightPx by remember { mutableFloatStateOf(0f) }
 
-    var offsetY by remember { mutableStateOf(0f) }
-    var isScrollGestureActive by remember { mutableStateOf(false) }
-    var isGestureStartedAtTop by remember { mutableStateOf(true) }
-    var dragReleaseJob by remember { mutableStateOf<Job?>(null) }
+    val dragState = rememberFullScreenLyricsDragState(lazyListState = lazyListState, onClose = onClose)
+
     // 歌词页手势拖动的纯 UI 交互态，不涉及业务数据，只在本组件内部使用
     var isUserScrolling by remember { mutableStateOf(false) }
-
-    fun handleDragRelease(velocity: Float = 0f) {
-        dragReleaseJob?.cancel()
-        dragReleaseJob = scope.launch {
-            val shouldClose = if (isGestureStartedAtTop) {
-                offsetY > viewportHeightPx * 0.20f || velocity > 1000f
-            } else {
-                offsetY > viewportHeightPx * 0.20f
-            }
-
-            if (offsetY > 0f && shouldClose) {
-                animate(
-                    initialValue = offsetY,
-                    targetValue = viewportHeightPx,
-                    initialVelocity = velocity,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                ) { value, _ ->
-                    offsetY = value
-                }
-                onClose()
-            } else {
-                animate(
-                    initialValue = offsetY,
-                    targetValue = 0f,
-                    initialVelocity = velocity,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                ) { value, _ ->
-                    offsetY = value.coerceAtLeast(0f)
-                }
-            }
-        }
-    }
-
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (source == NestedScrollSource.UserInput) {
-                    if (!isScrollGestureActive) {
-                        isScrollGestureActive = true
-                        isGestureStartedAtTop = lazyListState.firstVisibleItemIndex == 0
-                    }
-                }
-
-                return if (offsetY > 0f && available.y < 0f) {
-                    val damping = if (isGestureStartedAtTop) 1.0f else 0.3f
-                    val delta = available.y * damping
-                    val consumed = delta.coerceAtLeast(-offsetY)
-                    offsetY += consumed
-                    Offset(0f, consumed / damping)
-                } else {
-                    Offset.Zero
-                }
-            }
-
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                if (source == NestedScrollSource.UserInput) {
-                    if (!isScrollGestureActive) {
-                        isScrollGestureActive = true
-                        isGestureStartedAtTop = lazyListState.firstVisibleItemIndex == 0
-                    }
-                }
-
-                val isAtTop = lazyListState.firstVisibleItemIndex == 0 && lazyListState.firstVisibleItemScrollOffset == 0
-                return if (available.y > 0f && isAtTop && source == NestedScrollSource.UserInput) {
-                    val damping = if (isGestureStartedAtTop) 1.0f else 0.3f
-                    offsetY += available.y * damping
-                    Offset(0f, available.y)
-                } else {
-                    Offset.Zero
-                }
-            }
-
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                isScrollGestureActive = false
-                return if (offsetY > 0f) {
-                    handleDragRelease(velocity = available.y)
-                    available
-                } else {
-                    Velocity.Zero
-                }
-            }
-
-            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                isScrollGestureActive = false
-                return if (offsetY > 0f) {
-                    handleDragRelease(velocity = available.y)
-                    available
-                } else {
-                    Velocity.Zero
-                }
-            }
-        }
-    }
 
     val isPlayingState = rememberUpdatedState(isPlaying)
 
@@ -223,16 +118,16 @@ fun FullScreenLyricsView(
 
     val topCornerRadius by remember {
         derivedStateOf {
-            if (offsetY > 0f) 24.dp else 0.dp
+            if (dragState.offsetY > 0f) 24.dp else 0.dp
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .nestedScroll(nestedScrollConnection)
+            .nestedScroll(dragState.nestedScrollConnection)
             .graphicsLayer {
-                translationY = offsetY
+                translationY = dragState.offsetY
             }
             .clip(RoundedCornerShape(topStart = topCornerRadius, topEnd = topCornerRadius))
             .fullScreenLyricsBackground(
@@ -253,15 +148,9 @@ fun FullScreenLyricsView(
                 artist = artist,
                 onClose = onClose,
                 onMoreClick = onMoreClick,
-                onDragDelta = { delta ->
-                    offsetY = (offsetY + delta).coerceAtLeast(0f)
-                },
-                onDragStart = {
-                    isGestureStartedAtTop = true
-                },
-                onDragRelease = { velocity ->
-                    handleDragRelease(velocity = velocity)
-                }
+                onDragDelta = { delta -> dragState.onHeaderDrag(delta) },
+                onDragStart = { dragState.onHeaderDragStart() },
+                onDragRelease = { velocity -> dragState.handleDragRelease(velocity = velocity) }
             )
 
             FullScreenLyricsList(
@@ -272,10 +161,8 @@ fun FullScreenLyricsView(
                 highlightColor = highlightColor,
                 currentPositionProvider = currentPositionProvider,
                 lazyListState = lazyListState,
-                viewportHeightPx = viewportHeightPx,
-                onViewportHeightChange = { height ->
-                    viewportHeightPx = height
-                },
+                viewportHeightPx = dragState.viewportHeightPx,
+                onViewportHeightChange = { height -> dragState.onViewportHeightChange(height) },
                 gestureModifier = gestureModifier,
                 onSeek = handleSeek,
                 onLyricClick = { line ->
