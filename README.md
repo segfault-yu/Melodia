@@ -1,39 +1,50 @@
-# Melodia 
+# Melodia
 
-Melodia 是一款基于 Ko[app](app)tlin + Jetpack Compose 构建的轻量级第三方网易云音乐客户端。
+Melodia 是一款基于 Kotlin + Jetpack Compose 构建的轻量级第三方网易云音乐客户端。
+
 ---
 
 ## 项目架构
 
-本项目采用现代 Android 开发的最佳实践与分层架构设计（MVVM + Repository）：
+按**业务域**而非技术层组织：`core` 承载跨域共享能力，`feature` 下每个业务域自持 `data`/`domain`/`ui` 三件套。依赖方向单向收敛——`feature` 可依赖 `core`，`core` 不反向依赖 `feature`，域与域之间无循环依赖。
 
-```t[]()ext
+```text
 app/src/main/java/com/lin0721/linmusic/
-├── MelodiaApplication.kt           # 应用入口，初始化 Koin 依赖注入及 Coil 图片加载预热
-├── MainActivity.kt                 # 单 Activity 容器，管理全局手势、侧边栏及全局浮动播放器
+├── MelodiaApplication.kt        # Koin 初始化与 Coil 预热
+├── MainActivity.kt              # Activity 生命周期与桌面歌词权限引导
+├── MelodiaApp.kt                # 根组合：布局装配与浮层编排
+├── MelodiaNavHost.kt            # 主屏幕切换与路由分发
+├── MelodiaOverlays.kt           # 底部浮层、全屏播放器与全局 Toast
+├── MelodiaNavigationState.kt    # 导航回退栈与跳转参数
+├── MelodiaPlayerSheetState.kt   # 全屏播放器展开/收起状态机
+├── MelodiaSidebarState.kt       # 侧边栏推拉状态机
 │
-├── data/                           # 数据层
-│   ├── remote/
-│   │   ├── api/                    # Retrofit 接口定义及数据传输对象 (DTO)
-│   │   ├── crypto/                 # 核心加密算法 (WeApi, EApi, LinuxApi 的 Kotlin 原生实现)
-│   │   └── network/                # OkHttp 拦截器 (用于处理请求加密、设备特征指纹注入及异常处理)
-│   └── repository/                 # Repository 实现，将网络 DTO 转换为 UI 消费的领域模型，并提供 Flow 数据流
+├── core/                        # 跨域共享能力
+│   ├── api/                     # 账号鉴权接口
+│   ├── auth/                    # 登录态、账号信息与登录后同步
+│   ├── comment/                 # 评论数据与 UI，被播放器与歌单共用
+│   ├── contentfilter/           # 屏蔽艺人过滤
+│   ├── log/                     # 日志与崩溃收集
+│   ├── model/                   # 跨域共享的数据模型
+│   ├── network/                 # 加密、拦截器、统一错误语义与域名常量
+│   ├── player/                  # 播放引擎（门面 + 队列/进度/持久化/定时/漫游）
+│   ├── preferences/             # 设置项持久化
+│   ├── songlike/                # 歌曲红心
+│   ├── ui/                      # 通用组件与 Material 3 主题
+│   ├── userartist/              # 关注歌手列表
+│   └── userplaylist/            # 当前用户歌单列表
 │
-├── di/                             # 依赖注入模块 (使用 Koin 进行轻量级依赖管理)
+├── di/                          # Koin 依赖注入模块
 │
-├── player/                         # 播放引擎层
-│   ├── MelodiaPlaybackService.kt   # 基于 AndroidX Media3 (ExoPlayer) 的后台音频播放服务
-│   └── PlayerManager.kt            # 播放控制器封装，向 UI 层暴露当前的播放状态、轨道信息及进度控制
-│
-└── ui/                             # 视图层 (100% Jetpack Compose)
-    ├── home/                       # 首页模块 (今日推荐、历史日推、排行榜等聚合)
-    ├── search/                     # 搜索与发现模块 (云搜索、热搜榜、精品标签)
-    ├── library/                    # 音乐库模块 (用户歌单、收藏歌手/专辑的聚合与检索)
-    ├── create/                     # 新建/导入歌单等快捷操作面板
-    ├── playlist/                   # 歌单详情页 (支持沉浸式折叠及动态色彩提取背景)
-    ├── player/                     # 全屏播放器页面 (含毛玻璃顶栏、歌词动效及鲜艳度优先色彩提取)
-    ├── components/                 # 全局通用 UI 组件 (原生登录 WebView、侧边栏、底部导航等)
-    └── theme/                      # Material 3 主题及配色方案
+└── feature/                     # 业务域，各自含 data/domain/ui
+    ├── artist/                  # 歌手详情
+    ├── create/                  # 新建歌单等快捷操作
+    ├── home/                    # 首页聚合（推荐、日推、排行榜、关注艺人）
+    ├── library/                 # 音乐库（歌单/专辑/歌手聚合与检索）
+    ├── player/                  # 播放器页面（全屏播放器、歌词、队列、详情）
+    ├── playlist/                # 歌单与专辑详情
+    ├── search/                  # 搜索与发现
+    └── settings/                # 设置
 ```
 
 ---
@@ -45,17 +56,44 @@ app/src/main/java/com/lin0721/linmusic/
 - **依赖注入**：Koin
 - **网络层**：Retrofit2 + OkHttp3 + kotlinx.serialization
 - **异步与流式编程**：Kotlin Coroutines + Flow / StateFlow
-- **图片加载**：Coil (配置低延迟图片解码与多级缓存)
+- **图片加载**：Coil（配置低延迟图片解码与多级缓存）
 - **持久化**：Jetpack DataStore & SharedPreferences
 
 ---
 
-##  加密与安全路由
+## 加密与安全路由
 
 所有网络请求的加密与风控规避逻辑均使用 Kotlin 原生复刻，不依赖外部 Node.js 服务：
-- **EApi 路由**：使用 MD5 + AES-ECB 加密，用于获取排行榜、收藏列表、用户歌单及搜索等接口，规避 PC 端风控。
-- **WeApi 路由**：使用 AES-CBC + RSA 加密，用于获取历史日推及创作者信息等特定接口。
-- **设备特征指纹**：自动在拦截器中注入设备特征指纹，保障接口调用的稳定性。
+
+- **EApi 路由**：MD5 + AES-ECB 加密，请求改写至 `interface.music.163.com` 并伪装移动端特征，用于排行榜、收藏列表、用户歌单及搜索等接口，规避 PC 端风控。
+- **WeApi 路由**：AES-CBC + RSA 加密，走 `music.163.com`，用于历史日推及创作者信息等特定接口。
+- **设备特征指纹**：拦截器自动注入设备特征与地域伪装头，保障接口调用的稳定性。
+
+同一功能在两种前缀下的可用性由网易风控决定，不可想当然——已验证的结论记录在各接口定义处。
+
+---
+
+## 错误处理
+
+Repository 出口统一返回 `Result`，失败一律为 `AppError` 的子类型（网络 / 风控 / 未登录 / 解析 / 业务码），由 UI 层按类型分流渲染；面向用户的文案集中在 `strings.xml`。
+
+---
+
+## 构建与测试
+
+```bash
+./gradlew testDebugUnitTest
+```
+
+```bash
+./gradlew assembleRelease
+```
+
+`release` 已开启 R8 混淆与代码裁剪。Retrofit 接口与 `@Serializable` DTO 有显式 keep 规则——二者被误裁的表现是接口静默解析失败而非崩溃，因此 `assembleRelease` 同时充当混淆规则的回归验证。
+
+签名材料从版本控制之外注入，未配置时自动退回调试签名，`assembleRelease` 始终可产出可安装包。配置方式见 [RELEASE_SIGNING.md](RELEASE_SIGNING.md)。
+
+CI 在推送到 `main` 与 PR 时运行单元测试与 release 构建，产物包含 APK 与 `mapping.txt`。
 
 ---
 
