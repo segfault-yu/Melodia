@@ -28,7 +28,7 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 封面区：播放来源标题栏 + 方形封面，加载成功后回传取色结果
 @Composable
-fun CoverArt(
+fun FullPlayerCoverArt(
     coverUrl: String,
     title: String,
     playContext: String?,

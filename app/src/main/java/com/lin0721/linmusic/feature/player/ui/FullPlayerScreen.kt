@@ -266,7 +266,7 @@ fun FullPlayerScreen(
             )
         }
 
-        TopBar(
+        FullPlayerTopBar(
             onClose = onClose,
             title = title,
             artist = artist,

@@ -26,7 +26,7 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 播放页顶栏，仅在封面滚出视野后显示歌名与快捷操作
 @Composable
-fun TopBar(
+fun FullPlayerTopBar(
     onClose: () -> Unit,
     title: String = "",
     artist: String = "",
