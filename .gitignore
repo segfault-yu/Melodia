@@ -6,6 +6,9 @@ app/build/
 # Kotlin 编译器日志与缓存
 .kotlin/
 
+# NDK 构建产物
+.cxx/
+
 # IDE 配置文件
 .idea/
 *.iml
@@ -17,20 +20,25 @@ app/build/
 .vscode/
 *.code-workspace
 
-# 本地环境属性
+# 本地环境属性（含 SDK 路径与 release 签名材料，见 RELEASE_SIGNING.md）
 local.properties
 
-# 签名密钥文件
+# 签名密钥文件，丢失后已上架应用无法再发布更新，务必单独备份
 *.keystore
 *.jks
 *.pepk
 
 # 编译生成的打包文件
 *.apk
+*.aab
 *.aar
 *.jar
 
 !gradle/wrapper/gradle-wrapper.jar
+
+# 性能分析与内存快照
+captures/
+*.hprof
 
 # 垃圾文件
 .DS_Store
@@ -39,11 +47,12 @@ Thumbs.db
 # 临时日志文件
 *.log
 
+# Claude Code 的本地配置与子代理工作树
+.claude/settings.local.json
+.claude/worktrees/
+
+# 项目级 Agent 规范与阶段性规划文档，均为本地协作产物，不入库
 CLAUDE.md
-ui_cross_module_refactor_plan.md
-ui_component_extraction_plan.md
-ui_state_unification_plan.md
-app_icon_redesign_plan.md
-next_phase_refactor_plan.md
-PHASE1_ERROR_HANDLING_PLAN.md
+*_plan.md
+*_PLAN.md
 REFACTOR_ROADMAP.md
