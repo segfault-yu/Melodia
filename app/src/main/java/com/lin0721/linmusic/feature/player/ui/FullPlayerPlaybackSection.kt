@@ -38,7 +38,7 @@ fun LazyListScope.fullPlayerPlaybackSection(
     onInsertSimilarClick: () -> Unit
 ) {
     item(key = "cover") {
-        CoverArt(
+        FullPlayerCoverArt(
             coverUrl = coverUrl,
             title = title,
             playContext = playContext,
