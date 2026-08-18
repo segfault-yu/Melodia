@@ -23,7 +23,7 @@ app/build/
 # 本地环境属性（含 SDK 路径与 release 签名材料，见 RELEASE_SIGNING.md）
 local.properties
 
-# 签名密钥文件，丢失后已上架应用无法再发布更新，务必单独备份
+# 签名密钥文件
 *.keystore
 *.jks
 *.pepk
