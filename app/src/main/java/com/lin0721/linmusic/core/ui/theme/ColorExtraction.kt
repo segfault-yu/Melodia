@@ -2,6 +2,9 @@ package com.lin0721.linmusic.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.drawable.toBitmap
+import com.lin0721.linmusic.core.log.AppLogger
+
+private const val TAG = "ColorExtraction"
 
 data class ColorPalette(
     val dominant: Color,
@@ -59,6 +62,7 @@ fun extractColorPalette(drawable: android.graphics.drawable.Drawable): ColorPale
 
         ColorPalette(dominant, secondary)
     } catch (e: Exception) {
+        AppLogger.d(TAG, "取色失败，使用默认深灰色板", e)
         ColorPalette(Color(0xFF333333), Color(0xFF222222))
     }
 }

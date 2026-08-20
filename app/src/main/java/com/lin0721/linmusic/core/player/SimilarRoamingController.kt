@@ -1,11 +1,14 @@
 package com.lin0721.linmusic.core.player
 
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+private const val TAG = "SimilarRoamingController"
 
 // 私人漫游：播放到队列末尾时自动续接相似歌曲，退出漫游时还原原队列
 class SimilarRoamingController(
@@ -87,6 +90,8 @@ class SimilarRoamingController(
                     queue.appendAfter(index, simiItems)
                     stateStore.saveQueue(queue)
                 }
+            }.onFailure {
+                AppLogger.w(TAG, "漫游续接相似歌曲失败 songId=$songId", it)
             }
         }
     }

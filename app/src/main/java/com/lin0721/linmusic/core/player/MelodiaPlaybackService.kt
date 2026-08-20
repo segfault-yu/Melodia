@@ -16,6 +16,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.CommandButton
 import com.lin0721.linmusic.R
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.songlike.SongLikeRepository
@@ -27,6 +28,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
+
+private const val TAG = "MelodiaPlaybackService"
 
 class MelodiaPlaybackService : MediaSessionService() {
 
@@ -173,6 +176,8 @@ class MelodiaPlaybackService : MediaSessionService() {
                             likedSongIdsCache.addAll(ids)
                             isLikedListLoaded = true
                             updateCustomLayout()
+                        }.onFailure {
+                            AppLogger.w(TAG, "获取已喜欢歌曲列表失败，红心状态可能不同步", it)
                         }
                     }
                 } else {

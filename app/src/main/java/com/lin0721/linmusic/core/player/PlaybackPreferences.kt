@@ -6,12 +6,15 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.player.PlayMode
 import com.lin0721.linmusic.core.player.QueueItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+
+private const val TAG = "PlaybackPreferences"
 
 private val Context.dataStore by preferencesDataStore(name = "playback_prefs")
 
@@ -56,7 +59,9 @@ class PlaybackPreferences(private val context: Context) {
 
     val playMode: Flow<PlayMode> = context.dataStore.data.map { prefs ->
         val name = prefs[KEY_PLAY_MODE]
-        runCatching { PlayMode.valueOf(name ?: "") }.getOrDefault(PlayMode.LIST_LOOP)
+        runCatching { PlayMode.valueOf(name ?: "") }
+            .onFailure { AppLogger.w(TAG, "播放模式反序列化失败 value=$name", it) }
+            .getOrDefault(PlayMode.LIST_LOOP)
     }
 
     suspend fun savePlaybackState(state: PlaybackState) {
@@ -78,7 +83,9 @@ class PlaybackPreferences(private val context: Context) {
     val queueState: Flow<QueueState> = context.dataStore.data.map { prefs ->
         val queueJson = prefs[KEY_QUEUE]
         val queue = if (queueJson.isNullOrBlank()) emptyList()
-                    else runCatching { json.decodeFromString<List<QueueItem>>(queueJson) }.getOrDefault(emptyList())
+                    else runCatching { json.decodeFromString<List<QueueItem>>(queueJson) }
+                        .onFailure { AppLogger.w(TAG, "播放队列反序列化失败", it) }
+                        .getOrDefault(emptyList())
         QueueState(
             queue = queue,
             currentIndex = prefs[KEY_QUEUE_INDEX] ?: -1,

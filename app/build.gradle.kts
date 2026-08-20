@@ -79,6 +79,12 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests {
+            // AppLogger 内部调用 android.util.Log，纯 JVM 单测下未做该 mock 会直接抛异常
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 dependencies {

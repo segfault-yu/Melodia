@@ -2,8 +2,11 @@ package com.lin0721.linmusic.core.log
 
 import android.content.Context
 import android.util.Log
+import com.lin0721.linmusic.BuildConfig
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
 import java.io.File
 import java.io.FileWriter
 import java.text.SimpleDateFormat
@@ -11,8 +14,14 @@ import java.util.Date
 import java.util.Locale
 
 object AppLogger {
+    enum class LogLevel(val priority: Int) { DEBUG(0), INFO(1), WARN(2), ERROR(3) }
+
     private const val TAG = "AppLogger"
     private const val MAX_FILE_SIZE = 1024 * 1024 // 超过 1MB 自动滚动
+    private val defaultLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.WARN
+
+    @Volatile
+    private var currentLevel: LogLevel = defaultLevel
 
     private val logScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val logChannel = Channel<String>(capacity = 1000)
@@ -25,6 +34,11 @@ object AppLogger {
             if (!exists()) mkdirs()
         }
 
+        currentLevel = runCatching {
+            val saved = runBlocking { SettingsPreferences(context).logLevel.first() }
+            LogLevel.valueOf(saved)
+        }.onFailure { w(TAG, "读取日志级别设置失败，使用默认值", it) }.getOrDefault(defaultLevel)
+
         // 启动后台单协程，以非阻塞管道形式执行磁盘写入
         logScope.launch {
             for (logLine in logChannel) {
@@ -33,25 +47,36 @@ object AppLogger {
         }
     }
 
-    fun d(tag: String, msg: String) {
-        Log.d(tag, msg)
-        log("D", tag, msg)
+    // 供设置页在用户切换日志级别时立即生效，持久化由调用方负责
+    fun setLevel(level: LogLevel) {
+        currentLevel = level
+    }
+
+    fun d(tag: String, msg: String, tr: Throwable? = null) {
+        if (!isLoggable(LogLevel.DEBUG)) return
+        Log.d(tag, msg, tr)
+        log("D", tag, "$msg\n${tr?.stackTraceToString() ?: ""}")
     }
 
     fun i(tag: String, msg: String) {
+        if (!isLoggable(LogLevel.INFO)) return
         Log.i(tag, msg)
         log("I", tag, msg)
     }
 
     fun w(tag: String, msg: String, tr: Throwable? = null) {
+        if (!isLoggable(LogLevel.WARN)) return
         Log.w(tag, msg, tr)
         log("W", tag, "$msg\n${tr?.stackTraceToString() ?: ""}")
     }
 
     fun e(tag: String, msg: String, tr: Throwable? = null) {
+        if (!isLoggable(LogLevel.ERROR)) return
         Log.e(tag, msg, tr)
         log("E", tag, "$msg\n${tr?.stackTraceToString() ?: ""}")
     }
+
+    private fun isLoggable(level: LogLevel) = level.priority >= currentLevel.priority
 
     private fun log(level: String, tag: String, msg: String) {
         val time = dateFormat.format(Date())
@@ -79,9 +104,9 @@ object AppLogger {
         }
     }
 
-    fun getLogFile(): File? {
-        val dir = logDir ?: return null
-        val logFile = File(dir, "app_log_0.txt")
-        return if (logFile.exists()) logFile else null
+    fun getLogFiles(): List<File> {
+        val dir = logDir ?: return emptyList()
+        return listOf(File(dir, "app_log_0.txt"), File(dir, "app_log_1.txt"))
+            .filter { it.exists() }
     }
 }

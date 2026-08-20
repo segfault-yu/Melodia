@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.player.domain.LyricLine
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
@@ -26,6 +27,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
+
+private const val TAG = "FloatingLyricService"
 
 class FloatingLyricService : Service() {
 
@@ -65,6 +68,7 @@ class FloatingLyricService : Service() {
                 try {
                     floatingView?.setTextColor(Color.parseColor(colorHex))
                 } catch (e: Exception) {
+                    AppLogger.w(TAG, "悬浮歌词颜色值非法: $colorHex，回退白色", e)
                     floatingView?.setTextColor(Color.WHITE)
                 }
             }
@@ -158,6 +162,8 @@ class FloatingLyricService : Service() {
                                 result.onSuccess { lines ->
                                     lyricLines.clear()
                                     lyricLines.addAll(lines)
+                                }.onFailure {
+                                    AppLogger.w(TAG, "悬浮歌词拉取失败 songId=$songId", it)
                                 }
                             }
                         }

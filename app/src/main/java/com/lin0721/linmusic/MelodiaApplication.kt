@@ -5,6 +5,8 @@ import coil.Coil
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import com.lin0721.linmusic.core.log.AppLogger
+import com.lin0721.linmusic.core.log.CrashHandler
 import com.lin0721.linmusic.di.localModule
 import com.lin0721.linmusic.di.networkModule
 import com.lin0721.linmusic.di.playerModule
@@ -20,6 +22,9 @@ class MelodiaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // 尽早初始化，覆盖 Koin/Coil 启动阶段的崩溃与日志
+        AppLogger.init(this)
+        CrashHandler.init(this)
 
         val imageLoader = ImageLoader.Builder(this)
             .memoryCache {

@@ -1,6 +1,7 @@
 package com.lin0721.linmusic.feature.search.data
 
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.network.AppError
 import com.lin0721.linmusic.core.network.apiFlow
 import com.lin0721.linmusic.core.network.mapToAppError
@@ -12,6 +13,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+
+private const val TAG = "SearchRepositoryImpl"
 
 class SearchRepositoryImpl(
     private val apiService: SearchApi,
@@ -64,6 +67,7 @@ class SearchRepositoryImpl(
         }
 
         if (!tags.isSuccess) {
+            AppLogger.e(TAG, "getPlaylistTags 标签接口业务失败 code=${tags.code}")
             emit(Result.failure(AppError.BizError(tags.code, null)))
             return@flow
         }
@@ -77,6 +81,8 @@ class SearchRepositoryImpl(
                     }
                 }
             }
+        } else {
+            AppLogger.w(TAG, "getPlaylistTags 精品歌单接口失败 code=${playlists.code}，封面图将缺失")
         }
 
         val result = tags.tags
@@ -89,5 +95,8 @@ class SearchRepositoryImpl(
             }
 
         emit(Result.success(result))
-    }.catch { e -> emit(Result.failure(mapToAppError(e))) }
+    }.catch { e ->
+        AppLogger.e(TAG, "getPlaylistTags 请求异常", e)
+        emit(Result.failure(mapToAppError(e)))
+    }
 }

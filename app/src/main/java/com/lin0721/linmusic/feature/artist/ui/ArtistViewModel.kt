@@ -8,6 +8,7 @@ import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.feature.playlist.domain.SongCollectDelegate
@@ -21,6 +22,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
+private const val TAG = "ArtistViewModel"
 
 class ArtistViewModel(
     private val songCollectDelegate: SongCollectDelegate,
@@ -116,6 +119,7 @@ class ArtistViewModel(
                     _uiState.value = ArtistUiState.Error(err)
                 }
             } catch (e: Exception) {
+                AppLogger.e(TAG, "歌手详情页加载最终失败 artistId=$artistId", e)
                 _uiState.value = ArtistUiState.Error(e.toUserMessage(resourceProvider))
             }
         }

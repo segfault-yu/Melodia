@@ -6,11 +6,14 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.widget.Toast
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+private const val TAG = "PlaybackNetworkGuard"
 
 // 网络策略守卫：监听 Wi-Fi 切换到移动网络，并按“仅 Wi-Fi 播放”设置拦截联网起播
 class PlaybackNetworkGuard(
@@ -62,6 +65,7 @@ class PlaybackNetworkGuard(
     fun unregister() {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         kotlin.runCatching { cm?.unregisterNetworkCallback(networkCallback) }
+            .onFailure { AppLogger.w(TAG, "注销网络回调失败", it) }
     }
 
     // 移动网络下开启了“仅 Wi-Fi 播放”时拦截起播并提示
@@ -80,6 +84,6 @@ class PlaybackNetworkGuard(
             val activeNetwork = cm.activeNetwork ?: return false
             val capabilities = cm.getNetworkCapabilities(activeNetwork) ?: return false
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-        }.getOrDefault(false)
+        }.onFailure { AppLogger.w(TAG, "移动网络检测异常", it) }.getOrDefault(false)
     }
 }

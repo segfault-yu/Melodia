@@ -9,6 +9,7 @@ import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.model.ArtistInfo
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.player.domain.LyricLine
 import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.core.comment.data.CommentRepository
@@ -54,6 +55,8 @@ data class PlayerSongDetailState(
     val isArtistFollowed: Boolean = false
 )
 
+private const val TAG = "PlayerViewModel"
+
 class PlayerViewModel(
     private val loadLikedSongIdsUseCase: LoadLikedSongIdsUseCase,
     private val context: Context,
@@ -89,7 +92,7 @@ class PlayerViewModel(
             val activeNetwork = connectivityManager.activeNetwork ?: return false
             val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
             capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
-        }.getOrDefault(false)
+        }.onFailure { AppLogger.w(TAG, "Wi-Fi 状态检测异常", it) }.getOrDefault(false)
     }
 
     // 根据网络状态动态获取并组合成当前的活动播放音质 Flow

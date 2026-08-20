@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+
+private const val TAG = "PlayerManager"
 
 // 播放门面：对外暴露播放状态与控制入口，队列、控制器、进度、持久化等职责交由协作者承担
 class PlayerManager(
@@ -343,7 +346,8 @@ class PlayerManager(
                 result.onSuccess { url ->
                     val mediaItem = item.toMediaItem(url, playbackQueue.playContext.value)
                     controllerHolder.playItem(mediaItem, playbackQueue.playMode.value, startPosition)
-                }.onFailure {
+                }.onFailure { throwable ->
+                    AppLogger.w(TAG, "获取播放URL失败 songId=${item.songId} index=$index", throwable)
                     skipToNextOnError(index)
                 }
             }
@@ -360,6 +364,7 @@ class PlayerManager(
     private fun skipToNextOnError(failedIndex: Int) {
         consecutiveErrors++
         if (consecutiveErrors >= 3 || playbackQueue.size <= 1) {
+            AppLogger.e(TAG, "连续 $consecutiveErrors 次播放失败，放弃自动切歌 failedIndex=$failedIndex queueSize=${playbackQueue.size}")
             scope.launch {
                 Toast.makeText(context, "无法获取该歌曲的播放链接", Toast.LENGTH_SHORT).show()
             }
@@ -389,6 +394,7 @@ class PlayerManager(
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        AppLogger.i(TAG, "切歌: songId=${mediaItem?.mediaId} reason=${transitionReasonName(reason)}")
         _currentTrack.value = mediaItem
         playbackQueue.setPlayContext(mediaItem?.mediaMetadata?.extras?.getString("playContext"))
         if (mediaItem != null) {
@@ -402,6 +408,7 @@ class PlayerManager(
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
+        AppLogger.i(TAG, "播放状态变化: ${playbackStateName(playbackState)}")
         if (playbackState == Player.STATE_READY) {
             progress.updateDurationFromController()
             playbackQueue.nextItemByMode()?.let { coverPreloader.preload(it.coverUrl) }
@@ -414,9 +421,26 @@ class PlayerManager(
 
     override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
+        AppLogger.e(TAG, "播放器报错 errorCode=${error.errorCodeName} songId=${_currentTrack.value?.mediaId}", error)
         scope.launch {
             Toast.makeText(context, "当前歌曲无法播放，已自动跳过", Toast.LENGTH_SHORT).show()
         }
         skipToNextOnError(playbackQueue.currentIndex.value)
+    }
+
+    private fun playbackStateName(state: Int) = when (state) {
+        Player.STATE_IDLE -> "IDLE"
+        Player.STATE_BUFFERING -> "BUFFERING"
+        Player.STATE_READY -> "READY"
+        Player.STATE_ENDED -> "ENDED"
+        else -> "UNKNOWN($state)"
+    }
+
+    private fun transitionReasonName(reason: Int) = when (reason) {
+        Player.MEDIA_ITEM_TRANSITION_REASON_AUTO -> "AUTO"
+        Player.MEDIA_ITEM_TRANSITION_REASON_SEEK -> "SEEK"
+        Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT -> "REPEAT"
+        Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED -> "PLAYLIST_CHANGED"
+        else -> "UNKNOWN($reason)"
     }
 }

@@ -1,11 +1,14 @@
 package com.lin0721.linmusic.core.network
 
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.network.crypto.NeteaseCrypto
 import okhttp3.FormBody
 import okhttp3.Interceptor
 import okhttp3.RequestBody
 import okhttp3.Response
 import okio.Buffer
+
+private const val TAG = "CryptoInterceptor"
 
 // OkHttp 拦截器 —— 自动识别网易云 API 类型并加密请求体 (WeApi/EApi/LinuxApi)
 class CryptoInterceptor : Interceptor {
@@ -60,6 +63,7 @@ class CryptoInterceptor : Interceptor {
             orgJson.put("e_r", false)
             orgJson.toString()
         } catch (e: Exception) {
+            AppLogger.w(TAG, "WeApi csrf_token 注入失败，回退使用原始请求体", e)
             rawJson
         }
 
@@ -80,6 +84,7 @@ class CryptoInterceptor : Interceptor {
         val rootObj = try {
             org.json.JSONObject(rawJson)
         } catch (e: Exception) {
+            AppLogger.e(TAG, "EApi 请求体解析失败，payload 已清空: $url", e)
             org.json.JSONObject()
         }
         
@@ -90,6 +95,7 @@ class CryptoInterceptor : Interceptor {
             val digest = java.security.MessageDigest.getInstance("MD5").digest(rawId.toByteArray())
             digest.joinToString("") { "%02x".format(it) }
         } catch (e: Exception) {
+            AppLogger.d(TAG, "deviceId MD5 摘要失败，退化使用 model", e)
             model
         }
 

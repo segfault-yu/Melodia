@@ -2,6 +2,7 @@ package com.lin0721.linmusic.core.player.data
 
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.network.AppError
 import com.lin0721.linmusic.core.network.apiFlow
@@ -13,6 +14,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+
+private const val TAG = "PlaybackRepositoryImpl"
 
 class PlaybackRepositoryImpl(
     private val apiService: PlaybackApi,
@@ -29,6 +32,7 @@ class PlaybackRepositoryImpl(
             val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
             capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
         } catch (e: Exception) {
+            AppLogger.w(TAG, "Wi-Fi 状态检测异常，按移动网络处理", e)
             false
         }
     }
@@ -131,8 +135,8 @@ class PlaybackRepositoryImpl(
                         success = true
                     }
                 }
-            } catch (_: Exception) {
-                // 捕获智能推荐的异常
+            } catch (e: Exception) {
+                AppLogger.w(TAG, "心动模式接口失败，songId=$songId，自动降级为相似歌曲", e)
             }
         }
 
@@ -151,11 +155,13 @@ class PlaybackRepositoryImpl(
                     Result.failure(AppError.BizError(simiResponse.code, null))
                 }
             } catch (e: Exception) {
+                AppLogger.e(TAG, "心动模式与相似歌曲兜底均失败，songId=$songId", e)
                 Result.failure(e)
             }
             emit(fallbackResult)
         }
     }.catch { e ->
+        AppLogger.e(TAG, "getIntelligenceSongs 请求异常", e)
         emit(Result.failure(mapToAppError(e)))
     }
 }

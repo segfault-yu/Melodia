@@ -99,6 +99,8 @@ val networkModule = module {
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
                     level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+                    redactHeader("Cookie")
+                    redactHeader("Set-Cookie")
                 }
             )
             .connectTimeout(30, TimeUnit.SECONDS)

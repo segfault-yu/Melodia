@@ -5,11 +5,14 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.lin0721.linmusic.core.log.AppLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+
+private const val TAG = "UserPreferences"
 
 private val Context.userDataStore by preferencesDataStore(name = "user_prefs")
 
@@ -35,7 +38,9 @@ class UserPreferences(private val context: Context) {
     // 读取用户信息
     val userProfile: Flow<UserProfile?> = context.userDataStore.data.map { prefs ->
         prefs[KEY_USER_PROFILE]?.let { jsonStr ->
-            runCatching { json.decodeFromString<UserProfile>(jsonStr) }.getOrNull()
+            runCatching { json.decodeFromString<UserProfile>(jsonStr) }
+                .onFailure { AppLogger.w(TAG, "用户信息反序列化失败", it) }
+                .getOrNull()
         }
     }
 

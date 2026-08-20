@@ -1,11 +1,14 @@
 package com.lin0721.linmusic.core.network
 
 import com.lin0721.linmusic.core.auth.UserPreferences
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
+
+private const val TAG = "HeaderInterceptor"
 
 // 网易云反风控拦截器。UA、Referer、海外 IP 伪装及用户 Cookie。
 class HeaderInterceptor(
@@ -38,9 +41,25 @@ class HeaderInterceptor(
         val urlString = url.toString()
         val newRequestBuilder = originalRequest.newBuilder()
 
-        val storedCookies = runBlocking { userPreferences.cookies.first() }
-        val useRealIp = runBlocking { settingsPreferences.useRealIp.first() }
-        val realIpValue = runBlocking { settingsPreferences.realIpValue.first() }
+        // DataStore 读取异常时降级为安全默认值，避免单次读取失败拖垮所有网络请求
+        val storedCookies = try {
+            runBlocking { userPreferences.cookies.first() }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "读取存储的 Cookie 失败，本次请求按未登录处理", e)
+            null
+        }
+        val useRealIp = try {
+            runBlocking { settingsPreferences.useRealIp.first() }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "读取真实IP开关失败，本次请求跳过IP伪装", e)
+            false
+        }
+        val realIpValue = try {
+            runBlocking { settingsPreferences.realIpValue.first() }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "读取真实IP值失败", e)
+            ""
+        }
 
         // 域名白名单控制
         if (useRealIp && url.host.contains(NeteaseEndpoints.DOMAIN_SUFFIX)) {

@@ -1,6 +1,7 @@
 package com.lin0721.linmusic.core.preferences
 
 import android.content.Context
+import com.lin0721.linmusic.BuildConfig
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -52,6 +53,8 @@ class SettingsPreferences(private val context: Context) {
         private val KEY_LYRIC_TEXT_SIZE = intPreferencesKey("lyric_text_size")
         // 悬浮歌词颜色，默认 "#FFFFFF"
         private val KEY_LYRIC_TEXT_COLOR = stringPreferencesKey("lyric_text_color")
+        // 日志级别 KEY，默认 debug 包 "DEBUG"、release 包 "WARN"
+        private val KEY_LOG_LEVEL = stringPreferencesKey("log_level")
     }
 
     // Wi-Fi 音质设置 Flow
@@ -238,6 +241,17 @@ class SettingsPreferences(private val context: Context) {
     suspend fun saveLyricTextColor(color: String) {
         context.settingsDataStore.edit { prefs ->
             prefs[KEY_LYRIC_TEXT_COLOR] = color
+        }
+    }
+
+    // 日志级别 Flow，取值为 AppLogger.LogLevel 的 name（DEBUG/INFO/WARN/ERROR）
+    val logLevel: Flow<String> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_LOG_LEVEL] ?: if (BuildConfig.DEBUG) "DEBUG" else "WARN"
+    }
+
+    suspend fun saveLogLevel(level: String) {
+        context.settingsDataStore.edit { prefs ->
+            prefs[KEY_LOG_LEVEL] = level
         }
     }
 }

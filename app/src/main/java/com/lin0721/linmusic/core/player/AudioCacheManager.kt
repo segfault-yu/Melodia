@@ -6,7 +6,10 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import com.lin0721.linmusic.core.log.AppLogger
 import java.io.File
+
+private const val TAG = "AudioCacheManager"
 
 @UnstableApi
 object AudioCacheManager {
@@ -30,7 +33,7 @@ object AudioCacheManager {
             cache = null
             getCache(context, newMaxSize)
         } catch (e: Exception) {
-            e.printStackTrace()
+            AppLogger.e(TAG, "音质切换缓存重建失败", e)
         }
     }
 
@@ -44,7 +47,7 @@ object AudioCacheManager {
                 cacheDir.deleteRecursively()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            AppLogger.e(TAG, "清除音频缓存失败", e)
         }
     }
 }

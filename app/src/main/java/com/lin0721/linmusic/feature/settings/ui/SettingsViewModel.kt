@@ -3,6 +3,7 @@ package com.lin0721.linmusic.feature.settings.ui
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lin0721.linmusic.BuildConfig
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.feature.settings.data.UserBindingItem
@@ -11,12 +12,15 @@ import com.lin0721.linmusic.feature.settings.data.VipInfoData
 import com.lin0721.linmusic.core.auth.AuthRepository
 import com.lin0721.linmusic.feature.settings.data.SettingsRepository
 import com.lin0721.linmusic.core.player.AudioCacheManager
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.network.toUserMessage
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
+private const val TAG = "SettingsViewModel"
 
 @OptIn(FlowPreview::class)
 class SettingsViewModel(
@@ -71,6 +75,8 @@ class SettingsViewModel(
     val lyricTextSize = settingsPreferences.lyricTextSize.asState(14)
 
     val lyricTextColor = settingsPreferences.lyricTextColor.asState("#FFFFFF")
+
+    val logLevel = settingsPreferences.logLevel.asState(if (BuildConfig.DEBUG) "DEBUG" else "WARN")
 
     // ─── 服务端拉取数据状态 ───
     private val _userLevel = MutableStateFlow<UserLevelData?>(null)
@@ -140,6 +146,14 @@ class SettingsViewModel(
         viewModelScope.launch {
             settingsPreferences.saveAudioCacheMaxSize(size)
             AudioCacheManager.recreateCache(context, size)
+        }
+    }
+
+    // 持久化并立即让 AppLogger 生效，无需重启 App
+    fun updateLogLevel(level: AppLogger.LogLevel) {
+        viewModelScope.launch {
+            settingsPreferences.saveLogLevel(level.name)
+            AppLogger.setLevel(level)
         }
     }
 
@@ -303,7 +317,7 @@ class SettingsViewModel(
                         file.deleteRecursively()
                     }
                 }
-            }
+            }.onFailure { AppLogger.e(TAG, "清理应用缓存失败", it) }
             _toastEvent.emit("应用临时数据与图片缓存已清理完成")
             _isLoading.value = false
         }

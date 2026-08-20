@@ -19,7 +19,10 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.player.domain.LyricLine
+
+private const val TAG = "KaraokeLyricRow"
 
 // 逐字词的物理渲染坐标缓存，避免每帧重复调用 getBoundingBox 的 JNI 开销
 private class WordLayout(
@@ -85,11 +88,13 @@ fun KaraokeLyricRow(
                 val wordLeft = try {
                     layout.getBoundingBox(range.first).left
                 } catch (e: Exception) {
+                    AppLogger.d(TAG, "歌词字符定位 getBoundingBox 失败，回退 getHorizontalPosition", e)
                     layout.getHorizontalPosition(range.first, true)
                 }
                 val wordRight = try {
                     layout.getBoundingBox(range.last).right
                 } catch (e: Exception) {
+                    AppLogger.d(TAG, "歌词字符定位 getBoundingBox 失败，回退 getHorizontalPosition", e)
                     layout.getHorizontalPosition(range.last + 1, true)
                 }
 

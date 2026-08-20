@@ -6,8 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
-import com.lin0721.linmusic.core.log.AppLogger
-import com.lin0721.linmusic.core.log.CrashHandler
 import com.lin0721.linmusic.core.player.FloatingLyricService
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.core.ui.theme.MelodiaTheme
@@ -22,9 +20,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 初始化日志与崩溃收集系统
-        AppLogger.init(this)
-        CrashHandler.init(this)
         enableEdgeToEdge()
 
         // 监听悬浮歌词开关

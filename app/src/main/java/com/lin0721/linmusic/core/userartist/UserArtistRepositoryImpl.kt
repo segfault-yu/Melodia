@@ -1,9 +1,12 @@
 package com.lin0721.linmusic.core.userartist
 
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.core.network.AppError
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+
+private const val TAG = "UserArtistRepositoryImpl"
 
 class UserArtistRepositoryImpl(
     private val apiService: UserArtistApi
@@ -24,8 +27,8 @@ class UserArtistRepositoryImpl(
                     )
                 }
             }
-        } catch (_: Exception) {
-            // 网络失败或服务器返回空体，进入备用流程
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "已关注歌手接口失败，进入热门歌手备用流程", e)
         }
 
 
@@ -53,6 +56,7 @@ class UserArtistRepositoryImpl(
                 Result.failure(AppError.BizError(response.code, null))
             }
         } catch (e: Exception) {
+            AppLogger.e(TAG, "热门歌手兜底也失败", e)
             Result.failure(e)
         }
         emit(fallbackResult)

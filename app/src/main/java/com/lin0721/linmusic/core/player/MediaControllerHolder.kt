@@ -7,8 +7,12 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import com.lin0721.linmusic.core.log.AppLogger
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+private const val TAG = "MediaControllerHolder"
 
 // 持有与 MelodiaPlaybackService 的 MediaController 连接，收敛所有播放器指令下发
 class MediaControllerHolder(private val context: Context) {
@@ -39,10 +43,15 @@ class MediaControllerHolder(private val context: Context) {
             val factory = MediaController.Builder(context, sessionToken).buildAsync()
             factory.addListener(
                 {
-                    val mediaController = factory.get()
-                    mediaController.addListener(listener)
-                    onReady(mediaController)
-                    continuation.resume(mediaController)
+                    try {
+                        val mediaController = factory.get()
+                        mediaController.addListener(listener)
+                        onReady(mediaController)
+                        continuation.resume(mediaController)
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "MediaController 连接失败", e)
+                        continuation.resumeWithException(e)
+                    }
                 },
                 ContextCompat.getMainExecutor(context)
             )

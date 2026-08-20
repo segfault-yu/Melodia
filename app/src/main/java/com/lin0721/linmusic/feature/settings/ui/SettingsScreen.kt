@@ -243,7 +243,7 @@ private fun SubMenuContent(
             SettingsSubMenu.NETWORK -> NetworkSettingsView(viewModel)
             SettingsSubMenu.EXTENSIONS -> ExtensionsSettingsView(viewModel)
             SettingsSubMenu.LYRICS -> LyricsSettingsView(viewModel)
-            SettingsSubMenu.ABOUT -> AboutSettingsView()
+            SettingsSubMenu.ABOUT -> AboutSettingsView(viewModel)
         }
     }
 }

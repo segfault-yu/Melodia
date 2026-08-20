@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.core.network
 
+import com.lin0721.linmusic.core.log.AppLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
@@ -23,9 +24,13 @@ inline fun <T, R> apiFlow(
     } else if (code(response) == 301) {
         emit(Result.failure(AppError.Unauthorized))
     } else {
+        AppLogger.e("ApiFlow", "业务错误码 code=${code(response)} msg=${msg(response)}")
         emit(Result.failure(AppError.BizError(code(response), msg(response))))
     }
-}.catch { e -> emit(Result.failure(mapToAppError(e))) }
+}.catch { e ->
+    AppLogger.e("ApiFlow", "请求异常: ${e::class.simpleName}", e)
+    emit(Result.failure(mapToAppError(e)))
+}
 
 // 拦截器/序列化等非业务码异常统一映射为 AppError
 fun mapToAppError(e: Throwable): Throwable = when (e) {

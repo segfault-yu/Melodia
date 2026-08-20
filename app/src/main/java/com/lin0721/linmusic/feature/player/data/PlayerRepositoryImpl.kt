@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.feature.player.data
 
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.network.apiFlow
 import com.lin0721.linmusic.core.network.mapToAppError
@@ -9,6 +10,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+
+private const val TAG = "PlayerRepositoryImpl"
 
 class PlayerRepositoryImpl(
     private val apiService: PlayerApi
@@ -45,9 +48,16 @@ class PlayerRepositoryImpl(
                 }
             }
 
-            val detailResult = detailDeferred.await().getOrNull()
-            val wikiResult = wikiDeferred.await().getOrNull()
-            val creatorsResult = creatorsDeferred.await().getOrNull()
+            val detailOutcome = detailDeferred.await()
+            val wikiOutcome = wikiDeferred.await()
+            val creatorsOutcome = creatorsDeferred.await()
+            detailOutcome.exceptionOrNull()?.let { AppLogger.w(TAG, "getSongWiki 歌曲详情子请求失败 songId=$songId", it) }
+            wikiOutcome.exceptionOrNull()?.let { AppLogger.w(TAG, "getSongWiki 百科摘要子请求失败 songId=$songId", it) }
+            creatorsOutcome.exceptionOrNull()?.let { AppLogger.w(TAG, "getSongWiki 制作人员子请求失败 songId=$songId", it) }
+
+            val detailResult = detailOutcome.getOrNull()
+            val wikiResult = wikiOutcome.getOrNull()
+            val creatorsResult = creatorsOutcome.getOrNull()
 
             // 解析基础数据：专辑名与发行时间
             val albumName = detailResult?.songs?.firstOrNull()?.al?.name ?: ""
@@ -153,6 +163,7 @@ class PlayerRepositoryImpl(
             ))
         }
     }.catch { e ->
+        AppLogger.e(TAG, "getSongWiki 请求异常 songId=$songId", e)
         emit(Result.failure(mapToAppError(e)))
     }
 }

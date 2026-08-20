@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.userartist.UserArtistRepository
 import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
@@ -16,6 +17,8 @@ import com.lin0721.linmusic.core.network.toUserMessage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
+private const val TAG = "LibraryViewModel"
 
 enum class LibraryItemType {
     PLAYLIST, ARTIST, ALBUM
@@ -123,22 +126,30 @@ class LibraryViewModel(
             try {
                 // 1. 并行获取歌单
                 val playlistsDeferred = async {
-                    userPlaylistRepository.getUserPlaylists(profile.uid).firstOrNull()?.getOrNull() ?: emptyList()
+                    val result = userPlaylistRepository.getUserPlaylists(profile.uid).firstOrNull()
+                    result?.exceptionOrNull()?.let { AppLogger.w(TAG, "获取歌单列表失败", it) }
+                    result?.getOrNull() ?: emptyList()
                 }
 
                 // 2. 并行获取歌手
                 val artistsDeferred = async {
-                    userArtistRepository.getFavoriteArtists().firstOrNull()?.getOrNull() ?: emptyList()
+                    val result = userArtistRepository.getFavoriteArtists().firstOrNull()
+                    result?.exceptionOrNull()?.let { AppLogger.w(TAG, "获取收藏歌手失败", it) }
+                    result?.getOrNull() ?: emptyList()
                 }
 
                 // 3. 并行获取专辑
                 val albumsDeferred = async {
-                    libraryRepository.getCollectedAlbums().firstOrNull()?.getOrNull() ?: emptyList()
+                    val result = libraryRepository.getCollectedAlbums().firstOrNull()
+                    result?.exceptionOrNull()?.let { AppLogger.w(TAG, "获取收藏专辑失败", it) }
+                    result?.getOrNull() ?: emptyList()
                 }
 
                 // 4. 并行获取用户收藏统计数
                 val subcountDeferred = async {
-                    libraryRepository.getUserSubcount().firstOrNull()?.getOrNull()
+                    val result = libraryRepository.getUserSubcount().firstOrNull()
+                    result?.exceptionOrNull()?.let { AppLogger.w(TAG, "获取收藏统计数失败", it) }
+                    result?.getOrNull()
                 }
 
                 val playlists = playlistsDeferred.await()
@@ -215,6 +226,7 @@ class LibraryViewModel(
                 applyFilterAndSort()
 
             } catch (e: Exception) {
+                AppLogger.e(TAG, "音乐库加载最终失败 isRefresh=$isRefresh", e)
                 if (isRefresh) {
                     _toastEvent.emit(e.toUserMessage(resourceProvider))
                 } else {
