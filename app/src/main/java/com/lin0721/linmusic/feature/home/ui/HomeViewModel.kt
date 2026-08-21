@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.api.AccountInfoResponse
+import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
-import com.lin0721.linmusic.core.userartist.UserArtistRepository
 import com.lin0721.linmusic.feature.home.data.HomeRepository
+import com.lin0721.linmusic.feature.home.data.PersonalizedData
+import com.lin0721.linmusic.feature.home.domain.HomeCard
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 import com.lin0721.linmusic.R
@@ -28,12 +30,13 @@ import kotlinx.coroutines.launch
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
 
+private const val TAG = "HomeViewModel"
+
 // 首页 ViewModel
 class HomeViewModel(
     private val syncProfileAfterLoginUseCase: SyncProfileAfterLoginUseCase,
     private val playbackRepository: PlaybackRepository,
     private val homeRepository: HomeRepository,
-    private val userArtistRepository: UserArtistRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val resourceProvider: ResourceProvider
@@ -55,18 +58,19 @@ class HomeViewModel(
         }
     }
 
-    fun loadHomeData() {
+    fun loadHomeData(refresh: Boolean = false) {
         _uiState.value = HomeUiState.Loading
 
         viewModelScope.launch {
             try {
-                val playlistsDeferred = async {
-                    homeRepository.getPersonalizedPlaylists().first()
+                // 货架序列是整页主数据源，它失败才算整页失败；其余几项各自兜底不影响渲染
+                val blockPageDeferred = async {
+                    homeRepository.getHomeBlockPage(refresh = refresh).first()
                 }
 
-                val artistsDeferred = async {
-                    runCatching { userArtistRepository.getFavoriteArtists().first() }
-                        .getOrElse { Result.success(emptyList()) }
+                val playlistsDeferred = async {
+                    runCatching { homeRepository.getPersonalizedPlaylists().first() }
+                        .getOrDefault(Result.success(PersonalizedData()))
                 }
 
                 val recentDeferred = async {
@@ -84,30 +88,65 @@ class HomeViewModel(
                         .getOrDefault(Result.success(emptyList<ToplistInfo>()))
                 }
 
+                val blockPageResult = blockPageDeferred.await()
                 val playlistsResult = playlistsDeferred.await()
-                val artistsResult = artistsDeferred.await()
                 val recentResult = recentDeferred.await()
                 val dailySongsResult = dailySongsDeferred.await()
                 val toplistResult = toplistDeferred.await()
 
-                if (playlistsResult.isSuccess) {
+                val blockPage = blockPageResult.getOrNull()
+                if (blockPage != null) {
                     _uiState.value = HomeUiState.Success(
                         HomeFeedData(
-                            recommendPlaylists = playlistsResult.getOrThrow().playlists,
-                            favoriteArtists = artistsResult.getOrDefault(emptyList()),
+                            banners = blockPage.banners,
+                            shelves = blockPage.shelves,
+                            recommendPlaylists = playlistsResult.getOrNull()?.playlists.orEmpty(),
                             recentPlaylists = recentResult.getOrDefault(emptyList()),
                             dailySongs = dailySongsResult.getOrDefault(emptyList()),
-                            toplistItems = toplistResult.getOrDefault(emptyList())
+                            toplistItems = toplistResult.getOrDefault(emptyList()),
+                            nextCursor = blockPage.nextCursor,
+                            hasMore = blockPage.hasMore
                         )
                     )
                 } else {
                     _uiState.value = HomeUiState.Error(
-                        playlistsResult.exceptionOrNull()?.toUserMessage(resourceProvider)
+                        blockPageResult.exceptionOrNull()?.toUserMessage(resourceProvider)
                             ?: resourceProvider.getString(R.string.app_error_biz_default)
                     )
                 }
             } catch (e: Exception) {
                 _uiState.value = HomeUiState.Error(e.toUserMessage(resourceProvider))
+            }
+        }
+    }
+
+    // 滚到底时追加下一页货架。服务端目前只有两页，翻完 hasMore 即为 false
+    fun loadMoreShelves() {
+        val current = _uiState.value as? HomeUiState.Success ?: return
+        val cursor = current.data.nextCursor ?: return
+        if (current.data.isLoadingMore) return
+
+        _uiState.value = HomeUiState.Success(current.data.copy(isLoadingMore = true))
+
+        viewModelScope.launch {
+            val result = runCatching { homeRepository.getHomeBlockPage(cursor = cursor).first() }
+                .getOrNull()
+                ?.getOrNull()
+
+            val latest = _uiState.value as? HomeUiState.Success ?: return@launch
+            _uiState.value = if (result == null) {
+                // 追加失败不打断已渲染内容，仅收起加载态并停止继续翻页
+                AppLogger.w(TAG, "翻页失败，停止继续加载货架")
+                HomeUiState.Success(latest.data.copy(isLoadingMore = false, hasMore = false, nextCursor = null))
+            } else {
+                HomeUiState.Success(
+                    latest.data.copy(
+                        shelves = latest.data.shelves + result.shelves,
+                        nextCursor = result.nextCursor,
+                        hasMore = result.hasMore,
+                        isLoadingMore = false
+                    )
+                )
             }
         }
     }
@@ -134,6 +173,18 @@ class HomeViewModel(
         } else {
             viewModelScope.launch { _toastEvent.emit("每日推荐暂无歌曲") }
         }
+    }
+
+    // 播放货架里的单曲。区块页的 song 资源不含艺人字段，卡片描述行是「热门」「单曲上线」这类
+    // 榜单标签，拿它冒充艺人名会在播放条上显示错误信息，故宁可留空。
+    fun playShelfSong(song: HomeCard.Song) {
+        playSong(
+            songId = song.id,
+            title = song.title,
+            artist = "",
+            coverUrl = song.coverUrl,
+            playContext = "home_shelf"
+        )
     }
 
     fun togglePlayPause() {

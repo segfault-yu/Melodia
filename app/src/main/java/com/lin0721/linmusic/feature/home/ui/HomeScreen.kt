@@ -23,7 +23,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
-    onPlaylistClick: (Long) -> Unit = {},
+    onPlaylistClick: (Long, Boolean) -> Unit = { _, _ -> },
     onSearchClick: () -> Unit = {},
     onOpenSidebar: () -> Unit = {},
     onLoginScreenVisibilityChanged: (Boolean) -> Unit = {}
@@ -64,7 +64,9 @@ fun HomeScreen(
             onAvatarClick = onAvatarClick,
             onSearchClick = onSearchClick,
             onPlaylistClick = onPlaylistClick,
+            onSongClick = { song -> viewModel.playShelfSong(song) },
             onRetry = { viewModel.loadHomeData() },
+            onLoadMore = { viewModel.loadMoreShelves() },
             onIntelligenceClick = { viewModel.startIntelligenceMode() },
             onRoamingClick = { viewModel.startRoaming() }
         )

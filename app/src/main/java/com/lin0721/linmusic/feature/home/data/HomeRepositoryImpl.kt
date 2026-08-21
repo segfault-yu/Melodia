@@ -2,13 +2,22 @@ package com.lin0721.linmusic.feature.home.data
 
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.core.network.apiFlow
+import com.lin0721.linmusic.feature.home.domain.HomeBlockPage
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
+import com.lin0721.linmusic.feature.home.domain.toHomeBlockPage
 import kotlinx.coroutines.flow.Flow
 
 class HomeRepositoryImpl(
     private val apiService: HomeApi,
     private val contentFilter: ContentFilter
 ) : HomeRepository {
+
+    override fun getHomeBlockPage(refresh: Boolean, cursor: String): Flow<Result<HomeBlockPage>> = apiFlow(
+        request = { apiService.getHomeBlockPage(HomeBlockPageRequest(refresh = refresh, cursor = cursor)) },
+        isSuccess = { it.isSuccess && it.data != null },
+        code = { it.code },
+        transform = { it.data!!.toHomeBlockPage() }
+    )
 
     override fun getPersonalizedPlaylists(): Flow<Result<PersonalizedData>> = apiFlow(
         request = { apiService.getPersonalizedPlaylists() },

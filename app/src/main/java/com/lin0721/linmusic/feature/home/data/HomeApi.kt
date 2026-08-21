@@ -12,6 +12,13 @@ import retrofit2.http.POST
 // 首页/发现页相关的网易云 Retrofit 接口定义。
 interface HomeApi {
 
+    // 首页区块页：服务端编排好的货架序列，支持 cursor 翻页。
+    // 未登录也返回内容，只是不带个性化。必须走 eapi —— weapi 版本不下发 cursor，翻不了页。
+    @POST("/eapi/homepage/block/page")
+    suspend fun getHomeBlockPage(
+        @Body body: HomeBlockPageRequest = HomeBlockPageRequest()
+    ): HomeBlockPageResponse
+
     // 获取个性化推荐歌单（公开接口，无需登录）
     @POST("/eapi/personalized/playlist")
     suspend fun getPersonalizedPlaylists(

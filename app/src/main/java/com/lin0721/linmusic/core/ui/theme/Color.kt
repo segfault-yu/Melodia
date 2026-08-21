@@ -20,9 +20,6 @@ val ToastBackground = Color(0xFF2E2E2E)
 // 网页登录容器底色，与网页自身背景一致以避免键盘弹出时闪屏
 val WebLoginBackground = Color(0xFFF5F5F7)
 
-// 排行榜卡片底色，兼作其渐变蒙版的终点色
-val ToplistCardBackground = Color(0xFF1A1F2E)
-
 // 封面取色未命中缓存时的兜底主色，迷你播放器与全屏播放器共用以保证配色一致
 val FallbackDominant = Color(0xFF333333)
 val FallbackSecondary = Color(0xFF222222)
