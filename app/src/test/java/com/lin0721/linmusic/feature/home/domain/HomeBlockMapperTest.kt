@@ -1,8 +1,6 @@
 package com.lin0721.linmusic.feature.home.domain
 
-import com.lin0721.linmusic.feature.home.data.HomeBannerDto
 import com.lin0721.linmusic.feature.home.data.HomeBlockDto
-import com.lin0721.linmusic.feature.home.data.HomeBlockExtInfoDto
 import com.lin0721.linmusic.feature.home.data.HomeBlockPageData
 import com.lin0721.linmusic.feature.home.data.HomeCreativeDto
 import com.lin0721.linmusic.feature.home.data.HomeImageDto
@@ -37,13 +35,11 @@ class HomeBlockMapperTest {
     private fun block(
         code: String,
         blockUi: HomeUiElementDto? = null,
-        resources: List<HomeResourceDto> = emptyList(),
-        extInfo: HomeBlockExtInfoDto? = null
+        resources: List<HomeResourceDto> = emptyList()
     ) = HomeBlockDto(
         blockCode = code,
         uiElement = blockUi,
-        creatives = if (resources.isEmpty()) emptyList() else listOf(HomeCreativeDto(resources = resources)),
-        extInfo = extInfo
+        creatives = if (resources.isEmpty()) emptyList() else listOf(HomeCreativeDto(resources = resources))
     )
 
     private val playlistRes = HomeResourceDto(
@@ -233,24 +229,11 @@ class HomeBlockMapperTest {
     }
 
     @Test
-    fun `轮播图从BANNER区块的extInfo取出`() {
+    fun `轮播区块不参与货架渲染`() {
         val page = HomeBlockPageData(
-            blocks = listOf(
-                block(
-                    "HOMEPAGE_BANNER",
-                    extInfo = HomeBlockExtInfoDto(
-                        banners = listOf(
-                            HomeBannerDto("http://p1.music.126.net/b.jpg", "独家策划", 0, 3000, "https://y.music.163.com/g/x"),
-                            HomeBannerDto(null, "无图", 0, 3000, null)
-                        )
-                    )
-                )
-            )
+            blocks = listOf(block("HOMEPAGE_BANNER", ui(sub = "轮播"), listOf(playlistRes)))
         ).toHomeBlockPage()
 
-        val banner = page.banners.single()
-        assertEquals("独家策划", banner.typeTitle)
-        assertEquals("http://p1.music.126.net/b.jpg", banner.picUrl)
         assertTrue(page.shelves.isEmpty())
     }
 

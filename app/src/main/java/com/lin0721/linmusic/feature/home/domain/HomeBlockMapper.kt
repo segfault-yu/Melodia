@@ -16,26 +16,9 @@ private val ALBUM_ACTION = Regex("""orpheus://album/(\d+)""")
 // 把服务端下发的区块页拍平成货架列表。
 // 不认识的资源类型一律丢弃而非兜底渲染——首页宁可少一张卡，也不能出现点不动的死卡片。
 fun HomeBlockPageData.toHomeBlockPage(): HomeBlockPage {
-    val banners = blocks.firstOrNull { it.blockCode == BLOCK_BANNER }
-        ?.extInfo?.banners
-        ?.mapNotNull { dto ->
-            val pic = dto.pic?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            HomeBanner(
-                // 服务端未给稳定 banner 主键，用图片地址兜底保证 LazyList key 唯一
-                id = pic,
-                picUrl = pic,
-                typeTitle = dto.typeTitle.orEmpty(),
-                targetId = dto.targetId,
-                targetType = dto.targetType,
-                url = dto.url?.takeIf { it.isNotBlank() }
-            )
-        }
-        .orEmpty()
-
     val shelves = blocks.mapNotNull { it.toShelfOrNull() }
 
     return HomeBlockPage(
-        banners = banners,
         shelves = shelves,
         nextCursor = cursor?.takeIf { it.isNotBlank() && it != "null" },
         hasMore = hasMore

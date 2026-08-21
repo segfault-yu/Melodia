@@ -3,7 +3,6 @@ package com.lin0721.linmusic.feature.home.ui
 import com.lin0721.linmusic.feature.home.data.PersonalizedPlaylist
 import com.lin0721.linmusic.feature.home.data.RecentPlayItem
 import com.lin0721.linmusic.feature.home.data.DailySong
-import com.lin0721.linmusic.feature.home.domain.HomeBanner
 import com.lin0721.linmusic.feature.home.domain.HomeShelf
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 
@@ -19,7 +18,6 @@ sealed interface HomeUiState {
 
 // 首页聚合数据。货架序列由服务端编排下发，其余几项供顶部固定区块使用
 data class HomeFeedData(
-    val banners: List<HomeBanner> = emptyList(),
     val shelves: List<HomeShelf> = emptyList(),
     val recommendPlaylists: List<PersonalizedPlaylist> = emptyList(),
     val recentPlaylists: List<RecentPlayItem> = emptyList(),

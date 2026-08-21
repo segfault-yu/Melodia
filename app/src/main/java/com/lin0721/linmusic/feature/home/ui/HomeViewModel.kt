@@ -98,7 +98,6 @@ class HomeViewModel(
                 if (blockPage != null) {
                     _uiState.value = HomeUiState.Success(
                         HomeFeedData(
-                            banners = blockPage.banners,
                             shelves = blockPage.shelves,
                             recommendPlaylists = playlistsResult.getOrNull()?.playlists.orEmpty(),
                             recentPlaylists = recentResult.getOrDefault(emptyList()),

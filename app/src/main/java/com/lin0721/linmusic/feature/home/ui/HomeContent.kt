@@ -1,8 +1,10 @@
 package com.lin0721.linmusic.feature.home.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,16 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.distinctUntilChanged
 import com.lin0721.linmusic.core.auth.UserProfile
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.GradientStart
 import com.lin0721.linmusic.feature.home.domain.HomeCard
+import kotlinx.coroutines.flow.distinctUntilChanged
 
-// 顶部既有区块与货架各自处理左右边距，故外层容器不设横向 contentPadding。
-// 货架尤其不能由外层加 padding——横向滚动那种需要卡片能一直滑到屏幕边缘。
-
-// 首页信息流骨架：单个 LazyColumn 承载顶部固定区块与服务端下发的货架序列。
-// 货架内部两列是手写 Row，不能换成懒加载网格——嵌进 LazyColumn 会因无界高度约束崩溃。
+// 首页信息流骨架：单个 LazyColumn 承载顶栏与服务端下发的货架序列。
+// 货架内部两列是手写 Row，不能换成懒加载网格，嵌进 LazyColumn 会因无界高度约束崩溃。
 @Composable
 fun HomeContent(
     uiState: HomeUiState,
@@ -35,23 +37,29 @@ fun HomeContent(
     onRoamingClick: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    val feed = (uiState as? HomeUiState.Success)?.data
 
     LazyColumn(
         state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 180.dp)
     ) {
+        // 渐变铺在状态栏内边距之前，色彩才能顶到状态栏后面，顶栏不至于是一块死黑
         item {
-            TopGreetingBar(
-                userProfile = userProfile,
-                onLoginClick = onAvatarClick,
-                onSearchClick = onSearchClick
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(GradientStart, BackgroundDark)))
+                    .statusBarsPadding()
+            ) {
+                TopGreetingBar(
+                    userProfile = userProfile,
+                    onLoginClick = onAvatarClick,
+                    onSearchClick = onSearchClick
+                )
+                FilterPills()
+            }
         }
-
-        item { FilterPills() }
 
         when (uiState) {
             is HomeUiState.Loading -> item { LoadingIndicator() }
@@ -64,10 +72,9 @@ fun HomeContent(
                 val data = uiState.data
 
                 item {
-                    HomeBannerSection(
-                        banners = data.banners,
-                        onPlaylistClick = { onPlaylistClick(it, false) },
-                        modifier = Modifier.padding(horizontal = HomeEdgePadding)
+                    RecentPlaySection(
+                        items = data.recentPlaylists,
+                        onClick = { item -> onPlaylistClick(item.data.id, false) }
                     )
                 }
 
@@ -82,15 +89,6 @@ fun HomeContent(
                         onRadarClick = { onPlaylistClick(it, false) },
                         onRoamingClick = onRoamingClick
                     )
-                }
-
-                if (data.recentPlaylists.isNotEmpty()) {
-                    item {
-                        RecentPlaySection(
-                            items = data.recentPlaylists,
-                            onClick = { item -> onPlaylistClick(item.data.id, false) }
-                        )
-                    }
                 }
 
                 items(
@@ -118,7 +116,6 @@ fun HomeContent(
 
     // 翻页条件只能进 LaunchedEffect 的 key，不能塞进 snapshotFlow 的闭包——
     // uiState 是入参而非 State，闭包会一直捕获创建时那一份，翻页将永远触发不了。
-    val feed = (uiState as? HomeUiState.Success)?.data
     val canLoadMore = feed != null && feed.hasMore && !feed.isLoadingMore
 
     LaunchedEffect(listState, canLoadMore) {

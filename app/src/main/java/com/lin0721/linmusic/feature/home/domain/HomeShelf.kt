@@ -40,20 +40,8 @@ sealed interface HomeCard {
     ) : HomeCard
 }
 
-// 首页轮播图
-data class HomeBanner(
-    val id: String,
-    val picUrl: String,
-    val typeTitle: String,
-    // 站内资源 id，targetType 非站内类型时为 0
-    val targetId: Long,
-    val targetType: Int,
-    val url: String?
-)
-
 // 一页区块数据聚合后的结果
 data class HomeBlockPage(
-    val banners: List<HomeBanner>,
     val shelves: List<HomeShelf>,
     // 翻下一页用的游标，为 null 表示已到底
     val nextCursor: String?,

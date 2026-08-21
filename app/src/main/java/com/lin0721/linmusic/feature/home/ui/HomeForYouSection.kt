@@ -2,26 +2,24 @@ package com.lin0721.linmusic.feature.home.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shuffle
-import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.TrackChanges
+import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,25 +27,40 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import com.lin0721.linmusic.core.ui.theme.EntryDailyGradient
+import com.lin0721.linmusic.core.ui.theme.EntryHeartGradient
+import com.lin0721.linmusic.core.ui.theme.EntryHotGradient
+import com.lin0721.linmusic.core.ui.theme.EntryRadarGradient
+import com.lin0721.linmusic.core.ui.theme.EntryRoamingGradient
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.feature.home.data.PersonalizedPlaylist
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 
-// 为你推荐：五张固定入口卡，封面复用各数据源的首图
+private val EntryCardSize = 132.dp
+
+// 一个功能入口。这几个功能没有对应的封面资源，一律用策展色表达，
+// 不再从推荐歌单里借图——借来的封面跟点进去的功能毫无关系。
+private data class ForYouEntry(
+    val key: String,
+    val title: String,
+    val subtitle: String,
+    val icon: ImageVector,
+    val gradient: List<Color>,
+    val onClick: () -> Unit
+)
+
+// 为你推荐：功能入口横排。依赖具体歌单 id 的入口在拿不到 id 时直接不出现，
+// 避免出现点进去是无关内容的死入口。
 @Composable
 fun ForYouSection(
     dailySongs: List<DailySong>,
@@ -63,211 +76,147 @@ fun ForYouSection(
         toplists.firstOrNull { it.name.contains("热") } ?: toplists.firstOrNull()
     }
 
+    // 只认名字里带「雷达」的歌单，匹配不上就不放这个入口
     val radarPlaylist = remember(recommendPlaylists) {
-        recommendPlaylists.firstOrNull { it.name.contains("雷达") } ?: recommendPlaylists.firstOrNull()
+        recommendPlaylists.firstOrNull { it.name.contains("雷达") }
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        SectionHeader(title = "为你推荐", showAction = false)
-
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)
-        ) {
-            item {
-                val coverUrl = dailySongs.firstOrNull()?.al?.picUrl
-                ForYouCard(
+    val entries = remember(dailySongs, hotlist, radarPlaylist) {
+        buildList {
+            add(
+                ForYouEntry(
+                    key = "daily",
                     title = "每日推荐",
-                    subtitle = "专属歌曲每日更新",
-                    coverUrl = coverUrl,
-                    fallbackGradientColors = listOf(Color(0xFFE53935), Color(0xFFE35D5B)),
+                    subtitle = if (dailySongs.isEmpty()) "每天 6 点更新" else "${dailySongs.size} 首专属好歌",
+                    icon = Icons.Rounded.DateRange,
+                    gradient = EntryDailyGradient,
                     onClick = onDailyRecommendClick
                 )
-            }
-
-            item {
-                ForYouCard(
-                    title = "热歌榜",
-                    subtitle = "最热音乐随时听",
-                    coverUrl = hotlist?.coverUrl,
-                    fallbackGradientColors = listOf(Color(0xFFFFB300), Color(0xFFFBC02D)),
-                    onClick = { hotlist?.let { onHotlistClick(it.id) } }
+            )
+            hotlist?.let { list ->
+                add(
+                    ForYouEntry(
+                        key = "hot",
+                        title = "热歌榜",
+                        subtitle = "最热音乐随时听",
+                        icon = Icons.Rounded.Whatshot,
+                        gradient = EntryHotGradient,
+                        onClick = { onHotlistClick(list.id) }
+                    )
                 )
             }
-
-            item {
-                val coverUrl = recommendPlaylists.getOrNull(2)?.picUrl
-                ForYouCard(
+            add(
+                ForYouEntry(
+                    key = "heart",
                     title = "心动模式",
-                    subtitle = "开启智能红心电台",
-                    coverUrl = coverUrl,
-                    fallbackGradientColors = listOf(Color(0xFF8E24AA), Color(0xFFAB47BC)),
+                    subtitle = "智能红心电台",
+                    icon = Icons.Rounded.Favorite,
+                    gradient = EntryHeartGradient,
                     onClick = onIntelligenceClick
                 )
-            }
-
-            item {
-                ForYouCard(
-                    title = "私人雷达",
-                    subtitle = "根据喜好精准定制",
-                    coverUrl = radarPlaylist?.picUrl,
-                    fallbackGradientColors = listOf(Color(0xFF1E88E5), Color(0xFF42A5F5)),
-                    onClick = { radarPlaylist?.let { onRadarClick(it.id) } }
+            )
+            radarPlaylist?.let { list ->
+                add(
+                    ForYouEntry(
+                        key = "radar",
+                        title = "私人雷达",
+                        subtitle = "根据喜好定制",
+                        icon = Icons.Rounded.TrackChanges,
+                        gradient = EntryRadarGradient,
+                        onClick = { onRadarClick(list.id) }
+                    )
                 )
             }
-
-            item {
-                val coverUrl = recommendPlaylists.getOrNull(1)?.picUrl
-                ForYouCard(
+            add(
+                ForYouEntry(
+                    key = "roaming",
                     title = "音乐漫游",
                     subtitle = "无限探索相似歌曲",
-                    coverUrl = coverUrl,
-                    fallbackGradientColors = listOf(Color(0xFF43A047), Color(0xFF66BB6A)),
+                    icon = Icons.Rounded.Shuffle,
+                    gradient = EntryRoamingGradient,
                     onClick = onRoamingClick
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ForYouCard(
-    title: String,
-    subtitle: String,
-    coverUrl: String?,
-    fallbackGradientColors: List<Color>,
-    onClick: () -> Unit
-) {
-    val context = LocalContext.current
-
-    // 固化清晰封面的加载请求
-    val coverRequest = remember(coverUrl) {
-        if (!coverUrl.isNullOrBlank()) {
-            ImageRequest.Builder(context)
-                .data("$coverUrl?param=300y300")
-                .crossfade(true)
-                .build()
-        } else {
-            null
-        }
-    }
-    // 固化低清虚化背景的加载请求 (拉取 30x30 小图)
-    val blurBgRequest = remember(coverUrl) {
-        if (!coverUrl.isNullOrBlank()) {
-            ImageRequest.Builder(context)
-                .data("$coverUrl?param=30y30")
-                .crossfade(true)
-                .build()
-        } else {
-            null
-        }
-    }
-    val fallbackIcon = when (title) {
-        "每日推荐" -> Icons.Rounded.DateRange
-        "热歌榜" -> Icons.Rounded.Star
-        "心动模式" -> Icons.Rounded.Favorite
-        "私人雷达" -> Icons.Rounded.Search
-        "音乐漫游" -> Icons.Rounded.Shuffle
-        else -> Icons.Rounded.MusicNote
-    }
-
-    Box(
-        modifier = Modifier
-            .width(150.dp)
-            .height(210.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .clickable { onClick() }
-    ) {
-        // 底层模糊背景
-        if (blurBgRequest != null) {
-            AsyncImage(
-                model = blurBgRequest,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(8.dp)
-                    .graphicsLayer(alpha = 0.35f),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(colors = fallbackGradientColors))
             )
         }
+    }
 
-        // 上方 150dp 封面区
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .size(150.dp)
+    Column(modifier = Modifier.fillMaxWidth().padding(top = MelodiaSpacing.lg)) {
+        Text(
+            text = "为你推荐",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = HomeEdgePadding, end = HomeEdgePadding, bottom = 13.dp)
+        )
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = HomeEdgePadding),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (coverRequest != null) {
-                AsyncImage(
-                    model = coverRequest,
-                    contentDescription = title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
+            items(entries, key = { it.key }) { entry ->
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(colors = fallbackGradientColors))
-                )
-            }
+                        .size(EntryCardSize)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Brush.linearGradient(entry.gradient))
+                        .clickable { entry.onClick() }
+                ) {
+                    // 左上打一束高光，纯色块不至于平成一张色纸
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(Color.White.copy(alpha = 0.22f), Color.Transparent),
+                                    center = Offset.Zero,
+                                    radius = 300f
+                                )
+                            )
+                    )
 
-            if (coverUrl.isNullOrBlank()) {
-                Icon(
-                    imageVector = fallbackIcon,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.15f),
-                    modifier = Modifier
-                        .size(64.dp)
-                        .align(Alignment.BottomEnd)
-                        .offset(x = 8.dp, y = 8.dp)
-                )
-            }
+                    // 同一个图标放大压在右下角当水印，越出的部分由卡片圆角裁掉，做出纵深
+                    Icon(
+                        imageVector = entry.icon,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.15f),
+                        modifier = Modifier
+                            .size(94.dp)
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 24.dp, y = 20.dp)
+                    )
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(10.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color.Black.copy(alpha = 0.45f))
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = title,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(14.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Icon(
+                            imageVector = entry.icon,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(25.dp)
+                        )
+                        Column {
+                            Text(
+                                text = entry.title,
+                                color = Color.White,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = entry.subtitle,
+                                color = Color.White.copy(alpha = 0.75f),
+                                fontSize = 10.5.sp,
+                                lineHeight = 13.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 3.dp)
+                            )
+                        }
+                    }
+                }
             }
-        }
-
-        // 底部副标题区
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(60.dp)
-                .background(Color.Black.copy(alpha = 0.35f))
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                text = subtitle,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }

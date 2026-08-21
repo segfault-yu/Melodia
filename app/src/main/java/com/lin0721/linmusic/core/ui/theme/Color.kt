@@ -45,3 +45,11 @@ val LibraryBlueGreenGradient = listOf(
 
 // 已下载标识的翠绿色，取自上面渐变的终点色
 val DownloadedGreen = Color(0xFF10B981)
+
+// 首页功能入口的策展渐变。心动模式、音乐漫游这类功能本就没有对应封面，
+// 用固定色块表达
+val EntryDailyGradient = listOf(Color(0xFFE5484D), Color(0xFF8C1116))
+val EntryHotGradient = listOf(Color(0xFFF08C1A), Color(0xFF9C4A05))
+val EntryHeartGradient = listOf(Color(0xFFA33FC4), Color(0xFF4B1268))
+val EntryRadarGradient = listOf(Color(0xFF2F7FD6), Color(0xFF123F70))
+val EntryRoamingGradient = listOf(Color(0xFF3FAE5C), Color(0xFF175C2C))

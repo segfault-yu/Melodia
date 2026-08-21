@@ -37,7 +37,6 @@ data class HomeBlockDto(
     val showType: String = "",
     val uiElement: HomeUiElementDto? = null,
     val creatives: List<HomeCreativeDto> = emptyList(),
-    val extInfo: HomeBlockExtInfoDto? = null,
     val sort: Int = 0
 )
 
@@ -83,18 +82,3 @@ data class HomeLabelDto(
     val text: String? = null
 )
 
-// 仅 BANNER 一类 block 带 banners，其余 block 该节点为 null 或空对象
-@Serializable
-data class HomeBlockExtInfoDto(
-    val banners: List<HomeBannerDto> = emptyList()
-)
-
-@Serializable
-data class HomeBannerDto(
-    val pic: String? = null,
-    val typeTitle: String? = null,
-    val targetId: Long = 0,
-    // 1000=站内资源，3000=网页活动
-    val targetType: Int = 0,
-    val url: String? = null
-)
