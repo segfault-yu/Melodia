@@ -7,6 +7,7 @@ import com.lin0721.linmusic.feature.home.data.HomeUiElementDto
 
 private const val BLOCK_BANNER = "HOMEPAGE_BANNER"
 private const val BLOCK_DRAGON_BALL = "HOMEPAGE_BLOCK_OLD_DRAGON_BALL"
+private const val BLOCK_TOPLIST = "HOMEPAGE_BLOCK_TOPLIST"
 
 // orpheus://playlist/123 与 orpheus://album/123 两种站内跳转
 private val PLAYLIST_ACTION = Regex("""orpheus://playlist/(\d+)""")
@@ -55,7 +56,7 @@ private fun HomeBlockDto.toShelfOrNull(): HomeShelf? {
     return HomeShelf(
         blockCode = blockCode,
         title = title,
-        moreText = element.button?.text?.takeIf { it.isNotBlank() },
+        showRank = blockCode == BLOCK_TOPLIST,
         cards = cards
     )
 }

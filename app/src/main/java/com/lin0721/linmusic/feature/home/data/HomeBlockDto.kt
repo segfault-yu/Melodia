@@ -64,7 +64,6 @@ data class HomeUiElementDto(
     val subTitle: HomeTitleDto? = null,
     val description: String? = null,
     val image: HomeImageDto? = null,
-    val button: HomeButtonDto? = null,
     val labelTexts: List<String> = emptyList(),
     val labelText: HomeLabelDto? = null
 )
@@ -77,11 +76,6 @@ data class HomeTitleDto(
 @Serializable
 data class HomeImageDto(
     val imageUrl: String? = null
-)
-
-@Serializable
-data class HomeButtonDto(
-    val text: String? = null
 )
 
 @Serializable

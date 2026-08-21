@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.feature.home.domain.HomeCard
 
-// 货架与轮播自带左右边距，顶部既有区块各自已有内边距，故外层容器不设横向 contentPadding
-private val EdgePadding = 20.dp
+// 顶部既有区块与货架各自处理左右边距，故外层容器不设横向 contentPadding。
+// 货架尤其不能由外层加 padding——横向滚动那种需要卡片能一直滑到屏幕边缘。
 
 // 首页信息流骨架：单个 LazyColumn 承载顶部固定区块与服务端下发的货架序列。
 // 货架内部两列是手写 Row，不能换成懒加载网格——嵌进 LazyColumn 会因无界高度约束崩溃。
@@ -67,7 +67,7 @@ fun HomeContent(
                     HomeBannerSection(
                         banners = data.banners,
                         onPlaylistClick = { onPlaylistClick(it, false) },
-                        modifier = Modifier.padding(horizontal = EdgePadding)
+                        modifier = Modifier.padding(horizontal = HomeEdgePadding)
                     )
                 }
 
@@ -105,8 +105,7 @@ fun HomeContent(
                                 is HomeCard.Album -> onPlaylistClick(card.id, true)
                                 is HomeCard.Song -> onSongClick(card)
                             }
-                        },
-                        modifier = Modifier.padding(horizontal = EdgePadding)
+                        }
                     )
                 }
 

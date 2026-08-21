@@ -4,8 +4,8 @@ package com.lin0721.linmusic.feature.home.domain
 data class HomeShelf(
     val blockCode: String,
     val title: String,
-    // 服务端下发的「更多」按钮文案，缺省时不渲染入口
-    val moreText: String? = null,
+    // 榜单类货架在封面角标上显示名次，名次即卡片在货架内的次序
+    val showRank: Boolean = false,
     val cards: List<HomeCard>
 )
 

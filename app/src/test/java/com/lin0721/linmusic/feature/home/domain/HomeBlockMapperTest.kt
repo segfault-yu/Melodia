@@ -4,7 +4,6 @@ import com.lin0721.linmusic.feature.home.data.HomeBannerDto
 import com.lin0721.linmusic.feature.home.data.HomeBlockDto
 import com.lin0721.linmusic.feature.home.data.HomeBlockExtInfoDto
 import com.lin0721.linmusic.feature.home.data.HomeBlockPageData
-import com.lin0721.linmusic.feature.home.data.HomeButtonDto
 import com.lin0721.linmusic.feature.home.data.HomeCreativeDto
 import com.lin0721.linmusic.feature.home.data.HomeImageDto
 import com.lin0721.linmusic.feature.home.data.HomeLabelDto
@@ -12,6 +11,7 @@ import com.lin0721.linmusic.feature.home.data.HomeResourceDto
 import com.lin0721.linmusic.feature.home.data.HomeTitleDto
 import com.lin0721.linmusic.feature.home.data.HomeUiElementDto
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -24,14 +24,12 @@ class HomeBlockMapperTest {
         desc: String? = null,
         image: String? = "http://p1.music.126.net/cover.jpg",
         labels: List<String> = emptyList(),
-        label: String? = null,
-        button: String? = null
+        label: String? = null
     ) = HomeUiElementDto(
         mainTitle = main?.let { HomeTitleDto(it) },
         subTitle = sub?.let { HomeTitleDto(it) },
         description = desc,
         image = image?.let { HomeImageDto(it) },
-        button = button?.let { HomeButtonDto(it) },
         labelTexts = labels,
         labelText = label?.let { HomeLabelDto(it) }
     )
@@ -59,19 +57,34 @@ class HomeBlockMapperTest {
     fun `歌单区块映射为货架`() {
         val page = HomeBlockPageData(
             blocks = listOf(
-                block("HOMEPAGE_BLOCK_PLAYLIST_RCMD", ui(sub = "推荐歌单", button = "更多"), listOf(playlistRes))
+                block("HOMEPAGE_BLOCK_PLAYLIST_RCMD", ui(sub = "推荐歌单"), listOf(playlistRes))
             )
         ).toHomeBlockPage()
 
         assertEquals(1, page.shelves.size)
         val shelf = page.shelves.first()
         assertEquals("推荐歌单", shelf.title)
-        assertEquals("更多", shelf.moreText)
+        assertFalse(shelf.showRank)
 
         val card = shelf.cards.single() as HomeCard.Playlist
         assertEquals(7270961168L, card.id)
         assertEquals("音乐是唯一的解药", card.title)
         assertEquals("驾车 · 华语 · 安静", card.caption)
+    }
+
+    @Test
+    fun `排行榜区块标记名次`() {
+        val page = HomeBlockPageData(
+            blocks = listOf(
+                block(
+                    "HOMEPAGE_BLOCK_TOPLIST",
+                    ui(sub = "排行榜"),
+                    listOf(HomeResourceDto("song", "1", ui(main = "某歌", label = "热门"), null))
+                )
+            )
+        ).toHomeBlockPage()
+
+        assertTrue(page.shelves.single().showRank)
     }
 
     @Test
