@@ -10,6 +10,7 @@ import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.player.PlayMode
 import com.lin0721.linmusic.core.player.QueueItem
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -62,7 +63,7 @@ class PlaybackPreferences(private val context: Context) {
         runCatching { PlayMode.valueOf(name ?: "") }
             .onFailure { AppLogger.w(TAG, "播放模式反序列化失败 value=$name", it) }
             .getOrDefault(PlayMode.LIST_LOOP)
-    }
+    }.distinctUntilChanged()
 
     suspend fun savePlaybackState(state: PlaybackState) {
         context.dataStore.edit { prefs ->
