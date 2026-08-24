@@ -53,8 +53,9 @@ Thumbs.db
 .claude/worktrees/
 .superpowers/
 
-# 项目级 Agent 规范与阶段性规划文档，均为本地协作产物，不入库
+# 规划文档
 CLAUDE.md
 *_plan.md
 *_PLAN.md
 REFACTOR_ROADMAP.md
+RELEASE_SIGNING.md
