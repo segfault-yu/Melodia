@@ -1,0 +1,117 @@
+name: Release
+
+# 推送 v1.2.3 或 v1.2.3-beta.1/-rc.1 形式的 tag 时触发：正式签名构建 + 创建 GitHub Release
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 配置 JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: 配置 Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 从 tag 解析版本号
+        id: version
+        run: |
+          TAG_NAME=${GITHUB_REF_NAME#v}
+          BASE_VERSION=${TAG_NAME%%-*}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+          if ! [[ "$MAJOR" =~ ^[0-9]+$ && "$MINOR" =~ ^[0-9]+$ && "$PATCH" =~ ^[0-9]+$ ]]; then
+            echo "tag 格式不是 vMAJOR.MINOR.PATCH[-beta.N|-rc.N]：$GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+          # 预发布 tag 用 v1.2.3-beta.1 / v1.2.3-rc.1 形式，同一版本号下 beta < rc < 正式版，
+          # 保证 versionCode 严格递增，覆盖安装不会被系统当成降级拒绝
+          if [ "$TAG_NAME" = "$BASE_VERSION" ]; then
+            PRERELEASE=false
+            SUB_CODE=99
+          else
+            PRERELEASE=true
+            SUFFIX=${TAG_NAME#"$BASE_VERSION"-}
+            KIND=${SUFFIX%%.*}
+            NUM=${SUFFIX#*.}
+            if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
+              echo "预发布 tag 需要形如 v1.2.3-beta.1 的编号：$GITHUB_REF_NAME" >&2
+              exit 1
+            fi
+            case "$KIND" in
+              beta)
+                if [ "$NUM" -gt 49 ]; then
+                  echo "beta 编号超出上限 49：$NUM" >&2
+                  exit 1
+                fi
+                SUB_CODE=$NUM
+                ;;
+              rc)
+                if [ "$NUM" -gt 48 ]; then
+                  echo "rc 编号超出上限 48：$NUM" >&2
+                  exit 1
+                fi
+                SUB_CODE=$((50 + NUM))
+                ;;
+              *)
+                echo "不支持的预发布类型（仅支持 beta/rc）：$KIND" >&2
+                exit 1
+                ;;
+            esac
+          fi
+
+          VERSION_CODE=$(( (MAJOR * 10000 + MINOR * 100 + PATCH) * 100 + SUB_CODE ))
+          echo "name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: 写入签名 keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > melodia-release.jks
+
+      - name: Release 构建（正式签名）
+        env:
+          RELEASE_STORE_FILE: melodia-release.jks
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            -PreleaseVersionName=${{ steps.version.outputs.name }} \
+            -PreleaseVersionCode=${{ steps.version.outputs.code }} \
+            --no-daemon
+
+      # 四项签名 secret 缺任一项时 build.gradle.kts 会静默退回 debug 签名，此处必须拦截避免误发布
+      - name: 校验正式签名生效
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          OWNER=$(keytool -printcert -jarfile "$APK" | grep -m1 'Owner:')
+          echo "$OWNER"
+          if echo "$OWNER" | grep -qi "Android Debug"; then
+            echo "检测到 debug 签名，说明 RELEASE_* 四项 secret 未正确注入，已终止发布" >&2
+            exit 1
+          fi
+
+      - name: 清理 keystore
+        if: always()
+        run: rm -f melodia-release.jks
+
+      - name: 创建 GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          generate_release_notes: true
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          files: app/build/outputs/apk/release/app-release.apk

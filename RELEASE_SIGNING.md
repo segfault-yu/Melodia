@@ -36,9 +36,34 @@ RELEASE_KEY_PASSWORD=你的密钥密码
 
 ## CI 配置
 
-构建脚本对 `local.properties` 与环境变量同名读取，CI 侧只需注入这四个环境变量
-（GitHub Actions 用 Repository secrets）。keystore 本身建议以 base64 存为
-secret，在流水线里解码落盘后再指向它。
+`.github/workflows/release.yml` 在推送 `v*.*.*` 形式的 tag 时触发正式签名构建
+并发布 GitHub Release，需要在仓库 Settings → Secrets and variables → Actions
+下配置以下 4 个 Repository secrets：
+
+| Secret 名 | 内容 |
+|---|---|
+| `RELEASE_KEYSTORE_BASE64` | `melodia-release.jks` 的 base64 编码全文 |
+| `RELEASE_STORE_PASSWORD` | keystore 密码 |
+| `RELEASE_KEY_ALIAS` | 固定值 `melodia` |
+| `RELEASE_KEY_PASSWORD` | key 密码 |
+
+`RELEASE_KEYSTORE_BASE64` 在流水线里解码落盘为 `melodia-release.jks` 后，
+再以同名环境变量 `RELEASE_STORE_FILE`/`RELEASE_STORE_PASSWORD`/
+`RELEASE_KEY_ALIAS`/`RELEASE_KEY_PASSWORD` 注入给 `signingValue()` 读取，
+和本地 `local.properties` 走的是同一套读取逻辑。
+
+生成 base64（Windows）：
+
+```powershell
+certutil -encode melodia-release.jks keystore.b64
+```
+
+发布时只需：
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ## 注意
 
