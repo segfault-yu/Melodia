@@ -52,11 +52,14 @@ RELEASE_KEY_PASSWORD=你的密钥密码
 `RELEASE_KEY_ALIAS`/`RELEASE_KEY_PASSWORD` 注入给 `signingValue()` 读取，
 和本地 `local.properties` 走的是同一套读取逻辑。
 
-生成 base64（Windows）：
+生成 base64（Windows PowerShell，输出无换行的纯 base64，直接粘贴进 Secret 即可）：
 
 ```powershell
-certutil -encode melodia-release.jks keystore.b64
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("melodia-release.jks")) | Set-Clipboard
 ```
+
+（不要用 `certutil -encode`：它会在内容前后加 `-----BEGIN/END CERTIFICATE-----` 分隔行，
+不是合法 base64 字符，CI 侧解码会报 `base64: invalid input`。）
 
 发布时只需：
 

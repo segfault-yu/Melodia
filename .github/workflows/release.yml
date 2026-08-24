@@ -77,8 +77,14 @@ jobs:
           echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
 
+      # certutil -encode 会在内容前后包一层 -----BEGIN/END CERTIFICATE----- 分隔行，
+      # 这两行不是合法 base64 字符，grep 过滤掉再拼接解码，兼容两种生成方式
       - name: 写入签名 keystore
-        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > melodia-release.jks
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" \
+            | grep -v -- '-----BEGIN\|-----END' \
+            | tr -d '\r\n' \
+            | base64 -d > melodia-release.jks
 
       - name: Release 构建（正式签名）
         env:
