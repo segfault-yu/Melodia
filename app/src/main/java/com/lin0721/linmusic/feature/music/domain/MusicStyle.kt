@@ -31,8 +31,11 @@ data class StyleHead(
     val id: Long,
     val name: String,
     val enName: String,
+    // 曲风简介，服务端写的运营文案，比封顶的数量统计有信息量
+    val desc: String,
     val coverUrl: String?,
     val colorHex: String?,
+    // 热门曲风一律返回 999999+ / 1000+ 这类封顶值，展示前需判断是否为真实数字
     val songNum: String,
     val artistNum: String,
     // 该曲风下用户最爱的一首，未登录时为 null

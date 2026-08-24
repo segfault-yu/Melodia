@@ -54,6 +54,8 @@ fun StyleHeadDto.toStyleHead(): StyleHead = StyleHead(
     id = tagId,
     name = name,
     enName = enName.orEmpty(),
+    // 服务端文案里混有全角空格与换行，直接展示会在卡片上留下断行
+    desc = desc.orEmpty().replace('　', ' ').lines().joinToString(" ") { it.trim() }.trim(),
     coverUrl = cover.firstOrNull()?.takeIf { it.isNotBlank() },
     colorHex = colorDeep.normalizeHex(),
     songNum = songNum.orEmpty(),

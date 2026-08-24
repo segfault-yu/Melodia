@@ -179,6 +179,23 @@ class MusicMapperTest {
     }
 
     @Test
+    fun `简介压平换行与全角空格`() {
+        val head = StyleHeadDto(
+            tagId = 1,
+            name = "流行",
+            // 服务端文案里混有全角空格与换行，原样展示会在卡片上断行
+            desc = "解锁你的最佳流行推荐聚集地！\n流　行　音乐，是指那些结构短小的歌曲。 "
+        ).toStyleHead()
+
+        assertEquals("解锁你的最佳流行推荐聚集地！ 流 行 音乐，是指那些结构短小的歌曲。", head.desc)
+    }
+
+    @Test
+    fun `无简介时为空串而非null`() {
+        assertEquals("", StyleHeadDto(tagId = 1, name = "流行").toStyleHead().desc)
+    }
+
+    @Test
     fun `缺封面的歌单被丢弃`() {
         val items = listOf(
             StylePlaylistDto(id = 1, name = "有封面", cover = "http://c/1.jpg", playCount = 100),

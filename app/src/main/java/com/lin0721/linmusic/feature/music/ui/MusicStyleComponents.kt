@@ -47,6 +47,9 @@ internal val MusicEdgePadding = 20.dp
 // 服务端没给配色的曲风统一退回中性灰，不自行编一个色
 private val FallbackStyleColor = Color(0xFF4A4A4A)
 
+// 容得下标题加两行简介
+private val StyleHeaderHeight = 150.dp
+
 // 六位 hex 转 Color，脏值退回中性灰
 internal fun String?.toStyleColor(): Color {
     val hex = this ?: return FallbackStyleColor
@@ -63,7 +66,8 @@ fun MusicStyleChips(
     onSelect: (StyleSelection) -> Unit
 ) {
     LazyRow(
-        modifier = Modifier.fillMaxWidth(),
+        // 与上方的「全部 / 音乐 / 播客」隔开，两排胶囊贴在一起会分不清层级
+        modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
         contentPadding = PaddingValues(horizontal = MusicEdgePadding),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -252,7 +256,7 @@ fun MusicStyleHeader(head: StyleHead, onPlay: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MusicEdgePadding, vertical = 14.dp)
-            .height(132.dp)
+            .height(StyleHeaderHeight)
             .clip(RoundedCornerShape(14.dp))
             .background(Brush.linearGradient(listOf(accent, accent.copy(alpha = 0.4f))))
     ) {
@@ -260,7 +264,7 @@ fun MusicStyleHeader(head: StyleHead, onPlay: () -> Unit) {
             AsyncImage(
                 model = it,
                 contentDescription = head.name,
-                modifier = Modifier.fillMaxWidth().height(132.dp),
+                modifier = Modifier.fillMaxWidth().height(StyleHeaderHeight),
                 contentScale = ContentScale.Crop,
                 alpha = 0.42f
             )
@@ -278,22 +282,32 @@ fun MusicStyleHeader(head: StyleHead, onPlay: () -> Unit) {
             )
         }
 
-        Column(modifier = Modifier.align(Alignment.BottomStart).padding(14.dp)) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(14.dp)
+                // 给右下角的播放按钮让位，否则长简介会顶到按钮底下
+                .fillMaxWidth(0.82f)
+        ) {
             Text(
                 text = head.name,
                 color = Color.White,
                 fontSize = 23.sp,
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            val stats = listOfNotNull(
-                head.songNum.takeIf { it.isNotBlank() }?.let { "$it 首歌" },
-                head.artistNum.takeIf { it.isNotBlank() }?.let { "$it 位歌手" }
-            ).joinToString(" · ")
-            if (stats.isNotBlank()) {
+            // 简介优先；服务端对热门曲风的数量一律返回 999999+ 这类封顶值，
+            // 没有区分度，只有拿到真实数字才退回去展示
+            val subtitle = head.desc.takeIf { it.isNotBlank() } ?: head.realStatsOrEmpty()
+            if (subtitle.isNotBlank()) {
                 Text(
-                    text = stats,
+                    text = subtitle,
                     color = Color.White.copy(alpha = 0.82f),
                     fontSize = 11.5.sp,
+                    lineHeight = 16.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -318,6 +332,12 @@ fun MusicStyleHeader(head: StyleHead, onPlay: () -> Unit) {
         }
     }
 }
+
+// 带 + 的是服务端封顶值（999999+ / 1000+），各曲风都一样，展示了等于没说
+private fun StyleHead.realStatsOrEmpty(): String = listOfNotNull(
+    songNum.takeIf { it.isNotBlank() && !it.endsWith("+") }?.let { "$it 首歌" },
+    artistNum.takeIf { it.isNotBlank() && !it.endsWith("+") }?.let { "$it 位歌手" }
+).joinToString(" · ")
 
 // 「你在此曲风最爱」，未登录时上游不会传入。
 // 标签固定用品牌色而非曲风色：colorDeep 是给深底白字用的底色，当前景必然读不清
