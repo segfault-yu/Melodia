@@ -149,11 +149,15 @@ fun MelodiaApp() {
                     activePlaylistId = navigation.activePlaylistId,
                     activePlaylistIsAlbum = navigation.activePlaylistIsAlbum,
                     activeArtistId = navigation.activeArtistId,
+                    activeRadioId = navigation.activeRadioId,
+                    homeTab = navigation.homeTab,
                     searchAutoFocus = navigation.searchAutoFocus,
                     onOpenSidebar = { sidebar.open() },
                     onLoginScreenVisibilityChanged = { isLoginScreenVisible = it },
                     onNavigateToPlaylist = { id, isAlbum -> navigation.openPlaylist(id, isAlbum) },
                     onNavigateToArtist = { id -> navigation.openArtist(id) },
+                    onNavigateToRadio = { id -> navigation.openRadio(id) },
+                    onHomeTabSelected = { navigation.selectHomeTab(it) },
                     onNavigateToSearch = { navigation.openSearch(autoFocus = true) },
                     onBack = { navigation.navigateBack() }
                 )

@@ -9,7 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
 enum class Screen {
-    Home, Playlist, Search, Library, Settings, Artist
+    Home, Playlist, Search, Library, Settings, Artist, Radio
 }
 
 // 应用级导航状态：回退栈与各页面所需的跳转参数
@@ -29,6 +29,14 @@ class MelodiaNavigationState {
         private set
 
     var activeArtistId by mutableStateOf<Long?>(null)
+        private set
+
+    var activeRadioId by mutableStateOf<Long?>(null)
+        private set
+
+    // 主页三个 tab 的选中项。存在导航状态里而非 HomeScreen 内部——
+    // 页面切走时 HomeScreen 会离开 composition，记在里面的话从电台详情页退回来会跳回「全部」
+    var homeTab by mutableStateOf(0)
         private set
 
     var searchAutoFocus by mutableStateOf(false)
@@ -67,6 +75,15 @@ class MelodiaNavigationState {
     fun openArtist(id: Long) {
         activeArtistId = id
         navigateTo(Screen.Artist)
+    }
+
+    fun selectHomeTab(index: Int) {
+        homeTab = index
+    }
+
+    fun openRadio(id: Long) {
+        activeRadioId = id
+        navigateTo(Screen.Radio)
     }
 
     // 从主页搜索框进入时自动弹键盘，从底栏进入时展示发现内容

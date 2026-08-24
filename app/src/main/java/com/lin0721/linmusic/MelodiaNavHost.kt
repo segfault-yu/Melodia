@@ -23,11 +23,15 @@ fun MelodiaNavHost(
     activePlaylistId: Long?,
     activePlaylistIsAlbum: Boolean,
     activeArtistId: Long?,
+    activeRadioId: Long?,
+    homeTab: Int,
     searchAutoFocus: Boolean,
     onOpenSidebar: () -> Unit,
     onLoginScreenVisibilityChanged: (Boolean) -> Unit,
     onNavigateToPlaylist: (id: Long, isAlbum: Boolean) -> Unit,
     onNavigateToArtist: (Long) -> Unit,
+    onNavigateToRadio: (Long) -> Unit,
+    onHomeTabSelected: (Int) -> Unit,
     onNavigateToSearch: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -58,8 +62,11 @@ fun MelodiaNavHost(
             Screen.Home -> {
                 HomeScreen(
                     viewModel = homeViewModel,
+                    selectedTab = homeTab,
+                    onTabSelected = onHomeTabSelected,
                     onPlaylistClick = onNavigateToPlaylist,
                     onArtistClick = onNavigateToArtist,
+                    onRadioClick = onNavigateToRadio,
                     onSearchClick = onNavigateToSearch,
                     onOpenSidebar = onOpenSidebar,
                     onLoginScreenVisibilityChanged = onLoginScreenVisibilityChanged
@@ -96,6 +103,14 @@ fun MelodiaNavHost(
                 com.lin0721.linmusic.feature.settings.ui.SettingsScreen(
                     onBack = onBack
                 )
+            }
+            Screen.Radio -> {
+                activeRadioId?.let { id ->
+                    com.lin0721.linmusic.feature.podcast.ui.RadioDetailScreen(
+                        radioId = id,
+                        onBack = onBack
+                    )
+                }
             }
             Screen.Artist -> {
                 activeArtistId?.let { id ->

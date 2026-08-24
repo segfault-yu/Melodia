@@ -9,10 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,18 +19,25 @@ import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
 import com.lin0721.linmusic.feature.music.ui.MusicContent
 import com.lin0721.linmusic.feature.music.ui.MusicViewModel
+import com.lin0721.linmusic.feature.podcast.ui.PodcastContent
+import com.lin0721.linmusic.feature.podcast.ui.PodcastViewModel
 import org.koin.androidx.compose.koinViewModel
 
 private const val TAB_ALL = 0
 private const val TAB_MUSIC = 1
+private const val TAB_PODCAST = 2
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     musicViewModel: MusicViewModel = koinViewModel(),
+    podcastViewModel: PodcastViewModel = koinViewModel(),
+    selectedTab: Int = TAB_ALL,
+    onTabSelected: (Int) -> Unit = {},
     onPlaylistClick: (Long, Boolean) -> Unit = { _, _ -> },
     onArtistClick: (Long) -> Unit = {},
+    onRadioClick: (Long) -> Unit = {},
     onSearchClick: () -> Unit = {},
     onOpenSidebar: () -> Unit = {},
     onLoginScreenVisibilityChanged: (Boolean) -> Unit = {}
@@ -40,8 +45,8 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val musicUiState by musicViewModel.uiState.collectAsStateWithLifecycle()
+    val podcastUiState by podcastViewModel.uiState.collectAsStateWithLifecycle()
 
-    var selectedTab by rememberSaveable { mutableIntStateOf(TAB_ALL) }
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
 
@@ -62,9 +67,12 @@ fun HomeScreen(
         }
     }
 
-    // 曲风数据只在真正切到「音乐」时才拉
+    // 各 tab 的数据都等真正切过去才拉，避免拖慢「全部」的首屏
     LaunchedEffect(selectedTab) {
-        if (selectedTab == TAB_MUSIC) musicViewModel.loadIfNeeded()
+        when (selectedTab) {
+            TAB_MUSIC -> musicViewModel.loadIfNeeded()
+            TAB_PODCAST -> podcastViewModel.loadIfNeeded()
+        }
     }
 
     val onAvatarClick: () -> Unit = {
@@ -85,7 +93,7 @@ fun HomeScreen(
                 uiState = musicUiState,
                 userProfile = userProfile,
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
+                onTabSelected = onTabSelected,
                 onAvatarClick = onAvatarClick,
                 onSearchClick = onSearchClick,
                 onStyleSelect = { musicViewModel.selectStyle(it) },
@@ -101,11 +109,24 @@ fun HomeScreen(
                 onRetry = { musicViewModel.loadStyles() }
             )
 
+            TAB_PODCAST -> PodcastContent(
+                uiState = podcastUiState,
+                userProfile = userProfile,
+                selectedTab = selectedTab,
+                onTabSelected = onTabSelected,
+                onAvatarClick = onAvatarClick,
+                onSearchClick = onSearchClick,
+                onCategorySelect = { podcastViewModel.selectCategory(it) },
+                onProgramClick = { podcastViewModel.playProgramAt(it) },
+                onRadioClick = { onRadioClick(it.id) },
+                onRetry = { podcastViewModel.loadFeed() }
+            )
+
             else -> HomeContent(
                 uiState = uiState,
                 userProfile = userProfile,
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
+                onTabSelected = onTabSelected,
                 onAvatarClick = onAvatarClick,
                 onSearchClick = onSearchClick,
                 onPlaylistClick = onPlaylistClick,

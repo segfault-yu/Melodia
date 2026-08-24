@@ -6,6 +6,8 @@ import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
 import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.feature.create.data.CreateRepository
 import com.lin0721.linmusic.feature.create.data.CreateRepositoryImpl
+import com.lin0721.linmusic.feature.podcast.data.PodcastRepository
+import com.lin0721.linmusic.feature.podcast.data.PodcastRepositoryImpl
 import com.lin0721.linmusic.feature.music.data.MusicRepository
 import com.lin0721.linmusic.feature.music.data.MusicRepositoryImpl
 import com.lin0721.linmusic.feature.home.data.HomeRepository
@@ -50,6 +52,7 @@ val repositoryModule = module {
     // 首页数据仓储（feature/home）
     singleOf(::HomeRepositoryImpl) { bind<HomeRepository>() }
     singleOf(::MusicRepositoryImpl) { bind<MusicRepository>() }
+    singleOf(::PodcastRepositoryImpl) { bind<PodcastRepository>() }
 
     // 搜索数据仓储（feature/search）
     singleOf(::SearchRepositoryImpl) { bind<SearchRepository>() }
