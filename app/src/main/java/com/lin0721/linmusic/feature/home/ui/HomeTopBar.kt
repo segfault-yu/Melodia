@@ -103,11 +103,10 @@ fun TopGreetingBar(
 
 // 内容类型筛选胶囊，选中态仅作用于本地 UI
 @Composable
-fun FilterPills() {
-    var selectedIndex by remember { mutableStateOf(0) }
+fun FilterPills(selectedIndex: Int, onSelected: (Int) -> Unit) {
     FilterChipsRow(
         items = listOf("全部", "音乐", "播客"),
         selectedIndex = selectedIndex,
-        onSelected = { selectedIndex = it }
+        onSelected = onSelected
     )
 }

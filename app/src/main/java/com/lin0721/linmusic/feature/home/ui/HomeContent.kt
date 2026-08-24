@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun HomeContent(
     uiState: HomeUiState,
     userProfile: UserProfile?,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onAvatarClick: () -> Unit,
     onSearchClick: () -> Unit,
     onPlaylistClick: (Long, Boolean) -> Unit,
@@ -57,7 +59,7 @@ fun HomeContent(
                     onLoginClick = onAvatarClick,
                     onSearchClick = onSearchClick
                 )
-                FilterPills()
+                FilterPills(selectedIndex = selectedTab, onSelected = onTabSelected)
             }
         }
 

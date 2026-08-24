@@ -59,6 +59,7 @@ fun MelodiaNavHost(
                 HomeScreen(
                     viewModel = homeViewModel,
                     onPlaylistClick = onNavigateToPlaylist,
+                    onArtistClick = onNavigateToArtist,
                     onSearchClick = onNavigateToSearch,
                     onOpenSidebar = onOpenSidebar,
                     onLoginScreenVisibilityChanged = onLoginScreenVisibilityChanged
