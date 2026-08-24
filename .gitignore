@@ -27,6 +27,7 @@ local.properties
 *.keystore
 *.jks
 *.pepk
+*.b64
 
 # 编译生成的打包文件
 *.apk
@@ -50,6 +51,7 @@ Thumbs.db
 # Claude Code 的本地配置与子代理工作树
 .claude/settings.local.json
 .claude/worktrees/
+.superpowers/
 
 # 项目级 Agent 规范与阶段性规划文档，均为本地协作产物，不入库
 CLAUDE.md
