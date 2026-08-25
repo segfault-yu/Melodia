@@ -3,6 +3,7 @@ package com.lin0721.linmusic.feature.podcast.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.R
+import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.network.toUserMessage
@@ -23,6 +24,7 @@ private const val TAG = "PodcastViewModel"
 class PodcastViewModel(
     private val podcastRepository: PodcastRepository,
     private val playerManager: PlayerManager,
+    private val userPreferences: UserPreferences,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -44,8 +46,16 @@ class PodcastViewModel(
                 val categoriesDeferred = async {
                     runCatching { podcastRepository.getCategories().first() }.getOrDefault(Result.success(emptyList()))
                 }
+                // 该接口未登录也会返回内容，但那是通用推荐而非个性化。
+                // 顶着「根据你的收听」展示给未登录用户是假话，故未登录时直接不请求。
+                val isLoggedIn = userPreferences.userProfile.first() != null
                 val personalizedDeferred = async {
-                    runCatching { podcastRepository.getPersonalizedRadios().first() }.getOrDefault(Result.success(emptyList()))
+                    if (!isLoggedIn) {
+                        Result.success(emptyList())
+                    } else {
+                        runCatching { podcastRepository.getPersonalizedRadios().first() }
+                            .getOrDefault(Result.success(emptyList()))
+                    }
                 }
                 val recommendDeferred = async {
                     runCatching { podcastRepository.getRecommendRadios().first() }.getOrDefault(Result.success(emptyList()))
