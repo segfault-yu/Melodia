@@ -35,7 +35,9 @@ sealed interface RadioDetailUiState {
         val detail: PodcastRadioDetail,
         val programs: List<PodcastProgram>,
         val isLoadingMore: Boolean = false,
-        val hasMore: Boolean = false
+        val hasMore: Boolean = false,
+        // 订阅请求进行中，按钮置为等待态防止连点
+        val isSubscribing: Boolean = false
     ) : RadioDetailUiState
 
     data class Error(val message: String) : RadioDetailUiState

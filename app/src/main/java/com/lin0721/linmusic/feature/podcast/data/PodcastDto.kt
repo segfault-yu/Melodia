@@ -163,6 +163,20 @@ data class PodcastRadioDetailRequest(
     val id: Long
 )
 
+// 订阅与取消订阅共用同一请求体，靠不同路径区分
+@Serializable
+data class PodcastSubscribeRequest(
+    val id: Long
+)
+
+// 未登录调用同样返回 code 200，故不能仅凭它判定订阅成功，调用前必须先校验登录态
+@Serializable
+data class PodcastSubscribeResponse(
+    val code: Int = 0
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
 @Serializable
 data class PodcastProgramListRequest(
     val radioId: Long,

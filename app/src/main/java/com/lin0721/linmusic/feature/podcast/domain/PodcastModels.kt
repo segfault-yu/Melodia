@@ -42,5 +42,6 @@ data class PodcastRadioDetail(
     val programCount: Int,
     val subCount: Long,
     val djName: String,
-    val djAvatarUrl: String
+    val djAvatarUrl: String,
+    val subscribed: Boolean
 )

@@ -57,6 +57,16 @@ class PodcastRepositoryImpl(
         transform = { it.data!!.toPodcastRadioDetail() }
     )
 
+    override fun setRadioSubscribed(radioId: Long, subscribe: Boolean): Flow<Result<Unit>> = apiFlow(
+        request = {
+            val body = PodcastSubscribeRequest(radioId)
+            if (subscribe) apiService.subscribeRadio(body) else apiService.unsubscribeRadio(body)
+        },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { }
+    )
+
     override fun getRadioPrograms(radioId: Long, offset: Int): Flow<Result<List<PodcastProgram>>> = apiFlow(
         request = { apiService.getRadioPrograms(PodcastProgramListRequest(radioId = radioId, offset = offset)) },
         isSuccess = { it.isSuccess },

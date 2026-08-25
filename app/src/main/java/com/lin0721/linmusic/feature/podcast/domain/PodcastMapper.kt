@@ -62,5 +62,6 @@ fun PodcastRadioDetailDto.toPodcastRadioDetail(): PodcastRadioDetail = PodcastRa
     programCount = programCount,
     subCount = subCount,
     djName = dj?.nickname.orEmpty(),
-    djAvatarUrl = dj?.avatarUrl.orEmpty()
+    djAvatarUrl = dj?.avatarUrl.orEmpty(),
+    subscribed = subed
 )

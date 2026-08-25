@@ -43,6 +43,18 @@ interface PodcastApi {
         @Body body: PodcastRadioDetailRequest
     ): PodcastRadioDetailResponse
 
+    // 订阅电台（需登录）
+    @POST("/eapi/djradio/sub")
+    suspend fun subscribeRadio(
+        @Body body: PodcastSubscribeRequest
+    ): PodcastSubscribeResponse
+
+    // 取消订阅（需登录）
+    @POST("/eapi/djradio/unsub")
+    suspend fun unsubscribeRadio(
+        @Body body: PodcastSubscribeRequest
+    ): PodcastSubscribeResponse
+
     // 电台下的节目列表，一次 30 条
     @POST("/eapi/dj/program/byradio")
     suspend fun getRadioPrograms(

@@ -1,6 +1,7 @@
 package com.lin0721.linmusic.feature.podcast.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.home.ui.ErrorContent
@@ -69,6 +71,10 @@ fun RadioDetailScreen(
     val listState = rememberLazyListState()
 
     LaunchedEffect(radioId) { viewModel.load(radioId) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.toastEvent.collect { ToastManager.showToast(it) }
+    }
 
     val success = uiState as? RadioDetailUiState.Success
     val canLoadMore = success != null && success.hasMore && !success.isLoadingMore
@@ -101,7 +107,14 @@ fun RadioDetailScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 180.dp)
             ) {
-                item { RadioDetailHeader(detail = state.detail, onPlayLatest = { viewModel.playAt(0) }) }
+                item {
+                    RadioDetailHeader(
+                        detail = state.detail,
+                        isSubscribing = state.isSubscribing,
+                        onPlayLatest = { viewModel.playAt(0) },
+                        onToggleSubscribe = { viewModel.toggleSubscribe() }
+                    )
+                }
 
                 item {
                     PodcastSectionTitle("全部节目", "${state.detail.programCount} 期")
@@ -153,7 +166,12 @@ fun RadioDetailScreen(
 }
 
 @Composable
-private fun RadioDetailHeader(detail: PodcastRadioDetail, onPlayLatest: () -> Unit) {
+private fun RadioDetailHeader(
+    detail: PodcastRadioDetail,
+    isSubscribing: Boolean,
+    onPlayLatest: () -> Unit,
+    onToggleSubscribe: () -> Unit
+) {
     var descExpanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -269,6 +287,39 @@ private fun RadioDetailHeader(detail: PodcastRadioDetail, onPlayLatest: () -> Un
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 7.dp)
                 )
+            }
+
+            // 已订阅用描边、未订阅用实心，两态在深色底上都能看清
+            Box(
+                modifier = Modifier
+                    .padding(start = 10.dp)
+                    .height(40.dp)
+                    .clip(CircleShape)
+                    .then(
+                        if (detail.subscribed) {
+                            Modifier.border(1.dp, Color.White.copy(alpha = 0.28f), CircleShape)
+                        } else {
+                            Modifier.background(Color.White.copy(alpha = 0.14f))
+                        }
+                    )
+                    .clickable(enabled = !isSubscribing) { onToggleSubscribe() }
+                    .padding(horizontal = 18.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSubscribing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                } else {
+                    Text(
+                        text = if (detail.subscribed) "已订阅" else "订阅",
+                        color = if (detail.subscribed) Color(0xFFBDBDBD) else Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
