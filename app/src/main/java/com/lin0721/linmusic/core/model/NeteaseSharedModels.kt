@@ -21,7 +21,10 @@ data class Artist(
 data class Album(
     val id: Long = 0,
     val name: String = "",
-    val picUrl: String = ""
+    val picUrl: String = "",
+    // 仅专辑搜索结果（cloudsearch type=10）下发，歌曲内嵌 al 字段中不含此二项，已真机核实
+    val artists: List<Artist> = emptyList(),
+    val publishTime: Long = 0
 )
 
 @Serializable
@@ -58,7 +61,9 @@ data class PlaylistDetail(
     val playCount: Long = 0,
     val subscribed: Boolean = false,
     val creator: PlaylistCreator? = null,
-    val tracks: List<Track> = emptyList()
+    val tracks: List<Track> = emptyList(),
+    // 仅歌单搜索结果（cloudsearch type=1000）下发，详情接口里 tracks 本身已能反映曲目数，此字段该场景不下发，已真机核实
+    val trackCount: Int = 0
 )
 
 // 歌手领域模型，artist/player/home 等多域共用
@@ -91,6 +96,21 @@ data class ArtistAlbum(
     val picUrl: String = "",
     val publishTime: Long = 0,
     val size: Int = 0
+)
+
+// 歌手 MV 载荷模型；封面/播放量字段名未经真机数据验证，用 JsonNames 兜底常见别名
+@Serializable
+data class ArtistMv(
+    val id: Long = 0,
+    val name: String = "",
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    @JsonNames("imgurl16v9", "imgurl", "cover")
+    val cover: String = "",
+    val duration: Long = 0,
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    @JsonNames("playCount", "playcount")
+    val playCount: Long = 0,
+    val publishTime: String = ""
 )
 
 // ======================= 评论载荷模型（core/comment 产出，player/playlist 消费）=======================

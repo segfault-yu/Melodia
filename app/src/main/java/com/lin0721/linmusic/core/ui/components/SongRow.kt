@@ -49,7 +49,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
-// 歌曲行的轻量 UI 数据模型，各调用方把自己的领域模型（Track/QueueItem/SearchSong 等）映射到这里
+// 歌曲行的轻量 UI 数据模型，各调用方把自己的领域模型（Track/QueueItem 等）映射到这里
 data class SongRowData(
     val id: Long,
     val title: String,

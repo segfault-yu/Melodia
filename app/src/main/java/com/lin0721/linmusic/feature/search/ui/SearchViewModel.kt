@@ -4,14 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
 import com.lin0721.linmusic.core.auth.UserProfile
-import com.lin0721.linmusic.feature.search.data.SearchSong
-import com.lin0721.linmusic.feature.search.data.SearchRepository
-import com.lin0721.linmusic.feature.search.domain.HotSearch
-import com.lin0721.linmusic.feature.search.domain.PlaylistTag
-import com.lin0721.linmusic.core.player.PlayerManager
-import com.lin0721.linmusic.core.player.QueueItem
+import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.network.toUserMessage
+import com.lin0721.linmusic.core.player.PlayerManager
+import com.lin0721.linmusic.core.player.QueueItem
+import com.lin0721.linmusic.feature.search.data.SearchHistoryPreferences
+import com.lin0721.linmusic.feature.search.data.SearchRepository
+import com.lin0721.linmusic.feature.search.domain.SearchResultItem
+import com.lin0721.linmusic.feature.search.domain.SearchType
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -26,16 +27,9 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class SearchUiState(
-    val isLoading: Boolean = true,
-    val defaultKeyword: String = "搜索你想听的",
-    val hotSearches: List<HotSearch> = emptyList(),
-    val playlistTags: List<PlaylistTag> = emptyList(),
-    val error: String? = null
-)
-
 class SearchViewModel(
     private val repository: SearchRepository,
+    private val historyPreferences: SearchHistoryPreferences,
     val playerManager: PlayerManager,
     userPreferences: UserPreferences,
     private val resourceProvider: ResourceProvider
@@ -44,29 +38,32 @@ class SearchViewModel(
     val userProfile: StateFlow<UserProfile?> = userPreferences.userProfile
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    private val _uiState = MutableStateFlow(SearchUiState())
-    val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+    val history: StateFlow<List<String>> = historyPreferences.history
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _query = MutableStateFlow("")
-    val query: StateFlow<String> = _query.asStateFlow()
+    private val _discoveryState = MutableStateFlow<DiscoveryUiState>(DiscoveryUiState.Loading)
+    val discoveryState: StateFlow<DiscoveryUiState> = _discoveryState.asStateFlow()
 
-    private val _isSearching = MutableStateFlow(false)
-    val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
+    private val _inputState = MutableStateFlow(SearchInputState())
+    val inputState: StateFlow<SearchInputState> = _inputState.asStateFlow()
 
-    private val _searchResults = MutableStateFlow<List<SearchSong>>(emptyList())
-    val searchResults: StateFlow<List<SearchSong>> = _searchResults.asStateFlow()
+    private val _isSearchActive = MutableStateFlow(false)
+    val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
 
-    private val _searchLoading = MutableStateFlow(false)
-    val searchLoading: StateFlow<Boolean> = _searchLoading.asStateFlow()
+    private val _selectedType = MutableStateFlow(SearchType.SONG)
+    val selectedType: StateFlow<SearchType> = _selectedType.asStateFlow()
 
-    private val _hasMore = MutableStateFlow(false)
-    val hasMore: StateFlow<Boolean> = _hasMore.asStateFlow()
+    private val _resultsByType: Map<SearchType, MutableStateFlow<SearchResultsUiState>> =
+        SearchType.entries.associateWith { MutableStateFlow(SearchResultsUiState.Idle) }
+    val resultsByType: Map<SearchType, StateFlow<SearchResultsUiState>> = _resultsByType
 
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
+    // 各 Tab 独立维护的分页 offset，按接口原始返回条数推进（见 SearchPageResult.rawFetchedCount 注释）
+    private val offsetByType = mutableMapOf<SearchType, Int>()
     private var searchJob: Job? = null
-    private var currentOffset = 0
+    private var suggestJob: Job? = null
 
     init {
         loadDiscoveryData()
@@ -74,95 +71,172 @@ class SearchViewModel(
 
     private fun loadDiscoveryData() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _discoveryState.value = DiscoveryUiState.Loading
 
             val keywordDeferred = async { repository.getDefaultSearchKeyword().firstOrNull() }
             val hotSearchDeferred = async { repository.getHotSearches().firstOrNull() }
             val tagsDeferred = async { repository.getPlaylistTags().firstOrNull() }
 
-            val defaultKeyword = keywordDeferred.await()?.getOrNull() ?: "搜索你想听的"
-            val hotSearches = hotSearchDeferred.await()?.getOrNull() ?: emptyList()
-            val playlistTags = tagsDeferred.await()?.getOrNull() ?: emptyList()
+            val keywordResult = keywordDeferred.await()
+            val hotSearchResult = hotSearchDeferred.await()
+            val tagsResult = tagsDeferred.await()
 
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                defaultKeyword = defaultKeyword,
-                hotSearches = hotSearches,
-                playlistTags = playlistTags
+            val failures = listOfNotNull(keywordResult, hotSearchResult, tagsResult).mapNotNull { it.exceptionOrNull() }
+            val allFailed = keywordResult?.getOrNull() == null &&
+                hotSearchResult?.getOrNull() == null &&
+                tagsResult?.getOrNull() == null
+
+            if (allFailed && failures.isNotEmpty()) {
+                _discoveryState.value = DiscoveryUiState.Error(failures.first().toUserMessage(resourceProvider))
+                return@launch
+            }
+
+            _discoveryState.value = DiscoveryUiState.Success(
+                defaultKeyword = keywordResult?.getOrNull() ?: "搜索你想听的",
+                hotSearches = hotSearchResult?.getOrNull() ?: emptyList(),
+                playlistTags = tagsResult?.getOrNull() ?: emptyList()
             )
-        }
-    }
-
-    fun updateQuery(newQuery: String) {
-        _query.value = newQuery
-        searchJob?.cancel()
-        if (newQuery.isBlank()) {
-            _searchResults.value = emptyList()
-            _hasMore.value = false
-            return
-        }
-        searchJob = viewModelScope.launch {
-            delay(400)
-            performSearch(newQuery, isLoadMore = false)
-        }
-    }
-
-    fun searchWithKeyword(keyword: String) {
-        _isSearching.value = true
-        _query.value = keyword
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            performSearch(keyword, isLoadMore = false)
+            failures.firstOrNull()?.let { _toastEvent.emit(it.toUserMessage(resourceProvider)) }
         }
     }
 
     fun activateSearch() {
-        _isSearching.value = true
+        _isSearchActive.value = true
     }
 
     fun deactivateSearch() {
-        _isSearching.value = false
-        _query.value = ""
-        _searchResults.value = emptyList()
-        _hasMore.value = false
-        searchJob?.cancel()
+        _isSearchActive.value = false
+        resetSearchState()
     }
 
-    private suspend fun performSearch(keyword: String, isLoadMore: Boolean) {
-        if (!isLoadMore) {
-            currentOffset = 0
-            _searchLoading.value = true
+    private fun resetSearchState() {
+        searchJob?.cancel()
+        suggestJob?.cancel()
+        _inputState.value = SearchInputState()
+        offsetByType.clear()
+        _resultsByType.values.forEach { it.value = SearchResultsUiState.Idle }
+    }
+
+    fun updateQuery(newQuery: String) {
+        _inputState.value = _inputState.value.copy(query = newQuery)
+        searchJob?.cancel()
+        suggestJob?.cancel()
+
+        if (newQuery.isBlank()) {
+            _inputState.value = _inputState.value.copy(isSuggesting = false, suggestions = emptyList())
+            offsetByType.clear()
+            _resultsByType.values.forEach { it.value = SearchResultsUiState.Idle }
+            return
         }
-        repository.searchSongs(keyword, offset = currentOffset).firstOrNull()?.let { result ->
-            result.onSuccess { data ->
-                if (isLoadMore) {
-                    _searchResults.value = _searchResults.value + data.songs
-                } else {
-                    _searchResults.value = data.songs
-                }
-                currentOffset += data.songs.size
-                _hasMore.value = data.hasMore
-            }.onFailure { error ->
-                _toastEvent.emit(error.toUserMessage(resourceProvider))
+
+        _inputState.value = _inputState.value.copy(isSuggesting = true)
+        suggestJob = viewModelScope.launch {
+            delay(300)
+            repository.getSuggestions(newQuery).firstOrNull()?.onSuccess { suggestions ->
+                _inputState.value = _inputState.value.copy(suggestions = suggestions)
             }
         }
-        _searchLoading.value = false
+
+        searchJob = viewModelScope.launch {
+            delay(400)
+            offsetByType.clear()
+            runSearch(newQuery, _selectedType.value, isLoadMore = false)
+        }
+    }
+
+    // 明确提交搜索：选中联想词 / 历史词 / 热搜词，写入历史并立即执行（不走防抖）
+    fun searchWithKeyword(keyword: String) {
+        searchJob?.cancel()
+        suggestJob?.cancel()
+        _inputState.value = _inputState.value.copy(query = keyword, isSuggesting = false, suggestions = emptyList())
+        viewModelScope.launch { historyPreferences.addKeyword(keyword) }
+
+        // 关键词已更换，其余 Tab 缓存的旧结果失效，切回时会重新拉取
+        _resultsByType.forEach { (type, state) ->
+            if (type != _selectedType.value) state.value = SearchResultsUiState.Idle
+        }
+        offsetByType.clear()
+
+        searchJob = viewModelScope.launch {
+            runSearch(keyword, _selectedType.value, isLoadMore = false)
+        }
+    }
+
+    fun selectType(type: SearchType) {
+        if (_selectedType.value == type) return
+        _selectedType.value = type
+        val query = _inputState.value.query
+        if (query.isNotBlank() && _resultsByType.getValue(type).value is SearchResultsUiState.Idle) {
+            searchJob?.cancel()
+            searchJob = viewModelScope.launch { runSearch(query, type, isLoadMore = false) }
+        }
     }
 
     fun loadMore() {
-        val currentQuery = _query.value
-        if (currentQuery.isBlank() || !_hasMore.value || _searchLoading.value) return
-        viewModelScope.launch {
-            performSearch(currentQuery, isLoadMore = true)
+        val type = _selectedType.value
+        val keyword = _inputState.value.query
+        if (keyword.isBlank()) return
+        val current = _resultsByType.getValue(type).value
+        if (current !is SearchResultsUiState.Success || current.isLoadingMore || !current.hasMore) return
+
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch { runSearch(keyword, type, isLoadMore = true) }
+    }
+
+    private suspend fun runSearch(keyword: String, type: SearchType, isLoadMore: Boolean) {
+        val stateFlow = _resultsByType.getValue(type)
+        if (isLoadMore) {
+            val current = stateFlow.value
+            if (current !is SearchResultsUiState.Success || current.isLoadingMore || !current.hasMore) return
+            stateFlow.value = current.copy(isLoadingMore = true)
+        } else {
+            offsetByType[type] = 0
+            stateFlow.value = SearchResultsUiState.Loading
+        }
+
+        val offset = if (isLoadMore) offsetByType[type] ?: 0 else 0
+        repository.search(keyword, type, offset = offset).firstOrNull()?.let { result ->
+            result.onSuccess { page ->
+                offsetByType[type] = offset + page.rawFetchedCount
+                val mergedItems = if (isLoadMore) {
+                    (stateFlow.value as? SearchResultsUiState.Success)?.items.orEmpty() + page.items
+                } else {
+                    page.items
+                }
+                stateFlow.value = if (mergedItems.isEmpty()) {
+                    SearchResultsUiState.Empty
+                } else {
+                    SearchResultsUiState.Success(
+                        items = mergedItems,
+                        totalCount = page.totalCount,
+                        hasMore = page.hasMore,
+                        isLoadingMore = false
+                    )
+                }
+            }.onFailure { error ->
+                val current = stateFlow.value
+                if (isLoadMore && current is SearchResultsUiState.Success) {
+                    stateFlow.value = current.copy(isLoadingMore = false)
+                    _toastEvent.emit(error.toUserMessage(resourceProvider))
+                } else {
+                    stateFlow.value = SearchResultsUiState.Error(error.toUserMessage(resourceProvider))
+                }
+            }
         }
     }
 
-    fun playSong(song: SearchSong) {
-        val results = _searchResults.value
-        val queueItems = results.map { s ->
-            QueueItem(s.id, s.name, s.ar.joinToString { it.name }, s.al.picUrl)
+    fun clearHistory() {
+        viewModelScope.launch { historyPreferences.clear() }
+    }
+
+    fun playSong(track: Track) {
+        val state = _resultsByType.getValue(SearchType.SONG).value
+        if (state !is SearchResultsUiState.Success) return
+        val tracks = state.items.filterIsInstance<SearchResultItem.SongItem>().map { it.track }
+        val queueItems = tracks.map { t ->
+            QueueItem(t.id, t.name, t.ar.joinToString { it.name }, t.al.picUrl)
         }
-        val startIndex = results.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
+        val startIndex = tracks.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
         playerManager.playQueue(queueItems, startIndex, "搜索")
     }
 }

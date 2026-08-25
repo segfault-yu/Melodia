@@ -1,12 +1,5 @@
 package com.lin0721.linmusic.feature.search.domain
 
-// 搜索结果领域模型
-data class SearchSongsResult(
-    val songs: List<com.lin0721.linmusic.feature.search.data.SearchSong>,
-    val totalCount: Int,
-    val hasMore: Boolean
-)
-
 // 热搜领域模型
 data class HotSearch(
     val keyword: String,

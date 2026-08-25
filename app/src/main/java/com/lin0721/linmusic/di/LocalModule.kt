@@ -5,6 +5,7 @@ import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.player.PlaybackPreferences
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
+import com.lin0721.linmusic.feature.search.data.SearchHistoryPreferences
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -14,4 +15,5 @@ val localModule = module {
     single { SettingsPreferences(androidContext()) }
     single { ContentFilter(get()) }
     single { ResourceProvider(androidContext()) }
+    single { SearchHistoryPreferences(androidContext()) }
 }

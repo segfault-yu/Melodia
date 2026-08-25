@@ -5,11 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -29,20 +30,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.lin0721.linmusic.feature.search.data.SearchSong
-import com.lin0721.linmusic.feature.search.domain.HotSearch
-import com.lin0721.linmusic.feature.search.domain.PlaylistTag
+import com.lin0721.linmusic.core.model.Album
+import com.lin0721.linmusic.core.model.Artist
+import com.lin0721.linmusic.core.model.PlaylistDetail
+import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
+import com.lin0721.linmusic.feature.search.domain.HotSearch
+import com.lin0721.linmusic.feature.search.domain.PlaylistTag
+import com.lin0721.linmusic.feature.search.domain.SearchResultItem
+import com.lin0721.linmusic.feature.search.domain.SearchSuggestion
+import com.lin0721.linmusic.feature.search.domain.SearchType
 import org.koin.androidx.compose.koinViewModel
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
@@ -63,15 +71,16 @@ private val tagFallbackColors = listOf(
 fun SearchScreen(
     viewModel: SearchViewModel = koinViewModel(),
     autoFocus: Boolean = false,
-    onBack: () -> Unit,
-    onOpenSidebar: () -> Unit = {}
+    onOpenSidebar: () -> Unit = {},
+    onPlaylistClick: (id: Long, isAlbum: Boolean) -> Unit = { _, _ -> },
+    onArtistClick: (id: Long) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val query by viewModel.query.collectAsStateWithLifecycle()
-    val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
-    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
-    val searchLoading by viewModel.searchLoading.collectAsStateWithLifecycle()
-    val hasMore by viewModel.hasMore.collectAsStateWithLifecycle()
+    val discoveryState by viewModel.discoveryState.collectAsStateWithLifecycle()
+    val inputState by viewModel.inputState.collectAsStateWithLifecycle()
+    val isSearchActive by viewModel.isSearchActive.collectAsStateWithLifecycle()
+    val selectedType by viewModel.selectedType.collectAsStateWithLifecycle()
+    val selectedResultsState by viewModel.resultsByType.getValue(selectedType).collectAsStateWithLifecycle()
+    val history by viewModel.history.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -87,8 +96,8 @@ fun SearchScreen(
         if (autoFocus) viewModel.activateSearch()
     }
 
-    LaunchedEffect(isSearching) {
-        if (isSearching) focusRequester.requestFocus()
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) focusRequester.requestFocus()
     }
 
     Column(
@@ -141,10 +150,12 @@ fun SearchScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
-            IconButton(onClick = { /* 听歌识曲 */ }) {
+            IconButton(onClick = { /* 听歌识曲，暂不实现 */ }) {
                 Icon(Icons.Rounded.MusicNote, contentDescription = "听歌识曲", tint = Color.White)
             }
         }
+
+        val defaultKeywordText = (discoveryState as? DiscoveryUiState.Success)?.defaultKeyword ?: "搜索你想听的"
 
         Row(
             modifier = Modifier
@@ -155,7 +166,7 @@ fun SearchScreen(
                 .clip(RoundedCornerShape(18.dp))
                 .background(SurfaceDark)
                 .then(
-                    if (!isSearching) Modifier.clickable { viewModel.activateSearch() }
+                    if (!isSearchActive) Modifier.clickable { viewModel.activateSearch() }
                     else Modifier
                 )
                 .padding(horizontal = 12.dp),
@@ -169,17 +180,22 @@ fun SearchScreen(
             )
             Spacer(modifier = Modifier.width(8.dp))
 
-            if (isSearching) {
+            if (isSearchActive) {
                 BasicTextField(
-                    value = query,
+                    value = inputState.query,
                     onValueChange = { viewModel.updateQuery(it) },
                     singleLine = true,
                     textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
                     cursorBrush = SolidColor(NeteaseRed),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = {
+                        if (inputState.query.isNotBlank()) viewModel.searchWithKeyword(inputState.query)
+                        focusManager.clearFocus()
+                    }),
                     decorationBox = { inner ->
                         Box(contentAlignment = Alignment.CenterStart) {
-                            if (query.isEmpty()) {
-                                Text(uiState.defaultKeyword, color = TextGray, fontSize = 14.sp)
+                            if (inputState.query.isEmpty()) {
+                                Text(defaultKeywordText, color = TextGray, fontSize = 14.sp)
                             }
                             inner()
                         }
@@ -188,7 +204,7 @@ fun SearchScreen(
                         .weight(1f)
                         .focusRequester(focusRequester)
                 )
-                if (query.isNotEmpty()) {
+                if (inputState.query.isNotEmpty()) {
                     IconButton(
                         onClick = { viewModel.updateQuery("") },
                         modifier = Modifier.size(20.dp)
@@ -198,7 +214,7 @@ fun SearchScreen(
                 }
             } else {
                 Text(
-                    text = uiState.defaultKeyword,
+                    text = defaultKeywordText,
                     color = TextGray,
                     fontSize = 14.sp,
                     maxLines = 1,
@@ -207,184 +223,465 @@ fun SearchScreen(
             }
         }
 
-        // 内容区域
-        if (isSearching && (query.isNotEmpty() || searchResults.isNotEmpty())) {
-            SearchResultsList(
-                results = searchResults,
-                isLoading = searchLoading,
-                hasMore = hasMore,
-                currentTrackId = currentTrack?.mediaId,
-                onSongClick = { viewModel.playSong(it) },
-                onLoadMore = { viewModel.loadMore() }
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isSearchActive && inputState.query.isNotBlank()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    SearchTypeTabRow(selected = selectedType, onSelect = { viewModel.selectType(it) })
+                    SearchResultsList(
+                        state = selectedResultsState,
+                        type = selectedType,
+                        currentTrackId = currentTrack?.mediaId,
+                        onSongClick = { viewModel.playSong(it) },
+                        onAlbumClick = { id -> onPlaylistClick(id, true) },
+                        onArtistClick = onArtistClick,
+                        onPlaylistClick = { id -> onPlaylistClick(id, false) },
+                        onLoadMore = { viewModel.loadMore() }
+                    )
+                }
+            } else {
+                DiscoveryContent(
+                    state = discoveryState,
+                    history = history,
+                    onHistoryClick = { viewModel.searchWithKeyword(it) },
+                    onClearHistory = { viewModel.clearHistory() },
+                    onHotSearchClick = { viewModel.searchWithKeyword(it) }
+                )
+            }
+
+            if (isSearchActive && inputState.isSuggesting && inputState.suggestions.isNotEmpty()) {
+                SuggestionDropdown(
+                    suggestions = inputState.suggestions,
+                    onClick = { viewModel.searchWithKeyword(it) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchTypeTabRow(selected: SearchType, onSelect: (SearchType) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = MelodiaSpacing.md)
+            .padding(bottom = MelodiaSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
+    ) {
+        SearchType.entries.forEach { type ->
+            val isSelected = type == selected
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (isSelected) NeteaseRed else SurfaceDark)
+                    .clickable { onSelect(type) }
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = type.label,
+                    color = if (isSelected) Color.White else TextGray,
+                    fontSize = 13.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionDropdown(
+    suggestions: List<SearchSuggestion>,
+    onClick: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BackgroundDark)
+    ) {
+        suggestions.forEach { suggestion ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClick(suggestion.keyword) }
+                    .padding(horizontal = MelodiaSpacing.md, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Rounded.Search, contentDescription = null, tint = TextGray, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = suggestion.keyword,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+private val SearchResultItem.stableKey: String
+    get() = when (this) {
+        is SearchResultItem.SongItem -> "song_${track.id}"
+        is SearchResultItem.AlbumItem -> "album_${album.id}"
+        is SearchResultItem.ArtistItem -> "artist_${artist.id}"
+        is SearchResultItem.PlaylistItem -> "playlist_${playlist.id}"
+    }
+
+// 分类型搜索结果列表
+@Composable
+private fun SearchResultsList(
+    state: SearchResultsUiState,
+    type: SearchType,
+    currentTrackId: String?,
+    onSongClick: (Track) -> Unit,
+    onAlbumClick: (Long) -> Unit,
+    onArtistClick: (Long) -> Unit,
+    onPlaylistClick: (Long) -> Unit,
+    onLoadMore: () -> Unit
+) {
+    when (state) {
+        SearchResultsUiState.Idle, SearchResultsUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = NeteaseRed)
+            }
+        }
+        SearchResultsUiState.Empty -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("没有找到相关${type.label}", color = TextGray, fontSize = 14.sp)
+            }
+        }
+        is SearchResultsUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(state.message, color = TextGray, fontSize = 14.sp)
+            }
+        }
+        is SearchResultsUiState.Success -> {
+            val listState = rememberLazyListState()
+            val shouldLoadMore by remember(state.hasMore, state.isLoadingMore) {
+                derivedStateOf {
+                    val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                    lastVisible >= state.items.size - 5 && state.hasMore && !state.isLoadingMore
+                }
+            }
+            LaunchedEffect(shouldLoadMore) {
+                if (shouldLoadMore) onLoadMore()
+            }
+
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(bottom = 180.dp)
+            ) {
+                item(key = "header") {
+                    Text(
+                        "找到 ${state.totalCount} 个${type.label}",
+                        color = TextGray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
+                    )
+                }
+
+                items(state.items, key = { it.stableKey }) { item ->
+                    when (item) {
+                        is SearchResultItem.SongItem -> {
+                            val track = item.track
+                            val isActive = currentTrackId == track.id.toString()
+                            SongRow(
+                                data = SongRowData(
+                                    id = track.id,
+                                    title = track.name,
+                                    artist = track.ar.joinToString(" / ") { it.name },
+                                    coverUrl = track.al.picUrl,
+                                    durationText = if (track.dt > 0) {
+                                        val minutes = track.dt / 1000 / 60
+                                        val seconds = track.dt / 1000 % 60
+                                        "${minutes}:%02d".format(seconds)
+                                    } else {
+                                        null
+                                    }
+                                ),
+                                isActive = isActive,
+                                onClick = { onSongClick(track) }
+                            )
+                        }
+                        is SearchResultItem.AlbumItem -> AlbumResultRow(
+                            album = item.album,
+                            onClick = { onAlbumClick(item.album.id) }
+                        )
+                        is SearchResultItem.ArtistItem -> ArtistResultRow(
+                            artist = item.artist,
+                            onClick = { onArtistClick(item.artist.id) }
+                        )
+                        is SearchResultItem.PlaylistItem -> PlaylistResultRow(
+                            playlist = item.playlist,
+                            onClick = { onPlaylistClick(item.playlist.id) }
+                        )
+                    }
+                }
+
+                if (state.isLoadingMore) {
+                    item(key = "loading") {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(MelodiaSpacing.md),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = NeteaseRed, modifier = Modifier.size(24.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlbumResultRow(album: Album, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = MelodiaSpacing.md, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = "${album.picUrl}?param=100y100",
+            contentDescription = album.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp))
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = album.name,
+                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-        } else {
-            DiscoveryContent(
-                uiState = uiState,
-                onHotSearchClick = { viewModel.searchWithKeyword(it) }
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = album.artists.joinToString(" / ") { it.name },
+                color = TextGray,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
 }
 
-// 搜索结果列表
 @Composable
-private fun SearchResultsList(
-    results: List<SearchSong>,
-    isLoading: Boolean,
-    hasMore: Boolean,
-    currentTrackId: String?,
-    onSongClick: (SearchSong) -> Unit,
-    onLoadMore: () -> Unit
-) {
-    if (isLoading && results.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = NeteaseRed)
-        }
-        return
-    }
-
-    if (results.isEmpty() && !isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("没有找到相关歌曲", color = TextGray, fontSize = 14.sp)
-        }
-        return
-    }
-
-    val listState = rememberLazyListState()
-
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            lastVisible >= results.size - 5 && hasMore && !isLoading
-        }
-    }
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) onLoadMore()
-    }
-
-    LazyColumn(
-        state = listState,
-        contentPadding = PaddingValues(bottom = 180.dp)
+private fun ArtistResultRow(artist: Artist, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = MelodiaSpacing.md, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        item(key = "header") {
+        AsyncImage(
+            model = "${artist.picUrl}?param=100y100",
+            contentDescription = artist.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(48.dp).clip(CircleShape)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = artist.name,
+            color = Color.White,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun PlaylistResultRow(playlist: PlaylistDetail, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = MelodiaSpacing.md, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = "${playlist.coverImgUrl}?param=100y100",
+            contentDescription = playlist.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp))
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                "找到 ${results.size} 首歌曲",
+                text = playlist.name,
+                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = listOfNotNull(
+                    playlist.creator?.nickname,
+                    if (playlist.trackCount > 0) "${playlist.trackCount}首" else null
+                ).joinToString(" · "),
                 color = TextGray,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-        }
-
-        items(results, key = { it.id }) { song ->
-            val isActive = currentTrackId == song.id.toString()
-            SongRow(
-                data = SongRowData(
-                    id = song.id,
-                    title = song.name,
-                    artist = song.ar.joinToString(" / ") { it.name },
-                    coverUrl = song.al.picUrl,
-                    durationText = if (song.dt > 0) {
-                        val minutes = song.dt / 1000 / 60
-                        val seconds = song.dt / 1000 % 60
-                        "${minutes}:%02d".format(seconds)
-                    } else {
-                        null
-                    }
-                ),
-                isActive = isActive,
-                onClick = { onSongClick(song) }
-            )
-        }
-
-        if (isLoading && results.isNotEmpty()) {
-            item(key = "loading") {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(MelodiaSpacing.md),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = NeteaseRed, modifier = Modifier.size(24.dp))
-                }
-            }
         }
     }
 }
 
 @Composable
 private fun DiscoveryContent(
-    uiState: SearchUiState,
+    state: DiscoveryUiState,
+    history: List<String>,
+    onHistoryClick: (String) -> Unit,
+    onClearHistory: () -> Unit,
     onHotSearchClick: (String) -> Unit
 ) {
-    if (uiState.isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = NeteaseRed)
-        }
-        return
-    }
-
-    LazyColumn(
-        contentPadding = PaddingValues(bottom = 180.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        if (uiState.hotSearches.isNotEmpty()) {
-            item(key = "hot_header") {
-                SectionHeader("热搜榜")
-            }
-
-            val hotRows = uiState.hotSearches.take(10).chunked(2)
-            items(hotRows.size, key = { "hot_row_$it" }) { rowIndex ->
-                val pair = hotRows[rowIndex]
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = MelodiaSpacing.md)
-                        .padding(bottom = MelodiaSpacing.sm),
-                    horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
-                ) {
-                    pair.forEachIndexed { colIndex, item ->
-                        val rank = rowIndex * 2 + colIndex + 1
-                        HotSearchCompactItem(
-                            rank = rank,
-                            item = item,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onHotSearchClick(item.keyword) }
-                        )
-                    }
-                    if (pair.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+    when (state) {
+        DiscoveryUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = NeteaseRed)
             }
         }
-
-        // 精品歌单标签
-        if (uiState.playlistTags.isNotEmpty()) {
-            item(key = "tags_header") {
-                SectionHeader("精品歌单")
+        is DiscoveryUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(state.message, color = TextGray, fontSize = 14.sp)
             }
-
-            val rows = uiState.playlistTags.chunked(2)
-            items(rows.size, key = { "tag_row_$it" }) { rowIndex ->
-                val pair = rows[rowIndex]
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = MelodiaSpacing.md),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    pair.forEachIndexed { colIndex, tag ->
-                        val globalIndex = rowIndex * 2 + colIndex
-                        PlaylistTagCard(
-                            tag = tag,
-                            fallbackColor = tagFallbackColors[globalIndex % tagFallbackColors.size],
-                            modifier = Modifier.weight(1f),
-                            onClick = { }
-                        )
+        }
+        is DiscoveryUiState.Success -> {
+            LazyColumn(
+                contentPadding = PaddingValues(bottom = 180.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (history.isNotEmpty()) {
+                    item(key = "history_header") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.md),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "搜索历史",
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                Icons.Rounded.DeleteOutline,
+                                contentDescription = "清除搜索历史",
+                                tint = TextGray,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clickable { onClearHistory() }
+                            )
+                        }
                     }
-                    if (pair.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
+
+                    val historyRows = history.chunked(2)
+                    items(historyRows.size, key = { "history_row_$it" }) { rowIndex ->
+                        val pair = historyRows[rowIndex]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = MelodiaSpacing.md)
+                                .padding(bottom = MelodiaSpacing.sm),
+                            horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
+                        ) {
+                            pair.forEach { keyword ->
+                                Text(
+                                    text = keyword,
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(SurfaceDark)
+                                        .clickable { onHistoryClick(keyword) }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                                )
+                            }
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+
+                if (state.hotSearches.isNotEmpty()) {
+                    item(key = "hot_header") {
+                        SectionHeader("热搜榜")
+                    }
+
+                    val hotRows = state.hotSearches.take(10).chunked(2)
+                    items(hotRows.size, key = { "hot_row_$it" }) { rowIndex ->
+                        val pair = hotRows[rowIndex]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = MelodiaSpacing.md)
+                                .padding(bottom = MelodiaSpacing.sm),
+                            horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
+                        ) {
+                            pair.forEachIndexed { colIndex, item ->
+                                val rank = rowIndex * 2 + colIndex + 1
+                                HotSearchCompactItem(
+                                    rank = rank,
+                                    item = item,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onHotSearchClick(item.keyword) }
+                                )
+                            }
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+
+                // 精品歌单标签
+                if (state.playlistTags.isNotEmpty()) {
+                    item(key = "tags_header") {
+                        SectionHeader("精品歌单")
+                    }
+
+                    val rows = state.playlistTags.chunked(2)
+                    items(rows.size, key = { "tag_row_$it" }) { rowIndex ->
+                        val pair = rows[rowIndex]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = MelodiaSpacing.md),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            pair.forEachIndexed { colIndex, tag ->
+                                val globalIndex = rowIndex * 2 + colIndex
+                                PlaylistTagCard(
+                                    tag = tag,
+                                    fallbackColor = tagFallbackColors[globalIndex % tagFallbackColors.size],
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { }
+                                )
+                            }
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
             }
         }
     }

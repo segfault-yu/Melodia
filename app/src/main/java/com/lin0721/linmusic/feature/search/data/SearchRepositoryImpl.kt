@@ -5,9 +5,15 @@ import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.network.AppError
 import com.lin0721.linmusic.core.network.apiFlow
 import com.lin0721.linmusic.core.network.mapToAppError
+import com.lin0721.linmusic.feature.search.data.dto.CloudSearchRequest
+import com.lin0721.linmusic.feature.search.data.dto.HighQualityPlaylistRequest
+import com.lin0721.linmusic.feature.search.data.dto.SearchSuggestRequest
 import com.lin0721.linmusic.feature.search.domain.HotSearch
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
-import com.lin0721.linmusic.feature.search.domain.SearchSongsResult
+import com.lin0721.linmusic.feature.search.domain.SearchPageResult
+import com.lin0721.linmusic.feature.search.domain.SearchResultItem
+import com.lin0721.linmusic.feature.search.domain.SearchSuggestion
+import com.lin0721.linmusic.feature.search.domain.SearchType
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -28,16 +34,64 @@ class SearchRepositoryImpl(
         transform = { it.data!!.showKeyword }
     )
 
-    override fun searchSongs(keyword: String, offset: Int, limit: Int): Flow<Result<SearchSongsResult>> = apiFlow(
-        request = { apiService.cloudSearch(CloudSearchRequest(s = keyword, offset = offset, limit = limit)) },
+    override fun search(keyword: String, type: SearchType, offset: Int, limit: Int): Flow<Result<SearchPageResult>> = apiFlow(
+        request = {
+            apiService.cloudSearch(CloudSearchRequest(s = keyword, type = type.apiValue, offset = offset, limit = limit))
+        },
         isSuccess = { it.isSuccess && it.result != null },
         code = { it.code },
         transform = { response ->
-            val songs = response.result!!.songs ?: emptyList()
-            val total = response.result.songCount
-            val filteredSongs = contentFilter.filterBlockedArtists(songs) { it.ar.map { a -> a.id } }
-            val hasMore = if (filteredSongs.isEmpty()) false else (offset + songs.size < total)
-            SearchSongsResult(filteredSongs, total, hasMore)
+            val result = response.result!!
+            when (type) {
+                SearchType.SONG -> {
+                    val songs = result.songs ?: emptyList()
+                    val filtered = contentFilter.filterBlockedArtists(songs) { it.ar.map { a -> a.id } }
+                    // 屏蔽过滤后本页为空时强制 hasMore=false，避免翻页死循环
+                    val hasMore = if (filtered.isEmpty()) false else (offset + songs.size < result.songCount)
+                    SearchPageResult(
+                        filtered.map { SearchResultItem.SongItem(it) },
+                        result.songCount,
+                        hasMore,
+                        rawFetchedCount = songs.size
+                    )
+                }
+                SearchType.ALBUM -> {
+                    val albums = result.albums ?: emptyList()
+                    SearchPageResult(
+                        albums.map { SearchResultItem.AlbumItem(it) },
+                        result.albumCount,
+                        offset + albums.size < result.albumCount,
+                        rawFetchedCount = albums.size
+                    )
+                }
+                SearchType.ARTIST -> {
+                    val artists = result.artists ?: emptyList()
+                    SearchPageResult(
+                        artists.map { SearchResultItem.ArtistItem(it) },
+                        result.artistCount,
+                        offset + artists.size < result.artistCount,
+                        rawFetchedCount = artists.size
+                    )
+                }
+                SearchType.PLAYLIST -> {
+                    val playlists = result.playlists ?: emptyList()
+                    SearchPageResult(
+                        playlists.map { SearchResultItem.PlaylistItem(it) },
+                        result.playlistCount,
+                        offset + playlists.size < result.playlistCount,
+                        rawFetchedCount = playlists.size
+                    )
+                }
+            }
+        }
+    )
+
+    override fun getSuggestions(keyword: String): Flow<Result<List<SearchSuggestion>>> = apiFlow(
+        request = { apiService.getSearchSuggest(SearchSuggestRequest(s = keyword)) },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { response ->
+            (response.result?.allMatch ?: emptyList()).map { SearchSuggestion(it.keyword) }
         }
     )
 
