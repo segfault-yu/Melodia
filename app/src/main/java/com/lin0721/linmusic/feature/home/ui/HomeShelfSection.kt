@@ -150,8 +150,8 @@ private fun HomeShelfCard(
                 )
             }
 
-            // 歌曲点一下就直接播放，给个播放符号把这件事说清楚；歌单与专辑是进详情页，不加
-            if (card is HomeCard.Song) {
+            // 歌曲与播客单集点一下直接播放，给个播放符号说清楚；歌单与专辑是进详情页，不加
+            if (card is HomeCard.Song || card is HomeCard.Voice) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)

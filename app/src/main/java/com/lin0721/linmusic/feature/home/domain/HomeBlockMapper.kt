@@ -74,6 +74,14 @@ private fun HomeResourceDto.toCardOrNull(): HomeCard? {
             val id = resourceId?.toLongOrNull() ?: return null
             HomeCard.Song(id, name, cover, caption)
         }
+        // 播客单集。整个节目对象随 resourceExtInfo 一并下发，可播的 mainSong 就在里面，
+        // 不必为每张卡再查一次节目详情；拿不到 mainSong 的照旧丢弃
+        "voice" -> {
+            val program = resourceExtInfo?.djProgram ?: return null
+            val songId = program.mainSong?.id?.takeIf { it > 0 } ?: return null
+            val programId = program.id.takeIf { it > 0 } ?: resourceId?.toLongOrNull() ?: return null
+            HomeCard.Voice(programId, songId, name, cover, caption)
+        }
         else -> null
     }
 }

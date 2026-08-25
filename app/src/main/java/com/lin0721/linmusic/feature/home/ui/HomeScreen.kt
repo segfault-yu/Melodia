@@ -131,6 +131,7 @@ fun HomeScreen(
                 onSearchClick = onSearchClick,
                 onPlaylistClick = onPlaylistClick,
                 onSongClick = { song -> viewModel.playShelfSong(song) },
+                onVoiceClick = { voice -> viewModel.playShelfVoice(voice) },
                 onRetry = { viewModel.loadHomeData() },
                 onLoadMore = { viewModel.loadMoreShelves() },
                 onIntelligenceClick = { viewModel.startIntelligenceMode() },

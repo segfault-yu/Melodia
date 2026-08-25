@@ -38,6 +38,15 @@ sealed interface HomeCard {
         override val coverUrl: String,
         override val caption: String
     ) : HomeCard
+
+    // 播客单集。id 是节目 id 仅供 key 用，播放走 songId
+    data class Voice(
+        override val id: Long,
+        val songId: Long,
+        override val title: String,
+        override val coverUrl: String,
+        override val caption: String
+    ) : HomeCard
 }
 
 // 一页区块数据聚合后的结果

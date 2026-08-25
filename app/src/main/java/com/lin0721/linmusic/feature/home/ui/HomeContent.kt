@@ -33,6 +33,7 @@ fun HomeContent(
     onSearchClick: () -> Unit,
     onPlaylistClick: (Long, Boolean) -> Unit,
     onSongClick: (HomeCard.Song) -> Unit,
+    onVoiceClick: (HomeCard.Voice) -> Unit,
     onRetry: () -> Unit,
     onLoadMore: () -> Unit,
     onIntelligenceClick: () -> Unit,
@@ -104,6 +105,7 @@ fun HomeContent(
                                 is HomeCard.Playlist -> onPlaylistClick(card.id, false)
                                 is HomeCard.Album -> onPlaylistClick(card.id, true)
                                 is HomeCard.Song -> onSongClick(card)
+                                is HomeCard.Voice -> onVoiceClick(card)
                             }
                         }
                     )

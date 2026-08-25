@@ -186,6 +186,17 @@ class HomeViewModel(
         )
     }
 
+    // 播放货架里的播客单集。播放要用 mainSong 换来的 songId，节目自身 id 播不了
+    fun playShelfVoice(voice: HomeCard.Voice) {
+        playSong(
+            songId = voice.songId,
+            title = voice.title,
+            artist = voice.caption,
+            coverUrl = voice.coverUrl,
+            playContext = "home_voice"
+        )
+    }
+
     fun togglePlayPause() {
         playerManager.togglePlayPause()
     }

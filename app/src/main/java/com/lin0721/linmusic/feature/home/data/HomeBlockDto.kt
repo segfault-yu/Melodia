@@ -53,7 +53,41 @@ data class HomeResourceDto(
     val resourceId: String? = null,
     val uiElement: HomeUiElementDto? = null,
     val action: String? = null,
-    val actionType: String? = null
+    val actionType: String? = null,
+    // 播客类资源把整个节目对象塞在这里，可播的 mainSong 就在其中，无需再查节目详情
+    val resourceExtInfo: HomeResourceExtInfoDto? = null
+)
+
+@Serializable
+data class HomeResourceExtInfoDto(
+    val djProgram: HomeDjProgramDto? = null
+)
+
+@Serializable
+data class HomeDjProgramDto(
+    val id: Long = 0,
+    val name: String = "",
+    val coverUrl: String? = null,
+    val duration: Long = 0,
+    val mainSong: HomeDjMainSongDto? = null,
+    val radio: HomeDjRadioDto? = null,
+    val dj: HomeDjUserDto? = null
+)
+
+@Serializable
+data class HomeDjMainSongDto(
+    val id: Long = 0
+)
+
+@Serializable
+data class HomeDjRadioDto(
+    val id: Long = 0,
+    val name: String = ""
+)
+
+@Serializable
+data class HomeDjUserDto(
+    val nickname: String? = null
 )
 
 // block 与 resource 共用同一套 uiElement，字段按需出现

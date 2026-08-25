@@ -3,6 +3,10 @@ package com.lin0721.linmusic.feature.home.domain
 import com.lin0721.linmusic.feature.home.data.HomeBlockDto
 import com.lin0721.linmusic.feature.home.data.HomeBlockPageData
 import com.lin0721.linmusic.feature.home.data.HomeCreativeDto
+import com.lin0721.linmusic.feature.home.data.HomeDjMainSongDto
+import com.lin0721.linmusic.feature.home.data.HomeDjProgramDto
+import com.lin0721.linmusic.feature.home.data.HomeDjRadioDto
+import com.lin0721.linmusic.feature.home.data.HomeResourceExtInfoDto
 import com.lin0721.linmusic.feature.home.data.HomeImageDto
 import com.lin0721.linmusic.feature.home.data.HomeLabelDto
 import com.lin0721.linmusic.feature.home.data.HomeResourceDto
@@ -128,6 +132,66 @@ class HomeBlockMapperTest {
         ).toHomeBlockPage()
 
         assertTrue(page.shelves.isEmpty())
+    }
+
+    @Test
+    fun `播客单集取mainSong作为播放id`() {
+        val page = HomeBlockPageData(
+            blocks = listOf(
+                block(
+                    "HOMEPAGE_VOICELIST_RCMD",
+                    ui(sub = "热门播客"),
+                    listOf(
+                        HomeResourceDto(
+                            resourceType = "voice",
+                            resourceId = "3725385398",
+                            uiElement = ui(main = "13.永镇西方第一名", sub = "黑神话悟空游戏音乐总谱精选集"),
+                            action = "orpheus://program/3725385398",
+                            resourceExtInfo = HomeResourceExtInfoDto(
+                                djProgram = HomeDjProgramDto(
+                                    id = 3725385398,
+                                    name = "13.永镇西方第一名",
+                                    mainSong = HomeDjMainSongDto(3411649805),
+                                    radio = HomeDjRadioDto(1495966005, "黑神话悟空游戏音乐总谱精选集")
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ).toHomeBlockPage()
+
+        val card = page.shelves.single().cards.single() as HomeCard.Voice
+        // 节目 id 仅用于 key，播放必须走 mainSong
+        assertEquals(3725385398L, card.id)
+        assertEquals(3411649805L, card.songId)
+    }
+
+    @Test
+    fun `缺mainSong的播客单集被丢弃`() {
+        fun probe(ext: HomeResourceExtInfoDto?) = HomeBlockPageData(
+            blocks = listOf(
+                block(
+                    "HOMEPAGE_VOICELIST_RCMD",
+                    ui(sub = "热门播客"),
+                    listOf(
+                        HomeResourceDto(
+                            resourceType = "voice",
+                            resourceId = "1",
+                            uiElement = ui(main = "某节目"),
+                            resourceExtInfo = ext
+                        )
+                    )
+                )
+            )
+        ).toHomeBlockPage().shelves
+
+        assertTrue("无 extInfo 应丢弃", probe(null).isEmpty())
+        assertTrue("无 djProgram 应丢弃", probe(HomeResourceExtInfoDto()).isEmpty())
+        assertTrue(
+            "mainSong 为 0 应丢弃",
+            probe(HomeResourceExtInfoDto(HomeDjProgramDto(id = 1, mainSong = HomeDjMainSongDto(0)))).isEmpty()
+        )
     }
 
     @Test
