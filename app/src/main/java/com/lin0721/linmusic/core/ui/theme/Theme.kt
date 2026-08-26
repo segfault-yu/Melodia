@@ -13,7 +13,9 @@ private val DarkColorScheme = darkColorScheme(
     surface = SurfaceDark,
     onSurface = Color.White,
     surfaceVariant = SurfaceLight,
-    onSurfaceVariant = TextGray
+    onSurfaceVariant = TextGray,
+    error = NeteaseRed,
+    onError = Color.White
 )
 
 // Melodia 应用的全局 Material3 主题配置

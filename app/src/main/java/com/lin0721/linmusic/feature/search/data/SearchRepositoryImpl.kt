@@ -100,14 +100,17 @@ class SearchRepositoryImpl(
         isSuccess = { it.isSuccess },
         code = { it.code },
         transform = { response ->
-            response.data.map { item ->
-                HotSearch(
-                    keyword = item.searchWord,
-                    score = item.score,
-                    description = item.content,
-                    iconUrl = item.iconUrl
-                )
-            }
+            // 热搜榜偶尔混入 searchWord 为空的运营占位条目，过滤掉避免渲染出空白格子
+            response.data
+                .filter { it.searchWord.isNotBlank() }
+                .map { item ->
+                    HotSearch(
+                        keyword = item.searchWord,
+                        score = item.score,
+                        description = item.content,
+                        iconUrl = item.iconUrl
+                    )
+                }
         }
     )
 

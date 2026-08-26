@@ -100,6 +100,20 @@ class SearchViewModel(
         }
     }
 
+    // 发现页加载失败时的重试入口，UI 层错误态按钮调用
+    fun retryDiscovery() {
+        loadDiscoveryData()
+    }
+
+    // 搜索结果加载失败时的重试入口：重跑当前 Tab 当前关键词，不重复写历史
+    fun retrySearch() {
+        val type = _selectedType.value
+        val keyword = _inputState.value.query
+        if (keyword.isBlank()) return
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch { runSearch(keyword, type, isLoadMore = false) }
+    }
+
     fun activateSearch() {
         _isSearchActive.value = true
     }
