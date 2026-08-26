@@ -2,6 +2,7 @@ package com.lin0721.linmusic.feature.artist.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.lin0721.linmusic.core.model.Track
@@ -20,7 +22,9 @@ import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.ArtistInfo
+import com.lin0721.linmusic.core.model.ArtistMv
 import com.lin0721.linmusic.core.ui.theme.CoverPlaceholderDark
+import com.lin0721.linmusic.feature.playlist.ui.PlaylistSongOptionsSheet
 
 // 歌手详情页骨架：持有折叠进度与弹层状态，按 Tab 装配各内容区块
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,6 +35,12 @@ fun ArtistContent(
     fansCount: Long,
     topSongs: List<Track>,
     albums: List<ArtistAlbum>,
+    albumsHasMore: Boolean,
+    albumsLoadingMore: Boolean,
+    mvs: List<ArtistMv>,
+    mvsLoadingMore: Boolean,
+    allSongs: List<Track>,
+    allSongsLoadingMore: Boolean,
     similarArtists: List<ArtistInfo>,
     likedSongIds: Set<Long>,
     blockedArtistIds: Set<Long>,
@@ -41,14 +51,21 @@ fun ArtistContent(
     onArtistClick: (Long) -> Unit,
     onPlaylistClick: (Long) -> Unit,
     onAlbumClick: (Long) -> Unit,
+    onMvClick: (Long, String) -> Unit,
     onFollowClick: () -> Unit,
     onBlockClick: () -> Unit,
     onPlaySong: (Track) -> Unit,
     onPlayAll: () -> Unit,
     onLikeClick: (Long) -> Unit,
+    onToggleLike: (Long, Boolean) -> Unit,
+    onAddToPlayNext: (Track) -> Unit,
     onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
     onSaveNewCollection: (String, Long) -> Unit,
-    onRequireLogin: () -> Unit
+    onRequireLogin: () -> Unit,
+    onLoadMoreAlbums: () -> Unit,
+    onLoadMoreMvs: () -> Unit,
+    onLoadAllSongsIfNeeded: () -> Unit,
+    onLoadMoreAllSongs: () -> Unit
 ) {
     val density = LocalDensity.current
     val listState = rememberLazyListState()
@@ -66,18 +83,66 @@ fun ArtistContent(
         }
     }
 
+    // 头图 + 操作栏合计高度：与 ArtistBackdrop 的图片+融合色层总高度一致
+    val headerHeightPx = with(density) { 310.dp.toPx() }
+    val actionBarHeightPx = with(density) { 80.dp.toPx() }
+    val backdropCoverThresholdPx = headerHeightPx + actionBarHeightPx
+    // 已滚动越过头图区域的像素数：用于驱动下方不透明背板，彻底盖住固定不动的背景图，避免歌曲行等透明区域漏色
+    val backdropCoveredPx by remember {
+        derivedStateOf {
+            val index = listState.firstVisibleItemIndex
+            val offset = listState.firstVisibleItemScrollOffset.toFloat()
+            when {
+                index <= 0 -> offset
+                index == 1 -> headerHeightPx + offset
+                else -> backdropCoverThresholdPx
+            }.coerceIn(0f, backdropCoverThresholdPx)
+        }
+    }
+
     var collectSongId by remember { mutableStateOf<Long?>(null) }
     var showBioDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
+    var musicSubTab by remember { mutableStateOf(0) }
+    var optionsTrack by remember { mutableStateOf<Track?>(null) }
+
+    // 首次切到「全部歌曲」子 Tab 时触发加载
+    LaunchedEffect(musicSubTab) {
+        if (musicSubTab == 1) onLoadAllSongsIfNeeded()
+    }
+
+    // 滚动到底部附近，按当前 Tab 触发对应区块的分页加载
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val total = layoutInfo.totalItemsCount
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            total > 0 && lastVisible >= total - 5
+        }
+    }
+    LaunchedEffect(shouldLoadMore, selectedTab, musicSubTab) {
+        if (!shouldLoadMore) return@LaunchedEffect
+        when (selectedTab) {
+            0 -> if (musicSubTab == 1) onLoadMoreAllSongs()
+            1 -> onLoadMoreAlbums()
+            2 -> onLoadMoreMvs()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
 
         ArtistBackdrop(
             artist = artist,
-            progress = progress,
-            collapseThresholdPx = collapseThresholdPx,
             dominantColor = dominantColor,
             onDominantColorChange = { dominantColor = it }
+        )
+
+        // 不透明背板：随头图区滚动距离同步上移，跟随内容边缘彻底盖住背景图，防止歌曲行等透明区域漏出封面
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { translationY = backdropCoverThresholdPx - backdropCoveredPx }
+                .background(MaterialTheme.colorScheme.background)
         )
 
         // 滚动视口列表
@@ -113,20 +178,32 @@ fun ArtistContent(
                 // 根据选中的 Tab 呈现对应内容
                 when (selectedTab) {
                     0 -> artistMusicTab(
-                        topSongs = topSongs,
+                        hotSongs = topSongs,
+                        allSongs = allSongs,
+                        musicSubTab = musicSubTab,
+                        onMusicSubTabSelected = { musicSubTab = it },
+                        allSongsLoadingMore = allSongsLoadingMore,
                         likedSongIds = likedSongIds,
                         currentTrackId = currentTrackId,
                         isLoggedIn = isLoggedIn,
                         onPlaySong = onPlaySong,
                         onLikeClick = onLikeClick,
                         onOpenCollectSheet = { collectSongId = it },
+                        onOpenMoreOptions = { track ->
+                            if (!isLoggedIn) onRequireLogin() else optionsTrack = track
+                        },
                         onRequireLogin = onRequireLogin
                     )
                     1 -> artistAlbumTab(
                         albums = albums,
+                        loadingMore = albumsLoadingMore,
                         onAlbumClick = onAlbumClick
                     )
-                    2 -> artistMvTab()
+                    2 -> artistMvTab(
+                        mvs = mvs,
+                        loadingMore = mvsLoadingMore,
+                        onMvClick = { mv -> onMvClick(mv.id, mv.name) }
+                    )
                     3 -> artistAboutTab(
                         artist = artist,
                         similarArtists = similarArtists,
@@ -155,6 +232,26 @@ fun ArtistContent(
                 sheetShape = BottomSheetShape,
                 itemCornerRadius = 6.dp,
                 confirmButtonShape = RoundedCornerShape(12.dp)
+            )
+        }
+
+        // 歌曲「更多操作」Bottom Sheet（下一首播放/喜欢/收藏到歌单/专辑；歌手详情页隐藏「歌手」项）
+        optionsTrack?.let { track ->
+            PlaylistSongOptionsSheet(
+                track = track,
+                isLiked = track.id in likedSongIds,
+                isLoggedIn = isLoggedIn,
+                onDismiss = { optionsTrack = null },
+                onAddToPlayNext = onAddToPlayNext,
+                onToggleLike = onToggleLike,
+                onCollectClick = { songId ->
+                    collectSongId = songId
+                    onLikeClick(songId)
+                },
+                onArtistClick = onArtistClick,
+                onAlbumClick = onAlbumClick,
+                onRequireLogin = onRequireLogin,
+                showArtistOption = false
             )
         }
 

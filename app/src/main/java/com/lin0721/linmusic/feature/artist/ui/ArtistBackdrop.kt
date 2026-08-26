@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -15,27 +14,17 @@ import coil.request.ImageRequest
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.ui.theme.extractDominantColor
 
-// 顶部大图背景层：随列表滚动做视差平移、拉伸与渐隐，并回传封面主色
+// 顶部大图背景层：固定不动，由上层滚动列表的不透明内容自然覆盖，并回传封面主色
 @Composable
 fun BoxScope.ArtistBackdrop(
     artist: ArtistDetailInfo,
-    progress: Float,
-    collapseThresholdPx: Float,
     dominantColor: Color,
     onDominantColorChange: (Color) -> Unit
 ) {
-    val bgScale = 1f + (1f - progress) * 0.1f // 微微视差拉伸
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(380.dp)
-            .graphicsLayer {
-                translationY = -progress * collapseThresholdPx * 0.5f // 视差平移
-                scaleX = bgScale
-                scaleY = bgScale
-                alpha = 1f - progress * 0.7f // 渐隐
-            }
     ) {
         val bgUrl = artist.cover.ifEmpty { artist.avatar }
         AsyncImage(
@@ -59,10 +48,6 @@ fun BoxScope.ArtistBackdrop(
             .fillMaxWidth()
             .height(390.dp)
             .align(Alignment.TopCenter)
-            .graphicsLayer {
-                translationY = -progress * collapseThresholdPx * 0.5f // 与大图同步视差平移
-                alpha = 1f - progress * 0.7f // 与大图同步渐隐
-            }
     ) {
         // 纯色底色向下延伸,底边缘与底部的 tab_bar 接在一起
         Box(
