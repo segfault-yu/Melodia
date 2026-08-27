@@ -1,12 +1,19 @@
 package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -81,7 +88,6 @@ fun SongRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .background(if (isActive) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent)
             .padding(horizontal = MelodiaSpacing.md, vertical = verticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -117,6 +123,10 @@ fun SongRow(
 
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isActive) {
+                    PlayingEqualizerBars(color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(6.dp))
+                }
                 Text(
                     text = data.title,
                     color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -165,6 +175,44 @@ fun SongRow(
         }
 
         trailingSlot()
+    }
+}
+
+// 播放中标识：歌名前的三根音柱，高度错峰循环起伏，替代原来的整行底色高亮
+@Composable
+private fun PlayingEqualizerBars(color: Color) {
+    val transition = rememberInfiniteTransition(label = "song_row_eq")
+    val bar1 by transition.animateFloat(
+        initialValue = 4f,
+        targetValue = 14f,
+        animationSpec = infiniteRepeatable(tween(600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "eq_bar_1"
+    )
+    val bar2 by transition.animateFloat(
+        initialValue = 13f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(tween(750, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "eq_bar_2"
+    )
+    val bar3 by transition.animateFloat(
+        initialValue = 8f,
+        targetValue = 15f,
+        animationSpec = infiniteRepeatable(tween(500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "eq_bar_3"
+    )
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.height(16.dp)
+    ) {
+        listOf(bar1, bar2, bar3).forEach { barHeight ->
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(barHeight.dp)
+                    .background(color, RoundedCornerShape(1.dp))
+            )
+        }
     }
 }
 
