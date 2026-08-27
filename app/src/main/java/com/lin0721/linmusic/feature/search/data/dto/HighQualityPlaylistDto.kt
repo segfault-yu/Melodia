@@ -31,7 +31,8 @@ data class HighQualityPlaylistResponse(
     val code: Int = 0,
     val playlists: List<HighQualityPlaylist> = emptyList(),
     val more: Boolean = false,
-    val lasttime: Long = 0
+    val lasttime: Long = 0,
+    val total: Int = 0
 ) {
     val isSuccess: Boolean get() = code == 200
 }

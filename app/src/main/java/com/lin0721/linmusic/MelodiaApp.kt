@@ -154,6 +154,7 @@ fun MelodiaApp() {
                     activeRadioId = navigation.activeRadioId,
                     activeMvId = navigation.activeMvId,
                     activeMvName = navigation.activeMvName,
+                    activePlaylistCategory = navigation.activePlaylistCategory,
                     homeTab = navigation.homeTab,
                     searchAutoFocus = navigation.searchAutoFocus,
                     onOpenSidebar = { sidebar.open() },
@@ -163,6 +164,7 @@ fun MelodiaApp() {
                     onNavigateToRadio = { id -> navigation.openRadio(id) },
                     onNavigateToMv = { id, name -> navigation.openMvPlayer(id, name) },
                     onMvFullscreenChanged = { isMvFullscreen = it },
+                    onNavigateToPlaylistCategory = { category -> navigation.openPlaylistCategory(category) },
                     onHomeTabSelected = { navigation.selectHomeTab(it) },
                     onNavigateToSearch = { navigation.openSearch(autoFocus = true) },
                     onBack = { navigation.navigateBack() }

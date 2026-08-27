@@ -94,7 +94,8 @@ fun SearchScreen(
     autoFocus: Boolean = false,
     onOpenSidebar: () -> Unit = {},
     onPlaylistClick: (id: Long, isAlbum: Boolean) -> Unit = { _, _ -> },
-    onArtistClick: (id: Long) -> Unit = {}
+    onArtistClick: (id: Long) -> Unit = {},
+    onPlaylistCategoryClick: (category: String) -> Unit = {}
 ) {
     val discoveryState by viewModel.discoveryState.collectAsStateWithLifecycle()
     val inputState by viewModel.inputState.collectAsStateWithLifecycle()
@@ -298,6 +299,7 @@ fun SearchScreen(
                         onHistoryClick = { viewModel.searchWithKeyword(it) },
                         onClearHistory = { viewModel.clearHistory() },
                         onHotSearchClick = { viewModel.searchWithKeyword(it) },
+                        onPlaylistTagClick = onPlaylistCategoryClick,
                         onRetry = { viewModel.retryDiscovery() }
                     )
                 }
@@ -535,6 +537,7 @@ private fun DiscoveryContent(
     onHistoryClick: (String) -> Unit,
     onClearHistory: () -> Unit,
     onHotSearchClick: (String) -> Unit,
+    onPlaylistTagClick: (String) -> Unit,
     onRetry: () -> Unit
 ) {
     when (state) {
@@ -615,7 +618,7 @@ private fun DiscoveryContent(
                         PlaylistTagCard(
                             tag = tag,
                             fallbackColor = tagFallbackColors[index % tagFallbackColors.size],
-                            onClick = { }
+                            onClick = { onPlaylistTagClick(tag.name) }
                         )
                     }
                 }

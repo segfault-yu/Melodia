@@ -26,6 +26,7 @@ fun MelodiaNavHost(
     activeRadioId: Long?,
     activeMvId: Long?,
     activeMvName: String,
+    activePlaylistCategory: String?,
     homeTab: Int,
     searchAutoFocus: Boolean,
     onOpenSidebar: () -> Unit,
@@ -35,6 +36,7 @@ fun MelodiaNavHost(
     onNavigateToRadio: (Long) -> Unit,
     onNavigateToMv: (Long, String) -> Unit,
     onMvFullscreenChanged: (Boolean) -> Unit,
+    onNavigateToPlaylistCategory: (String) -> Unit,
     onHomeTabSelected: (Int) -> Unit,
     onNavigateToSearch: () -> Unit,
     onBack: () -> Unit
@@ -92,7 +94,8 @@ fun MelodiaNavHost(
                     autoFocus = searchAutoFocus,
                     onOpenSidebar = onOpenSidebar,
                     onPlaylistClick = onNavigateToPlaylist,
-                    onArtistClick = onNavigateToArtist
+                    onArtistClick = onNavigateToArtist,
+                    onPlaylistCategoryClick = onNavigateToPlaylistCategory
                 )
             }
             Screen.Library -> {
@@ -138,6 +141,15 @@ fun MelodiaNavHost(
                         onArtistClick = onNavigateToArtist,
                         onMvClick = onNavigateToMv,
                         onFullscreenChanged = onMvFullscreenChanged
+                    )
+                }
+            }
+            Screen.PlaylistCategory -> {
+                activePlaylistCategory?.let { category ->
+                    com.lin0721.linmusic.feature.search.ui.PlaylistCategoryScreen(
+                        category = category,
+                        onBack = onBack,
+                        onPlaylistClick = { id -> onNavigateToPlaylist(id, false) }
                     )
                 }
             }

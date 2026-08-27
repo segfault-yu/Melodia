@@ -2,6 +2,7 @@ package com.lin0721.linmusic.feature.search.data
 
 import com.lin0721.linmusic.core.contentfilter.ContentFilter
 import com.lin0721.linmusic.core.log.AppLogger
+import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.network.AppError
 import com.lin0721.linmusic.core.network.apiFlow
 import com.lin0721.linmusic.core.network.mapToAppError
@@ -9,6 +10,7 @@ import com.lin0721.linmusic.feature.search.data.dto.CloudSearchRequest
 import com.lin0721.linmusic.feature.search.data.dto.HighQualityPlaylistRequest
 import com.lin0721.linmusic.feature.search.data.dto.SearchSuggestRequest
 import com.lin0721.linmusic.feature.search.domain.HotSearch
+import com.lin0721.linmusic.feature.search.domain.PlaylistCategoryPage
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
 import com.lin0721.linmusic.feature.search.domain.SearchPageResult
 import com.lin0721.linmusic.feature.search.domain.SearchResultItem
@@ -156,4 +158,29 @@ class SearchRepositoryImpl(
         AppLogger.e(TAG, "getPlaylistTags 请求异常", e)
         emit(Result.failure(mapToAppError(e)))
     }
+
+    override fun getPlaylistsByCategory(category: String, cursor: Long, limit: Int): Flow<Result<PlaylistCategoryPage>> = apiFlow(
+        request = {
+            apiService.getHighQualityPlaylists(
+                HighQualityPlaylistRequest(cat = category, lasttime = cursor, limit = limit)
+            )
+        },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        transform = { response ->
+            PlaylistCategoryPage(
+                playlists = response.playlists.map { item ->
+                    PlaylistDetail(
+                        id = item.id,
+                        name = item.name,
+                        coverImgUrl = item.coverImgUrl,
+                        playCount = item.playCount
+                    )
+                },
+                hasMore = response.more,
+                nextCursor = response.lasttime,
+                total = response.total
+            )
+        }
+    )
 }
