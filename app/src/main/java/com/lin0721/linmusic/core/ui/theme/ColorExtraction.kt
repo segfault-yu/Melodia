@@ -67,11 +67,19 @@ fun extractColorPalette(drawable: android.graphics.drawable.Drawable): ColorPale
     }
 }
 
+// 原始饱和度低于此值时视为黑白/灰阶画面，不再编造色相
+private const val MEANINGFUL_SATURATION = 0.08f
+
 private fun adjustColor(r: Int, g: Int, b: Int, minSat: Float, valRange: ClosedFloatingPointRange<Float>): Color {
     val hsv = FloatArray(3)
     android.graphics.Color.RGBToHSV(r, g, b, hsv)
+    val value = hsv[2].coerceIn(valRange.start, valRange.endInclusive)
+    if (hsv[1] < MEANINGFUL_SATURATION) {
+        // 该像素本身几乎无色（压缩噪点导致的色相不可信），退化为中性深灰，避免凭空上色
+        return Color(android.graphics.Color.HSVToColor(floatArrayOf(0f, 0f, value)))
+    }
     hsv[1] = hsv[1].coerceAtLeast(minSat)
-    hsv[2] = hsv[2].coerceIn(valRange.start, valRange.endInclusive)
+    hsv[2] = value
     return Color(android.graphics.Color.HSVToColor(hsv))
 }
 

@@ -34,6 +34,7 @@ fun MelodiaNavHost(
     onNavigateToArtist: (Long) -> Unit,
     onNavigateToRadio: (Long) -> Unit,
     onNavigateToMv: (Long, String) -> Unit,
+    onMvFullscreenChanged: (Boolean) -> Unit,
     onHomeTabSelected: (Int) -> Unit,
     onNavigateToSearch: () -> Unit,
     onBack: () -> Unit
@@ -133,7 +134,10 @@ fun MelodiaNavHost(
                     com.lin0721.linmusic.feature.artist.ui.ArtistMvPlayerScreen(
                         mvId = id,
                         mvName = activeMvName,
-                        onBack = onBack
+                        onBack = onBack,
+                        onArtistClick = onNavigateToArtist,
+                        onMvClick = onNavigateToMv,
+                        onFullscreenChanged = onMvFullscreenChanged
                     )
                 }
             }

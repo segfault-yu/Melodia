@@ -313,8 +313,8 @@ class PlayerViewModel(
         viewModelScope.launch {
             artistRepository.getArtistAlbums(artistId).collect { result ->
                 if (currentSongId != forSongId) return@collect
-                result.onSuccess { albums ->
-                    _songDetailState.update { it.copy(artistAlbums = albums) }
+                result.onSuccess { page ->
+                    _songDetailState.update { it.copy(artistAlbums = page.albums) }
                 }.onFailure {
                     _songDetailState.update { it.copy(artistAlbums = emptyList()) }
                 }

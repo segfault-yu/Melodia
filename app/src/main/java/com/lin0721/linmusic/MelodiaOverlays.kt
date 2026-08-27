@@ -36,6 +36,7 @@ fun MelodiaBottomOverlay(
     currentScreen: Screen,
     showCreateSheet: Boolean,
     isLoginScreenVisible: Boolean,
+    isMvFullscreen: Boolean,
     currentTrack: MediaItem?,
     isPlaying: Boolean,
     currentPositionProvider: () -> Long,
@@ -82,7 +83,7 @@ fun MelodiaBottomOverlay(
 
         // 1. 浮动播放卡片
         AnimatedVisibility(
-            visible = currentTrack != null && !isLoginScreenVisible,
+            visible = currentTrack != null && !isLoginScreenVisible && !isMvFullscreen,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
         ) {
@@ -103,7 +104,7 @@ fun MelodiaBottomOverlay(
 
         // 2. M3 导航栏 (在非登录状态下显示)
         AnimatedVisibility(
-            visible = !isLoginScreenVisible,
+            visible = !isLoginScreenVisible && !isMvFullscreen,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {

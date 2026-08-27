@@ -154,7 +154,7 @@ fun ArtistContent(
                 contentPadding = PaddingValues(bottom = 180.dp)
             ) {
                 item(key = "header_placeholder") {
-                    ArtistNameSection(artist = artist)
+                    ArtistNameSection(artist = artist, progress = progress, tintColor = dominantColor)
                 }
 
                 item(key = "action_bar") {

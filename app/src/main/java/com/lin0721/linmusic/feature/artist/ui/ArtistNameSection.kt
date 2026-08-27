@@ -18,13 +18,20 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 顶占位透明高，用于显示出大图 Header，底部叠加歌手名与译名
 @Composable
-fun ArtistNameSection(artist: ArtistDetailInfo) {
+fun ArtistNameSection(artist: ArtistDetailInfo, progress: Float, tintColor: Color) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(310.dp),
         contentAlignment = Alignment.BottomStart
     ) {
+        // 滚动色调蒙层：随折叠进度加深，与悬浮返回栏的淡入节奏保持同步
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(tintColor.copy(alpha = progress))
+        )
+
         // 歌手名称和粉丝数区域的渐变蒙层
         Column(
             modifier = Modifier

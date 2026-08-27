@@ -42,7 +42,9 @@ fun PlaylistSongOptionsSheet(
     onCollectClick: (Long) -> Unit,
     onArtistClick: (Long) -> Unit,
     onAlbumClick: (Long) -> Unit,
-    onRequireLogin: () -> Unit
+    onRequireLogin: () -> Unit,
+    // 歌手详情页场景下点击「歌手」等于跳到当前页本身，传 false 隐藏该项
+    showArtistOption: Boolean = true
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -139,17 +141,19 @@ fun PlaylistSongOptionsSheet(
                     }
                 )
 
-                val artistsText = track.ar.joinToString(" • ") { it.name }
-                OptionRow(
-                    icon = Icons.Default.Person,
-                    text = "歌手: $artistsText",
-                    onClick = {
-                        onDismiss()
-                        track.ar.firstOrNull()?.id?.let { artistId ->
-                            onArtistClick(artistId)
+                if (showArtistOption) {
+                    val artistsText = track.ar.joinToString(" • ") { it.name }
+                    OptionRow(
+                        icon = Icons.Default.Person,
+                        text = "歌手: $artistsText",
+                        onClick = {
+                            onDismiss()
+                            track.ar.firstOrNull()?.id?.let { artistId ->
+                                onArtistClick(artistId)
+                            }
                         }
-                    }
-                )
+                    )
+                }
 
                 OptionRow(
                     icon = Icons.Default.Album,

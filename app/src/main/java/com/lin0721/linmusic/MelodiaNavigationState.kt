@@ -9,7 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
 enum class Screen {
-    Home, Playlist, Search, Library, Settings, Artist, Radio
+    Home, Playlist, Search, Library, Settings, Artist, Radio, MvPlayer
 }
 
 // 应用级导航状态：回退栈与各页面所需的跳转参数
@@ -32,6 +32,12 @@ class MelodiaNavigationState {
         private set
 
     var activeRadioId by mutableStateOf<Long?>(null)
+        private set
+
+    var activeMvId by mutableStateOf<Long?>(null)
+        private set
+
+    var activeMvName by mutableStateOf("")
         private set
 
     // 主页三个 tab 的选中项。存在导航状态里而非 HomeScreen 内部——
@@ -84,6 +90,12 @@ class MelodiaNavigationState {
     fun openRadio(id: Long) {
         activeRadioId = id
         navigateTo(Screen.Radio)
+    }
+
+    fun openMvPlayer(id: Long, name: String) {
+        activeMvId = id
+        activeMvName = name
+        navigateTo(Screen.MvPlayer)
     }
 
     // 从主页搜索框进入时自动弹键盘，从底栏进入时展示发现内容

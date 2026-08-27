@@ -3,9 +3,12 @@ package com.lin0721.linmusic.feature.artist.data
 import com.lin0721.linmusic.core.model.Artist
 import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
+import com.lin0721.linmusic.core.model.ArtistMv
 import com.lin0721.linmusic.core.model.Track
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -52,6 +55,48 @@ interface ArtistApi {
         @Path("op") op: String, // sub 表示关注, unsub 表示取消关注
         @Body body: ArtistSubscriptionRequest
     ): ArtistSubscriptionResponse
+
+    // ================== 歌手 MV ==================
+    @POST("/weapi/artist/mvs")
+    suspend fun getArtistMvs(
+        @Body body: ArtistMvsRequest
+    ): ArtistMvsResponse
+
+    // 获取 MV 播放地址
+    @POST("/weapi/song/enhance/play/mv/url")
+    suspend fun getMvUrl(
+        @Body body: MvUrlRequest
+    ): MvUrlResponse
+
+    // ================== 歌手全部歌曲（裸 api 无加密，前缀未经真机验证，eapi/weapi 两版均实现由调用方择优）==================
+    @POST("/eapi/v1/artist/songs")
+    suspend fun getArtistAllSongsEapi(
+        @Body body: ArtistAllSongsRequest
+    ): ArtistAllSongsResponse
+
+    @POST("/weapi/v1/artist/songs")
+    suspend fun getArtistAllSongsWeapi(
+        @Body body: ArtistAllSongsRequest
+    ): ArtistAllSongsResponse
+
+    // ================== MV 详情/收藏/点赞（观看页信息面板用）==================
+    @POST("/weapi/v1/mv/detail")
+    suspend fun getMvDetail(
+        @Body body: MvDetailRequest
+    ): MvDetailResponse
+
+    @POST("/weapi/mv/{op}")
+    suspend fun subscribeMv(
+        @Path("op") op: String, // sub 表示收藏, unsub 表示取消收藏
+        @Body body: MvSubscriptionRequest
+    ): MvSubscriptionResponse
+
+    // 通用资源点赞/取消点赞（threadId 形如 R_MV_5_{mvId}）
+    @POST("/weapi/resource/{op}")
+    suspend fun likeResource(
+        @Path("op") op: String, // like 表示点赞, unlike 表示取消点赞
+        @Body body: ResourceLikeRequest
+    ): ResourceLikeResponse
 }
 
 // ======================= 相似歌手 DTO =======================
@@ -163,6 +208,154 @@ data class ArtistSubscriptionRequest(
 
 @Serializable
 data class ArtistSubscriptionResponse(
+    val code: Int = 0,
+    val message: String? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= 歌手 MV 列表 DTO =======================
+
+@Serializable
+data class ArtistMvsRequest(
+    val artistId: Long,
+    val limit: Int = 20,
+    val offset: Int = 0,
+    val total: Boolean = true
+)
+
+@Serializable
+data class ArtistMvsResponse(
+    val code: Int = 0,
+    val mvs: List<ArtistMv> = emptyList(),
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("hasMore", "more")
+    val hasMore: Boolean = false
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= MV 播放地址 DTO =======================
+
+@Serializable
+data class MvUrlRequest(
+    val id: Long,
+    val r: Int = 1080
+)
+
+@Serializable
+data class MvUrlResponse(
+    val code: Int = 0,
+    val data: MvUrlData? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class MvUrlData(
+    val id: Long = 0,
+    val url: String? = null,
+    val r: Int = 0,
+    val size: Long = 0
+)
+
+// ======================= 歌手全部歌曲 DTO =======================
+
+@Serializable
+data class ArtistAllSongsRequest(
+    val id: Long,
+    @SerialName("private_cloud") val privateCloud: String = "true",
+    @SerialName("work_type") val workType: Int = 1,
+    val order: String = "hot", // hot=热门, time=按时间
+    val offset: Int = 0,
+    val limit: Int = 100
+)
+
+@Serializable
+data class ArtistAllSongsResponse(
+    val code: Int = 0,
+    val songs: List<Track> = emptyList(),
+    val more: Boolean = false,
+    val total: Int = 0
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= MV 详情 DTO =======================
+// 字段名参照网易云通用惯例编写，未经真机数据验证；isSubed/isLiked 拿不到时默认 false，
+// 不影响点赞/收藏动作本身，只是初始态展示可能不准确
+
+@Serializable
+data class MvDetailRequest(val id: Long)
+
+@Serializable
+data class MvDetailResponse(
+    val code: Int = 0,
+    val data: MvDetailData? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class MvDetailData(
+    val id: Long = 0,
+    val name: String = "",
+    val artistId: Long = 0,
+    val artistName: String = "",
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("imgurl16v9", "imgurl", "cover")
+    val cover: String = "",
+    val duration: Long = 0,
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("playCount", "playcount")
+    val playCount: Long = 0,
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("subCount", "subCnt")
+    val subCount: Long = 0,
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("shareCount", "shareCnt")
+    val shareCount: Long = 0,
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("commentCount", "commentCnt")
+    val commentCount: Long = 0,
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("likedCount", "likedCnt")
+    val likedCount: Long = 0,
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("subed", "hasSubed")
+    val subed: Boolean = false,
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("liked", "hasLiked")
+    val liked: Boolean = false,
+    val publishTime: String = "",
+    val briefDesc: String? = null
+)
+
+// ======================= 收藏/取消收藏 MV DTO =======================
+
+@Serializable
+data class MvSubscriptionRequest(
+    val mvId: Long,
+    val mvIds: String
+)
+
+@Serializable
+data class MvSubscriptionResponse(
+    val code: Int = 0,
+    val message: String? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= 通用资源点赞 DTO =======================
+
+@Serializable
+data class ResourceLikeRequest(
+    val threadId: String
+)
+
+@Serializable
+data class ResourceLikeResponse(
     val code: Int = 0,
     val message: String? = null
 ) {

@@ -26,7 +26,8 @@ fun ArtistScreen(
     onBack: () -> Unit,
     onArtistClick: (Long) -> Unit,
     onPlaylistClick: (Long) -> Unit,
-    onAlbumClick: (Long) -> Unit
+    onAlbumClick: (Long) -> Unit,
+    onMvClick: (Long, String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val likedSongIds by viewModel.likedSongIds.collectAsStateWithLifecycle()
@@ -76,6 +77,12 @@ fun ArtistScreen(
                     fansCount = state.fansCount,
                     topSongs = state.topSongs,
                     albums = state.albums,
+                    albumsHasMore = state.albumsHasMore,
+                    albumsLoadingMore = state.albumsLoadingMore,
+                    mvs = state.mvs,
+                    mvsLoadingMore = state.mvsLoadingMore,
+                    allSongs = state.allSongs,
+                    allSongsLoadingMore = state.allSongsLoadingMore,
                     similarArtists = state.similarArtists,
                     likedSongIds = likedSongIds,
                     blockedArtistIds = blockedArtistIds,
@@ -86,6 +93,7 @@ fun ArtistScreen(
                     onArtistClick = onArtistClick,
                     onPlaylistClick = onPlaylistClick,
                     onAlbumClick = onAlbumClick,
+                    onMvClick = onMvClick,
                     onFollowClick = { viewModel.toggleFollow(artistId) },
                     onBlockClick = { viewModel.toggleBlockArtist(artistId) },
                     onPlaySong = { track ->
@@ -99,6 +107,12 @@ fun ArtistScreen(
                     onLikeClick = { songId ->
                         viewModel.prepareCollectDialog(songId)
                     },
+                    onToggleLike = { songId, like ->
+                        viewModel.toggleLikeSong(songId, like)
+                    },
+                    onAddToPlayNext = { track ->
+                        viewModel.addTrackToPlayNext(track)
+                    },
                     onSaveCollection = { songId, items ->
                         viewModel.savePlaylistCollection(songId, items)
                     },
@@ -107,7 +121,11 @@ fun ArtistScreen(
                     },
                     onRequireLogin = {
                         showLoginSheet = true
-                    }
+                    },
+                    onLoadMoreAlbums = { viewModel.loadMoreAlbums() },
+                    onLoadMoreMvs = { viewModel.loadMoreMvs() },
+                    onLoadAllSongsIfNeeded = { viewModel.loadAllSongsIfNeeded() },
+                    onLoadMoreAllSongs = { viewModel.loadMoreAllSongs() }
                 )
             }
         }

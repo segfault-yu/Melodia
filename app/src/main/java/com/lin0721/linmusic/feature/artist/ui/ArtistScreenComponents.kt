@@ -5,8 +5,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,6 +27,7 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.ArtistInfo
+import com.lin0721.linmusic.core.model.ArtistMv
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -129,5 +132,83 @@ fun formatFansCount(count: Long): String {
         String.format(Locale.getDefault(), "%.1f万", num)
     } else {
         NumberFormat.getNumberInstance(Locale.US).format(count)
+    }
+}
+
+// mm:ss 时长格式化，供 MV 卡片时长角标使用
+private fun formatDuration(durationMs: Long): String {
+    val totalSeconds = durationMs / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%d:%02d".format(minutes, seconds)
+}
+
+@Composable
+fun ArtistMvCard(
+    mv: ArtistMv,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier.fillMaxWidth()
+) {
+    Column(
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(10.dp))
+        ) {
+            AsyncImage(
+                model = "${mv.cover}?param=500y280",
+                contentDescription = mv.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .align(Alignment.Center)
+                    .background(Color.Black.copy(alpha = 0.35f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = "播放",
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            if (mv.duration > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(text = formatDuration(mv.duration), color = Color.White, fontSize = 11.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(MelodiaSpacing.sm))
+        Text(
+            text = mv.name,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (mv.playCount > 0) {
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "${formatFansCount(mv.playCount)}次播放",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp
+            )
+        }
     }
 }

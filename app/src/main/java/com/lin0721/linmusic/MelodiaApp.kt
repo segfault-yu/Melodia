@@ -57,6 +57,8 @@ fun MelodiaApp() {
     var showCreateSheet by remember { mutableStateOf(false) }
     // 网页登录界面可见性状态
     var isLoginScreenVisible by remember { mutableStateOf(false) }
+    // MV 播放页是否处于全屏态：全屏时隐藏底部导航栏/悬浮播放条，避免盖住视频
+    var isMvFullscreen by remember { mutableStateOf(false) }
 
     val hazeState = remember { HazeState() }
     val density = LocalDensity.current
@@ -150,6 +152,8 @@ fun MelodiaApp() {
                     activePlaylistIsAlbum = navigation.activePlaylistIsAlbum,
                     activeArtistId = navigation.activeArtistId,
                     activeRadioId = navigation.activeRadioId,
+                    activeMvId = navigation.activeMvId,
+                    activeMvName = navigation.activeMvName,
                     homeTab = navigation.homeTab,
                     searchAutoFocus = navigation.searchAutoFocus,
                     onOpenSidebar = { sidebar.open() },
@@ -157,6 +161,8 @@ fun MelodiaApp() {
                     onNavigateToPlaylist = { id, isAlbum -> navigation.openPlaylist(id, isAlbum) },
                     onNavigateToArtist = { id -> navigation.openArtist(id) },
                     onNavigateToRadio = { id -> navigation.openRadio(id) },
+                    onNavigateToMv = { id, name -> navigation.openMvPlayer(id, name) },
+                    onMvFullscreenChanged = { isMvFullscreen = it },
                     onHomeTabSelected = { navigation.selectHomeTab(it) },
                     onNavigateToSearch = { navigation.openSearch(autoFocus = true) },
                     onBack = { navigation.navigateBack() }
@@ -179,6 +185,7 @@ fun MelodiaApp() {
                 currentScreen = navigation.currentScreen,
                 showCreateSheet = showCreateSheet,
                 isLoginScreenVisible = isLoginScreenVisible,
+                isMvFullscreen = isMvFullscreen,
                 currentTrack = currentTrack,
                 isPlaying = isPlaying,
                 currentPositionProvider = currentPositionProvider,
