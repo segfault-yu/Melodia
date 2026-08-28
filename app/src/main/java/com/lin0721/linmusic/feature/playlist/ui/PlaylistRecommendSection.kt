@@ -30,6 +30,7 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 fun LazyListScope.playlistRecommendItems(
     recommendedSongs: List<Track>,
     currentTrackId: String?,
+    isPlaying: Boolean,
     onRefreshRecommendations: () -> Unit,
     onPlaySong: (Track) -> Unit,
     onArtistClick: (Long) -> Unit,
@@ -50,6 +51,7 @@ fun LazyListScope.playlistRecommendItems(
                 isVip = track.fee == 1
             ),
             isActive = currentTrackId == track.id.toString(),
+            isPlaying = isPlaying,
             onClick = { onPlaySong(track) },
             onArtistClick = { track.ar.firstOrNull()?.id?.let(onArtistClick) },
             trailingSlot = {

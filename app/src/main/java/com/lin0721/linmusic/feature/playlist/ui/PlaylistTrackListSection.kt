@@ -24,6 +24,7 @@ fun LazyListScope.playlistTrackItems(
     tracks: List<Track>,
     searchQuery: String,
     currentTrackId: String?,
+    isPlaying: Boolean,
     onPlaySong: (Track) -> Unit,
     onArtistClick: (Long) -> Unit,
     onMoreClick: (Track) -> Unit
@@ -43,6 +44,7 @@ fun LazyListScope.playlistTrackItems(
                 isVip = track.fee == 1
             ),
             isActive = currentTrackId == track.id.toString(),
+            isPlaying = isPlaying,
             onClick = { onPlaySong(track) },
             onArtistClick = { track.ar.firstOrNull()?.id?.let(onArtistClick) },
             trailingSlot = {

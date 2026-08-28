@@ -104,6 +104,7 @@ fun SearchScreen(
     val selectedType by viewModel.selectedType.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
 
@@ -284,6 +285,7 @@ fun SearchScreen(
                                 type = type,
                                 listState = resultListStates.getValue(type),
                                 currentTrackId = currentTrack?.mediaId,
+                                isPlaying = isPlaying,
                                 onSongClick = { viewModel.playSong(it) },
                                 onAlbumClick = { id -> onPlaylistClick(id, true) },
                                 onArtistClick = onArtistClick,
@@ -405,6 +407,7 @@ private fun SearchResultsList(
     type: SearchType,
     listState: LazyListState,
     currentTrackId: String?,
+    isPlaying: Boolean,
     onSongClick: (Track) -> Unit,
     onAlbumClick: (Long) -> Unit,
     onArtistClick: (Long) -> Unit,
@@ -475,6 +478,7 @@ private fun SearchResultsList(
                                     }
                                 ),
                                 isActive = isActive,
+                                isPlaying = isPlaying,
                                 onClick = { onSongClick(track) }
                             )
                         }

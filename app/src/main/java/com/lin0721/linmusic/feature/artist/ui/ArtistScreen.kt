@@ -34,6 +34,7 @@ fun ArtistScreen(
     val collectState by viewModel.collectState.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
 
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
@@ -87,6 +88,7 @@ fun ArtistScreen(
                     likedSongIds = likedSongIds,
                     blockedArtistIds = blockedArtistIds,
                     currentTrackId = currentTrack?.mediaId,
+                    isPlaying = isPlaying,
                     collectState = collectState,
                     isLoggedIn = userProfile != null,
                     onBack = onBack,

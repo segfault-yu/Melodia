@@ -32,6 +32,7 @@ fun LazyListScope.artistMusicTab(
     allSongsLoadingMore: Boolean,
     likedSongIds: Set<Long>,
     currentTrackId: String?,
+    isPlaying: Boolean,
     isLoggedIn: Boolean,
     onPlaySong: (Track) -> Unit,
     onLikeClick: (Long) -> Unit,
@@ -73,6 +74,7 @@ fun LazyListScope.artistMusicTab(
                     isVip = track.fee == 1
                 ),
                 isActive = isActive,
+                isPlaying = isPlaying,
                 index = index + 1,
                 onClick = { onPlaySong(track) },
                 trailingSlot = {

@@ -38,6 +38,7 @@ fun PlaylistScreen(
 ) {
     val uiState      by viewModel.uiState.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
     val likedSongIds by viewModel.likedSongIds.collectAsStateWithLifecycle()
     val collectState by viewModel.collectState.collectAsStateWithLifecycle()
     val userProfile  by viewModel.userProfile.collectAsStateWithLifecycle()
@@ -88,6 +89,7 @@ fun PlaylistScreen(
                 PlaylistContent(
                     playlist       = state.playlist,
                     currentTrackId = currentTrack?.mediaId,
+                    isPlaying      = isPlaying,
                     likedSongIds   = likedSongIds,
                     collectState   = collectState,
                     isLoggedIn     = userProfile != null,

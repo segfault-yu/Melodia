@@ -35,6 +35,7 @@ private val COVER_MIN_SIZE = 36.dp
 fun PlaylistContent(
     playlist: PlaylistDetail,
     currentTrackId: String?,
+    isPlaying: Boolean,
     likedSongIds: Set<Long>,
     collectState: PlaylistCollectState,
     isLoggedIn: Boolean,
@@ -196,6 +197,7 @@ fun PlaylistContent(
                     tracks         = playlist.tracks,
                     searchQuery    = searchQuery,
                     currentTrackId = currentTrackId,
+                    isPlaying      = isPlaying,
                     onPlaySong     = onPlaySong,
                     onArtistClick  = onArtistClick,
                     onMoreClick    = { activeSongMoreOptions = it }
@@ -207,6 +209,7 @@ fun PlaylistContent(
                 playlistRecommendItems(
                     recommendedSongs         = recommendedSongs,
                     currentTrackId           = currentTrackId,
+                    isPlaying                = isPlaying,
                     onRefreshRecommendations = onRefreshRecommendations,
                     onPlaySong               = onPlaySong,
                     onArtistClick            = onArtistClick,

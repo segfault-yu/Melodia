@@ -1,12 +1,9 @@
 package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -34,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -55,6 +53,9 @@ import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 // 歌曲行的轻量 UI 数据模型，各调用方把自己的领域模型（Track/QueueItem 等）映射到这里
 data class SongRowData(
@@ -71,6 +72,7 @@ data class SongRowData(
 fun SongRow(
     data: SongRowData,
     isActive: Boolean = false,
+    isPlaying: Boolean = true,
     compact: Boolean = false,
     index: Int? = null,
     onClick: () -> Unit,
@@ -124,7 +126,7 @@ fun SongRow(
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (isActive) {
-                    PlayingEqualizerBars(color = MaterialTheme.colorScheme.primary)
+                    PlayingEqualizerBars(color = MaterialTheme.colorScheme.primary, animate = isPlaying)
                     Spacer(Modifier.width(6.dp))
                 }
                 Text(
@@ -178,34 +180,44 @@ fun SongRow(
     }
 }
 
-// 播放中标识：歌名前的三根音柱，高度错峰循环起伏，替代原来的整行底色高亮
+// 播放中标识：歌名前的三根音柱。animate 为 false（暂停）时，各自定格在暂停那一刻的高度上，而不是跳到另一套固定姿态；
+// 用 Animatable 手动循环而非 InfiniteTransition，是因为暂停时需要保留 value 原地冻结，恢复播放时也从当前高度接着动
 @Composable
-private fun PlayingEqualizerBars(color: Color) {
-    val transition = rememberInfiniteTransition(label = "song_row_eq")
-    val bar1 by transition.animateFloat(
-        initialValue = 4f,
-        targetValue = 14f,
-        animationSpec = infiniteRepeatable(tween(600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "eq_bar_1"
-    )
-    val bar2 by transition.animateFloat(
-        initialValue = 13f,
-        targetValue = 6f,
-        animationSpec = infiniteRepeatable(tween(750, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "eq_bar_2"
-    )
-    val bar3 by transition.animateFloat(
-        initialValue = 8f,
-        targetValue = 15f,
-        animationSpec = infiniteRepeatable(tween(500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "eq_bar_3"
-    )
+private fun PlayingEqualizerBars(color: Color, animate: Boolean) {
+    val bar1 = remember { Animatable(4f) }
+    val bar2 = remember { Animatable(13f) }
+    val bar3 = remember { Animatable(8f) }
+
+    LaunchedEffect(animate) {
+        if (!animate) return@LaunchedEffect
+        coroutineScope {
+            launch {
+                while (isActive) {
+                    bar1.animateTo(14f, tween(600, easing = FastOutSlowInEasing))
+                    bar1.animateTo(4f, tween(600, easing = FastOutSlowInEasing))
+                }
+            }
+            launch {
+                while (isActive) {
+                    bar2.animateTo(6f, tween(750, easing = FastOutSlowInEasing))
+                    bar2.animateTo(13f, tween(750, easing = FastOutSlowInEasing))
+                }
+            }
+            launch {
+                while (isActive) {
+                    bar3.animateTo(15f, tween(500, easing = FastOutSlowInEasing))
+                    bar3.animateTo(8f, tween(500, easing = FastOutSlowInEasing))
+                }
+            }
+        }
+    }
+
     Row(
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         modifier = Modifier.height(16.dp)
     ) {
-        listOf(bar1, bar2, bar3).forEach { barHeight ->
+        listOf(bar1.value, bar2.value, bar3.value).forEach { barHeight ->
             Box(
                 modifier = Modifier
                     .width(3.dp)
