@@ -124,6 +124,18 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
                         exportAndShareLogs(context)
                     }
                 )
+                HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+                SettingsRow(
+                    title = "清空日志文件",
+                    subtitle = "清除本地保存的运行日志，清空后将无法再导出",
+                    onClick = {
+                        if (AppLogger.clearLogs()) {
+                            ToastManager.showToast("日志已清空")
+                        } else {
+                            ToastManager.showToast("清空日志失败")
+                        }
+                    }
+                )
 
                 if (showLogLevelDialog) {
                     AlertDialog(

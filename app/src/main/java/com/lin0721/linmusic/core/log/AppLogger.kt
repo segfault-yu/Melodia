@@ -106,7 +106,15 @@ object AppLogger {
 
     fun getLogFiles(): List<File> {
         val dir = logDir ?: return emptyList()
-        return listOf(File(dir, "app_log_0.txt"), File(dir, "app_log_1.txt"))
-            .filter { it.exists() }
+        return existingLogFiles(dir)
     }
+
+    // 清空本地已落盘的日志文件，供设置页手动清理使用
+    fun clearLogs(): Boolean {
+        val dir = logDir ?: return false
+        return existingLogFiles(dir).fold(true) { allDeleted, file -> file.delete() && allDeleted }
+    }
+
+    private fun existingLogFiles(dir: File) =
+        listOf(File(dir, "app_log_0.txt"), File(dir, "app_log_1.txt")).filter { it.exists() }
 }
