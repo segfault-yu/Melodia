@@ -15,6 +15,9 @@ interface PlaylistRepository {
     // 收藏/取消收藏歌单
     fun subscribePlaylist(playlistId: Long, subscribe: Boolean): Flow<Result<Unit>>
 
+    // 收藏/取消收藏专辑
+    fun subscribeAlbum(albumId: Long, subscribe: Boolean): Flow<Result<Unit>>
+
     // 歌单歌曲添加/删除操作
     fun manipulatePlaylistTracks(op: String, playlistId: Long, trackId: Long): Flow<Result<Unit>>
 }

@@ -144,11 +144,30 @@ class PlaylistViewModel(
                         } else {
                             allRecommendedTracks = emptyList()
                         }
+                        // 专辑详情接口不下发收藏状态，需额外核对已收藏专辑列表
+                        if (isAlbum) {
+                            checkAlbumSubscribed(detail.id)
+                        }
                     },
                     onFailure = { error ->
                         _uiState.value = PlaylistUiState.Error(error.toUserMessage(resourceProvider))
                     }
                 )
+            }
+        }
+    }
+
+    private fun checkAlbumSubscribed(albumId: Long) {
+        viewModelScope.launch {
+            libraryRepository.getCollectedAlbums().collect { result ->
+                result.onSuccess { albums ->
+                    val subscribed = albums.any { it.id == albumId }
+                    _uiState.update { state ->
+                        if (state is PlaylistUiState.Success && state.playlist.id == albumId) {
+                            state.copy(isSubscribed = subscribed)
+                        } else state
+                    }
+                }
             }
         }
     }
@@ -293,15 +312,21 @@ class PlaylistViewModel(
 
     fun toggleSubscribePlaylist() {
         val successState = _uiState.value as? PlaylistUiState.Success ?: return
-        val playlistId = successState.playlist.id
+        val id = successState.playlist.id
         val targetSubscribe = !successState.isSubscribed
+        val resourceLabel = if (isAlbumMode) "专辑" else "歌单"
         viewModelScope.launch {
-            playlistRepository.subscribePlaylist(playlistId, targetSubscribe).collect { result ->
+            val flow = if (isAlbumMode) {
+                playlistRepository.subscribeAlbum(id, targetSubscribe)
+            } else {
+                playlistRepository.subscribePlaylist(id, targetSubscribe)
+            }
+            flow.collect { result ->
                 result.onSuccess {
                     _uiState.update { state ->
                         if (state is PlaylistUiState.Success) state.copy(isSubscribed = targetSubscribe) else state
                     }
-                    _toastEvent.emit(if (targetSubscribe) "已收藏歌单" else "已取消收藏歌单")
+                    _toastEvent.emit(if (targetSubscribe) "已收藏$resourceLabel" else "已取消收藏$resourceLabel")
                 }.onFailure { e ->
                     _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
@@ -309,10 +334,13 @@ class PlaylistViewModel(
         }
     }
 
+    // 评论区 threadId：歌单为 A_PL_0_，专辑为 R_AL_3_，二者接口不通用
+    private fun commentThreadId(id: Long): String = if (isAlbumMode) "R_AL_3_$id" else "A_PL_0_$id"
+
     fun loadPlaylistComments(playlistId: Long) {
         viewModelScope.launch {
             _commentsState.value = CommentsState.Loading
-            val threadId = "A_PL_0_$playlistId"
+            val threadId = commentThreadId(playlistId)
             commentRepository.getComments(threadId, limit = 20).collect { result ->
                 result.onSuccess { response ->
                     _commentsState.value = CommentsState.Success(
@@ -339,7 +367,7 @@ class PlaylistViewModel(
             
             val successState = _uiState.value as? PlaylistUiState.Success ?: return@launch
             val playlistId = successState.playlist.id
-            val threadId = "A_PL_0_$playlistId"
+            val threadId = commentThreadId(playlistId)
             val targetLike = !comment.liked
 
             val updatedComments = currentState.comments.map {
