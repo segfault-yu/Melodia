@@ -102,6 +102,7 @@ fun MelodiaNavHost(
                 com.lin0721.linmusic.feature.library.ui.LibraryScreen(
                     onPlaylistClick = { id -> onNavigateToPlaylist(id, false) },
                     onArtistClick = onNavigateToArtist,
+                    onAlbumClick = { id -> onNavigateToPlaylist(id, true) },
                     onBack = onBack,
                     onOpenSidebar = onOpenSidebar,
                     onLoginScreenVisibilityChanged = onLoginScreenVisibilityChanged

@@ -51,6 +51,19 @@ class PlaylistRepositoryImpl(
         transform = { Unit }
     )
 
+    override fun subscribeAlbum(albumId: Long, subscribe: Boolean): Flow<Result<Unit>> = apiFlow(
+        request = {
+            apiService.subscribeAlbum(
+                op = if (subscribe) "sub" else "unsub",
+                body = AlbumSubscribeRequest(id = albumId)
+            )
+        },
+        isSuccess = { it.isSuccess },
+        code = { it.code },
+        msg = { it.message },
+        transform = { Unit }
+    )
+
     override fun manipulatePlaylistTracks(op: String, playlistId: Long, trackId: Long): Flow<Result<Unit>> = apiFlow(
         request = {
             apiService.manipulatePlaylistTracks(

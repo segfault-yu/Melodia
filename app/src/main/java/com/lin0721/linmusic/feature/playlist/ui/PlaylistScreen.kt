@@ -217,12 +217,13 @@ fun PlaylistScreen(
 
                     val firstArtist = playlist.tracks.firstOrNull()?.ar?.firstOrNull()
                     val artistName = firstArtist?.name ?: "未知歌手"
+                    val resourceLabel = if (isAlbum) "专辑" else "歌单"
 
                     val menuItems = listOf(
                         PlaylistMenuItem(
                             icon = if (successState.isSubscribed) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            title = if (successState.isSubscribed) "取消收藏歌单" else "收藏歌单",
-                            subtitle = "收藏歌单到我的音乐库"
+                            title = if (successState.isSubscribed) "取消收藏$resourceLabel" else "收藏$resourceLabel",
+                            subtitle = "收藏${resourceLabel}到我的音乐库"
                         ) {
                             showMoreMenuSheet = false
                             if (userProfile == null) {

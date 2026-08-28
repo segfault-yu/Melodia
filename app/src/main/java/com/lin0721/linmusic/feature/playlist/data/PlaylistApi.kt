@@ -36,6 +36,13 @@ interface PlaylistApi {
         @Path("op") op: String,
         @Body body: PlaylistSubscribeRequest
     ): PlaylistSubscribeResponse
+
+    // ================== 专辑收藏操作 (收藏/取消收藏) ==================
+    @POST("/weapi/album/{op}")
+    suspend fun subscribeAlbum(
+        @Path("op") op: String,
+        @Body body: AlbumSubscribeRequest
+    ): AlbumSubscribeResponse
 }
 
 // ======================= 歌单详情 =======================
@@ -84,6 +91,21 @@ data class PlaylistSubscribeRequest(
 
 @Serializable
 data class PlaylistSubscribeResponse(
+    val code: Int = 0,
+    val message: String? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+// ======================= 收藏与取消收藏专辑 DTO =======================
+
+@Serializable
+data class AlbumSubscribeRequest(
+    val id: Long
+)
+
+@Serializable
+data class AlbumSubscribeResponse(
     val code: Int = 0,
     val message: String? = null
 ) {
