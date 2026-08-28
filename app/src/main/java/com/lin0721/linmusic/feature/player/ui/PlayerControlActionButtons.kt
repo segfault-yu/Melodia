@@ -3,8 +3,8 @@ package com.lin0721.linmusic.feature.player.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
-import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
@@ -14,12 +14,12 @@ import androidx.compose.ui.unit.dp
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
-// 控件区底部次级入口：定时关闭、插播相似歌曲、播放队列
+// 控件区底部次级入口：定时关闭、分享、播放队列
 @Composable
 fun ActionButtons(
     onTimerClick: () -> Unit,
     onQueueClick: () -> Unit,
-    onInsertSimilarClick: () -> Unit
+    onShareClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -38,12 +38,12 @@ fun ActionButtons(
             }
         }
         Row {
-            IconButton(onClick = onInsertSimilarClick) {
+            IconButton(onClick = onShareClick) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.QueueMusic,
-                    contentDescription = "插播相似歌曲",
+                    imageVector = Icons.Rounded.Share,
+                    contentDescription = "分享",
                     tint = TextGray,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
             IconButton(

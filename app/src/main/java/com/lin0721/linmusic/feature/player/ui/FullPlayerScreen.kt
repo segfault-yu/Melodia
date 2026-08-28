@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.feature.player.ui
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
@@ -51,6 +53,7 @@ fun FullPlayerScreen(
 ) {
     if (currentTrack == null) return
 
+    val context = LocalContext.current
     val viewModel: PlayerViewModel = koinViewModel()
     val songDetailState by viewModel.songDetailState.collectAsStateWithLifecycle()
     val songDetail = songDetailState.songDetail
@@ -245,11 +248,13 @@ fun FullPlayerScreen(
                 onDisableRoaming = { viewModel.playerManager.disableRoaming() },
                 onTimerClick = { showTimerSheet = true },
                 onQueueClick = { showQueueSheet = true },
-                onInsertSimilarClick = {
-                    val songId = currentTrack.mediaId?.toLongOrNull()
-                    if (songId != null && songId != -1L) {
-                        viewModel.insertSimilarSongs(songId)
+                onShareClick = {
+                    val shareText = "《$title》- $artist https://music.163.com/song?id=${currentTrack.mediaId}"
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, shareText)
                     }
+                    context.startActivity(Intent.createChooser(intent, "分享歌曲"))
                 }
             )
 

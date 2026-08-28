@@ -35,7 +35,7 @@ fun LazyListScope.fullPlayerPlaybackSection(
     onDisableRoaming: () -> Unit,
     onTimerClick: () -> Unit,
     onQueueClick: () -> Unit,
-    onInsertSimilarClick: () -> Unit
+    onShareClick: () -> Unit
 ) {
     item(key = "cover") {
         FullPlayerCoverArt(
@@ -100,7 +100,7 @@ fun LazyListScope.fullPlayerPlaybackSection(
         ActionButtons(
             onTimerClick = onTimerClick,
             onQueueClick = onQueueClick,
-            onInsertSimilarClick = onInsertSimilarClick
+            onShareClick = onShareClick
         )
     }
 }
