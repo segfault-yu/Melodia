@@ -32,6 +32,7 @@ import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.BuildConfig
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.R
 import com.lin0721.linmusic.core.log.AppLogger
@@ -72,7 +73,7 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text("Melodia Player", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("Version 1.0.0", color = TextGray, fontSize = 13.sp)
+            Text(appVersionLabel(), color = TextGray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -205,6 +206,13 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
 }
 
 private const val TAG = "AboutSettingsScreen"
+
+// tag 里的 -beta.N/-rc.N 后缀原样带进 versionName，这里额外加中文标注避免用户误当正式版反馈问题
+private fun appVersionLabel(): String {
+    val name = BuildConfig.VERSION_NAME
+    val isPrerelease = name.contains("beta", ignoreCase = true) || name.contains("rc", ignoreCase = true)
+    return if (isPrerelease) "Version $name（测试版）" else "Version $name"
+}
 
 private fun logLevelLabel(level: AppLogger.LogLevel): String = when (level) {
     AppLogger.LogLevel.DEBUG -> "详细"
