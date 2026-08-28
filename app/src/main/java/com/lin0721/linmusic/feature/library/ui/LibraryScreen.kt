@@ -65,6 +65,7 @@ import com.lin0721.linmusic.core.auth.UserProfile
 fun LibraryScreen(
     onPlaylistClick: (Long) -> Unit,
     onArtistClick: (Long) -> Unit,
+    onAlbumClick: (Long) -> Unit,
     onBack: () -> Unit,
     onOpenSidebar: () -> Unit = {},
     onLoginScreenVisibilityChanged: (Boolean) -> Unit = {}
@@ -357,7 +358,7 @@ fun LibraryScreen(
                                                     } else if (item.type == LibraryItemType.ARTIST) {
                                                         onArtistClick(item.id.toLong())
                                                     } else {
-                                                        com.lin0721.linmusic.core.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
+                                                        onAlbumClick(item.id.toLong())
                                                     }
                                                 }
                                             )
@@ -383,7 +384,7 @@ fun LibraryScreen(
                                             } else if (item.type == LibraryItemType.ARTIST) {
                                                 onArtistClick(item.id.toLong())
                                             } else {
-                                                com.lin0721.linmusic.core.ui.components.ToastManager.showToast("已收藏的专辑: ${item.title}")
+                                                onAlbumClick(item.id.toLong())
                                             }
                                         },
                                         onLongClick = {
