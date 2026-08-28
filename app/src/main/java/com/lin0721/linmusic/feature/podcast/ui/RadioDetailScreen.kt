@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
@@ -105,7 +106,7 @@ fun RadioDetailScreen(
             is RadioDetailUiState.Success -> LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 180.dp)
+                contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp)
             ) {
                 item {
                     RadioDetailHeader(

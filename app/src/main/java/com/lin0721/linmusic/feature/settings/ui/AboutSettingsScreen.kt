@@ -32,6 +32,7 @@ import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.R
 import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.ui.components.ToastManager
@@ -48,7 +49,7 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
     // 渲染“关于”子设置项
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = LocalBottomOverlayInset.current + 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {

@@ -12,9 +12,13 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -26,6 +30,9 @@ import com.lin0721.linmusic.feature.create.ui.CreatePopupMenu
 import com.lin0721.linmusic.feature.player.ui.FullPlayerScreen
 import dev.chrisbanes.haze.HazeState
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+
+// 悬浮播放卡片 + 底部导航栏的实际占用高度，供各页面计算列表底部留白，避免内容被遮挡
+val LocalBottomOverlayInset = staticCompositionLocalOf { 0.dp }
 
 // ────────────────────────────────────────────────────────────────────────────
 // 底部浮层：创建菜单弹出层 + 悬浮播放卡片 + M3 导航栏
@@ -49,8 +56,10 @@ fun MelodiaBottomOverlay(
     onMiniPlayerDragEnd: (Float) -> Unit,
     onCreateDismiss: () -> Unit,
     onNavigate: (Screen) -> Unit,
-    onCreateClick: () -> Unit
+    onCreateClick: () -> Unit,
+    onOverlayHeightChanged: (Dp) -> Unit = {}
 ) {
+    val density = LocalDensity.current
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -81,39 +90,46 @@ fun MelodiaBottomOverlay(
             }
         }
 
-        // 1. 浮动播放卡片
-        AnimatedVisibility(
-            visible = currentTrack != null && !isLoginScreenVisible && !isMvFullscreen,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        // 悬浮播放卡片 + 导航栏：实际占用高度上报出去，供页面内容计算底部留白
+        Column(
+            modifier = Modifier.onSizeChanged {
+                onOverlayHeightChanged(with(density) { it.height.toDp() })
+            }
         ) {
-            MiniPlayerCard(
-                hazeState = hazeState,
-                currentTrack = currentTrack,
-                isPlaying = isPlaying,
-                currentPositionProvider = currentPositionProvider,
-                duration = duration,
-                onTogglePlay = onTogglePlay,
-                onNext = onNext,
-                onClick = onMiniPlayerClick,
-                onDrag = onMiniPlayerDrag,
-                onDragEnd = onMiniPlayerDragEnd,
-                modifier = Modifier.padding(horizontal = MelodiaSpacing.sm)
-            )
-        }
+            // 1. 浮动播放卡片
+            AnimatedVisibility(
+                visible = currentTrack != null && !isLoginScreenVisible && !isMvFullscreen,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+            ) {
+                MiniPlayerCard(
+                    hazeState = hazeState,
+                    currentTrack = currentTrack,
+                    isPlaying = isPlaying,
+                    currentPositionProvider = currentPositionProvider,
+                    duration = duration,
+                    onTogglePlay = onTogglePlay,
+                    onNext = onNext,
+                    onClick = onMiniPlayerClick,
+                    onDrag = onMiniPlayerDrag,
+                    onDragEnd = onMiniPlayerDragEnd,
+                    modifier = Modifier.padding(horizontal = MelodiaSpacing.sm)
+                )
+            }
 
-        // 2. M3 导航栏 (在非登录状态下显示)
-        AnimatedVisibility(
-            visible = !isLoginScreenVisible && !isMvFullscreen,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            MelodiaNavigationBar(
-                currentScreen = currentScreen,
-                onNavigate = onNavigate,
-                onCreateClick = onCreateClick,
-                isCreateMenuOpen = showCreateSheet
-            )
+            // 2. M3 导航栏 (在非登录状态下显示)
+            AnimatedVisibility(
+                visible = !isLoginScreenVisible && !isMvFullscreen,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                MelodiaNavigationBar(
+                    currentScreen = currentScreen,
+                    onNavigate = onNavigate,
+                    onCreateClick = onCreateClick,
+                    isCreateMenuOpen = showCreateSheet
+                )
+            }
         }
     }
 }

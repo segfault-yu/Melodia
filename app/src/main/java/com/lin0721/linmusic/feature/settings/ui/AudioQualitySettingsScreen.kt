@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.model.getQualityDisplayName
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
@@ -32,7 +33,7 @@ fun AudioQualitySettingsView(viewModel: SettingsViewModel) {
     // 渲染音质的子设置项
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
+        contentPadding = PaddingValues(top = 8.dp, bottom = LocalBottomOverlayInset.current + 16.dp)
     ) {
         item {
             SettingsGroupCard("默认音质") {

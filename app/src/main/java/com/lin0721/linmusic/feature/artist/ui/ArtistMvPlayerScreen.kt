@@ -91,6 +91,7 @@ import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.comment.ui.CommentsBottomSheet
 import com.lin0721.linmusic.core.comment.ui.CommentsPreviewCard
 import com.lin0721.linmusic.core.log.AppLogger
@@ -720,7 +721,7 @@ fun ArtistMvPlayerScreen(
 
                 LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(bottom = 180.dp)
+                    contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp)
                 ) {
                     item(key = "info") {
                         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {

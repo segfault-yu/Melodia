@@ -15,6 +15,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.auth.UserProfile
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.GradientStart
@@ -45,7 +46,7 @@ fun HomeContent(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 180.dp)
+        contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp)
     ) {
         // 渐变铺在状态栏内边距之前，色彩才能顶到状态栏后面，顶栏不至于是一块死黑
         item {

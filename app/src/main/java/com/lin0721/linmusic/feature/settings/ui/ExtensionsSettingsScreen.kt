@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 @Composable
@@ -19,7 +20,7 @@ fun ExtensionsSettingsView(viewModel: SettingsViewModel) {
     // 渲染扩展模块的子设置项
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
+        contentPadding = PaddingValues(top = 8.dp, bottom = LocalBottomOverlayInset.current + 16.dp)
     ) {
         item {
             SettingsGroupCard("悬浮与桌面") {

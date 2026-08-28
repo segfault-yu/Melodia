@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.components.FilterChipsRow
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
@@ -338,7 +339,7 @@ fun LibraryScreen(
                         } else if (isGridView) {
                             LazyColumn(
                                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                                contentPadding = PaddingValues(bottom = 180.dp, top = MelodiaSpacing.xs, start = MelodiaSpacing.md, end = MelodiaSpacing.md)
+                                contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp, top = MelodiaSpacing.xs, start = MelodiaSpacing.md, end = MelodiaSpacing.md)
                             ) {
                                 val rows = state.filteredItems.chunked(3)
                                 items(rows, key = { row -> row.joinToString(separator = "_") { it.id } }) { row ->
@@ -371,7 +372,7 @@ fun LibraryScreen(
                         } else {
                             LazyColumn(
                                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                                contentPadding = PaddingValues(bottom = 180.dp, top = MelodiaSpacing.xs)
+                                contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp, top = MelodiaSpacing.xs)
                             ) {
                                 items(state.filteredItems, key = { "${it.type}_${it.id}" }) { item ->
                                     LibraryItemRow(

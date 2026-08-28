@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectSheet
@@ -120,7 +121,7 @@ fun PlaylistContent(
         // ── 1. 滚动内容 ───────────────────────────────────────────────────
         LazyColumn(
             state          = listState,
-            contentPadding = PaddingValues(bottom = 180.dp),
+            contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp),
             modifier       = Modifier.nestedScroll(searchBarSnapConnection)
         ) {
             // Item 0：搜索栏（下拉可见）

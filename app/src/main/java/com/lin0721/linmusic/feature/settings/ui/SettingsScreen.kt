@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
@@ -150,7 +151,7 @@ private fun MainSettingsMenu(
             .fillMaxSize()
             .padding(horizontal = MelodiaSpacing.md),
         verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md),
-        contentPadding = PaddingValues(bottom = 32.dp, top = 8.dp)
+        contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp, top = 8.dp)
     ) {
         // 多级设置菜单入口组
         item {

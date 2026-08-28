@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.EmptyState
 import com.lin0721.linmusic.core.ui.components.EntityCoverShape
@@ -443,7 +444,7 @@ private fun SearchResultsList(
 
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(bottom = 180.dp)
+                contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp)
             ) {
                 item(key = "header") {
                     Text(
@@ -562,7 +563,7 @@ private fun DiscoveryContent(
                     start = MelodiaSpacing.md,
                     end = MelodiaSpacing.md,
                     top = MelodiaSpacing.sm,
-                    bottom = 180.dp
+                    bottom = LocalBottomOverlayInset.current + 16.dp
                 ),
                 modifier = Modifier.fillMaxSize()
             ) {

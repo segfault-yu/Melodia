@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.ui.components.DiscoverySectionSkeleton
 import com.lin0721.linmusic.core.ui.components.EmptyState
@@ -119,7 +120,7 @@ fun PlaylistCategoryScreen(
                         contentPadding = PaddingValues(
                             start = MelodiaSpacing.md,
                             end = MelodiaSpacing.md,
-                            bottom = 180.dp
+                            bottom = LocalBottomOverlayInset.current + 16.dp
                         ),
                         modifier = Modifier.fillMaxSize()
                     ) {

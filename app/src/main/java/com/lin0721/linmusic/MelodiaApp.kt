@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +60,8 @@ fun MelodiaApp() {
     var isLoginScreenVisible by remember { mutableStateOf(false) }
     // MV 播放页是否处于全屏态：全屏时隐藏底部导航栏/悬浮播放条，避免盖住视频
     var isMvFullscreen by remember { mutableStateOf(false) }
+    // 悬浮播放卡片 + 导航栏的实际高度，下发给各页面用作列表底部留白
+    var bottomOverlayHeight by remember { mutableStateOf(0.dp) }
 
     val hazeState = remember { HazeState() }
     val density = LocalDensity.current
@@ -140,80 +143,83 @@ fun MelodiaApp() {
                 }
                 .background(BackgroundDark)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (playerSheet.isOpen) Modifier.haze(hazeState) else Modifier)
-            ) {
-                MelodiaNavHost(
-                    currentScreen = navigation.currentScreen,
-                    homeViewModel = viewModel,
-                    activePlaylistId = navigation.activePlaylistId,
-                    activePlaylistIsAlbum = navigation.activePlaylistIsAlbum,
-                    activeArtistId = navigation.activeArtistId,
-                    activeRadioId = navigation.activeRadioId,
-                    activeMvId = navigation.activeMvId,
-                    activeMvName = navigation.activeMvName,
-                    activePlaylistCategory = navigation.activePlaylistCategory,
-                    homeTab = navigation.homeTab,
-                    searchAutoFocus = navigation.searchAutoFocus,
-                    onOpenSidebar = { sidebar.open() },
-                    onLoginScreenVisibilityChanged = { isLoginScreenVisible = it },
-                    onNavigateToPlaylist = { id, isAlbum -> navigation.openPlaylist(id, isAlbum) },
-                    onNavigateToArtist = { id -> navigation.openArtist(id) },
-                    onNavigateToRadio = { id -> navigation.openRadio(id) },
-                    onNavigateToMv = { id, name -> navigation.openMvPlayer(id, name) },
-                    onMvFullscreenChanged = { isMvFullscreen = it },
-                    onNavigateToPlaylistCategory = { category -> navigation.openPlaylistCategory(category) },
-                    onHomeTabSelected = { navigation.selectHomeTab(it) },
-                    onNavigateToSearch = { navigation.openSearch(autoFocus = true) },
-                    onBack = { navigation.navigateBack() }
-                )
-            }
-
-            // 创建菜单遮罩
-            if (showCreateSheet) {
+            CompositionLocalProvider(LocalBottomOverlayInset provides bottomOverlayHeight) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clickable { showCreateSheet = false }
-                )
-            }
+                        .then(if (playerSheet.isOpen) Modifier.haze(hazeState) else Modifier)
+                ) {
+                    MelodiaNavHost(
+                        currentScreen = navigation.currentScreen,
+                        homeViewModel = viewModel,
+                        activePlaylistId = navigation.activePlaylistId,
+                        activePlaylistIsAlbum = navigation.activePlaylistIsAlbum,
+                        activeArtistId = navigation.activeArtistId,
+                        activeRadioId = navigation.activeRadioId,
+                        activeMvId = navigation.activeMvId,
+                        activeMvName = navigation.activeMvName,
+                        activePlaylistCategory = navigation.activePlaylistCategory,
+                        homeTab = navigation.homeTab,
+                        searchAutoFocus = navigation.searchAutoFocus,
+                        onOpenSidebar = { sidebar.open() },
+                        onLoginScreenVisibilityChanged = { isLoginScreenVisible = it },
+                        onNavigateToPlaylist = { id, isAlbum -> navigation.openPlaylist(id, isAlbum) },
+                        onNavigateToArtist = { id -> navigation.openArtist(id) },
+                        onNavigateToRadio = { id -> navigation.openRadio(id) },
+                        onNavigateToMv = { id, name -> navigation.openMvPlayer(id, name) },
+                        onMvFullscreenChanged = { isMvFullscreen = it },
+                        onNavigateToPlaylistCategory = { category -> navigation.openPlaylistCategory(category) },
+                        onHomeTabSelected = { navigation.selectHomeTab(it) },
+                        onNavigateToSearch = { navigation.openSearch(autoFocus = true) },
+                        onBack = { navigation.navigateBack() }
+                    )
 
-            // 放置在应用了平移 graphicsLayer 的主 Box 内部的底部
-            MelodiaBottomOverlay(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                currentScreen = navigation.currentScreen,
-                showCreateSheet = showCreateSheet,
-                isLoginScreenVisible = isLoginScreenVisible,
-                isMvFullscreen = isMvFullscreen,
-                currentTrack = currentTrack,
-                isPlaying = isPlaying,
-                currentPositionProvider = currentPositionProvider,
-                duration = duration,
-                hazeState = hazeState,
-                onTogglePlay = { viewModel.togglePlayPause() },
-                onNext = { viewModel.playerManager.playNext() },
-                onMiniPlayerClick = { playerSheet.animateTo(true, 0f) },
-                onMiniPlayerDrag = { delta -> playerSheet.onDrag(delta) },
-                onMiniPlayerDragEnd = { velocity -> playerSheet.onDragEnd(velocity) },
-                onCreateDismiss = { showCreateSheet = false },
-                onNavigate = { navigation.openTab(it) },
-                onCreateClick = { showCreateSheet = !showCreateSheet }
-            )
-
-            // 侧边栏打开时的遮罩与点击收起事件
-            if (sidebar.progress > 0f) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f * sidebar.progress))
-                        .clickable(
-                            enabled = sidebar.isOpen,
-                            onClick = { sidebar.close() }
+                    // 创建菜单遮罩
+                    if (showCreateSheet) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f))
+                                .clickable { showCreateSheet = false }
                         )
-                )
+                    }
+
+                    // 放置在应用了平移 graphicsLayer 的主 Box 内部的底部
+                    MelodiaBottomOverlay(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        currentScreen = navigation.currentScreen,
+                        showCreateSheet = showCreateSheet,
+                        isLoginScreenVisible = isLoginScreenVisible,
+                        isMvFullscreen = isMvFullscreen,
+                        currentTrack = currentTrack,
+                        isPlaying = isPlaying,
+                        currentPositionProvider = currentPositionProvider,
+                        duration = duration,
+                        hazeState = hazeState,
+                        onTogglePlay = { viewModel.togglePlayPause() },
+                        onNext = { viewModel.playerManager.playNext() },
+                        onMiniPlayerClick = { playerSheet.animateTo(true, 0f) },
+                        onMiniPlayerDrag = { delta -> playerSheet.onDrag(delta) },
+                        onMiniPlayerDragEnd = { velocity -> playerSheet.onDragEnd(velocity) },
+                        onCreateDismiss = { showCreateSheet = false },
+                        onNavigate = { navigation.openTab(it) },
+                        onCreateClick = { showCreateSheet = !showCreateSheet },
+                        onOverlayHeightChanged = { bottomOverlayHeight = it }
+                    )
+
+                    // 侧边栏打开时的遮罩与点击收起事件
+                    if (sidebar.progress > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f * sidebar.progress))
+                                .clickable(
+                                    enabled = sidebar.isOpen,
+                                    onClick = { sidebar.close() }
+                                )
+                        )
+                    }
+                }
             }
         }
 
