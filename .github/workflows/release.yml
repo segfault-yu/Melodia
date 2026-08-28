@@ -14,7 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 生成分类日志需要完整提交历史和全部 tag，checkout 默认浅克隆（depth=1）拿不到
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 配置 JDK 21
         uses: actions/setup-java@v4
@@ -116,11 +119,59 @@ jobs:
         if: always()
         run: rm -f melodia-release.jks
 
+      # 仓库日常开发直接 push 到 main、不走 PR，GitHub 原生的 generate_release_notes
+      # 依赖 PR 记录生成"What's Changed"，这里没有 PR 可列，只能退化成空列表 + 对比链接。
+      # 改成按 commit message 的 conventional commits 前缀（feat/fix/refactor...）自己分类生成
+      - name: 生成分类日志
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          RANGE="HEAD"
+          [ -n "$PREV_TAG" ] && RANGE="$PREV_TAG..HEAD"
+
+          declare -A TITLES=(
+            [feat]="✨ 新功能" [fix]="🐛 修复" [refactor]="♻️ 重构"
+            [perf]="⚡ 性能" [docs]="📝 文档" [test]="✅ 测试"
+            [ci]="🔧 CI/构建" [chore]="🧹 杂项" [style]="🎨 样式"
+          )
+          ORDER=(feat fix refactor perf docs test ci chore style)
+          declare -A BUCKETS
+          OTHER=""
+
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            TYPE=$(echo "$line" | grep -oE '^[a-z]+' || true)
+            if [ -n "$TYPE" ] && [ -n "${TITLES[$TYPE]:-}" ]; then
+              BUCKETS[$TYPE]="${BUCKETS[$TYPE]:-}"$'\n'"- $line"
+            else
+              OTHER="$OTHER"$'\n'"- $line"
+            fi
+          done < <(git log "$RANGE" --no-merges --pretty=format:'%s')
+
+          {
+            for t in "${ORDER[@]}"; do
+              if [ -n "${BUCKETS[$t]:-}" ]; then
+                echo "### ${TITLES[$t]}"
+                echo "${BUCKETS[$t]}"
+                echo ""
+              fi
+            done
+            if [ -n "$OTHER" ]; then
+              echo "### 📌 其他"
+              echo "$OTHER"
+              echo ""
+            fi
+            if [ -n "$PREV_TAG" ]; then
+              echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${GITHUB_REF_NAME}"
+            fi
+          } > release-notes.md
+
+          cat release-notes.md
+
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          generate_release_notes: true
+          body_path: release-notes.md
           prerelease: ${{ steps.version.outputs.prerelease }}
           files: app/build/outputs/apk/release/app-release.apk
