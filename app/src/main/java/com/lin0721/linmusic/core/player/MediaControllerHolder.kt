@@ -46,6 +46,7 @@ class MediaControllerHolder(private val context: Context) {
                     try {
                         val mediaController = factory.get()
                         mediaController.addListener(listener)
+                        AppLogger.i(TAG, "MediaController 连接成功")
                         onReady(mediaController)
                         continuation.resume(mediaController)
                     } catch (e: Exception) {

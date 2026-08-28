@@ -49,7 +49,8 @@ class MelodiaPlaybackService : MediaSessionService() {
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
-        
+        AppLogger.i(TAG, "Service onCreate instanceId=${System.identityHashCode(this)}")
+
         // 允许跨协议重定向（如 HTTPS 到 HTTP）
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
@@ -152,6 +153,7 @@ class MelodiaPlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        AppLogger.i(TAG, "Service onDestroy instanceId=${System.identityHashCode(this)}")
         playerManager.release()
         playerManager.saveState()
         serviceScope.cancel()

@@ -26,6 +26,9 @@ class PlaybackNetworkGuard(
 
     private var lastWasWifi = false
 
+    // 网络恢复为真正可用（INTERNET+VALIDATED）时触发一次性回调，供播放失败重试耗尽后挂起等待
+    private var recoveryCallback: (() -> Unit)? = null
+
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
             super.onCapabilitiesChanged(network, capabilities)
@@ -50,7 +53,26 @@ class PlaybackNetworkGuard(
             } else if (isMobile) {
                 lastWasWifi = false
             }
+
+            if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            ) {
+                recoveryCallback?.let { callback ->
+                    recoveryCallback = null
+                    scope.launch(Dispatchers.Main) { callback() }
+                }
+            }
         }
+    }
+
+    // 注册一次性网络恢复回调，触发后自动清空
+    fun awaitNetworkRecovery(onRecovered: () -> Unit) {
+        recoveryCallback = onRecovered
+    }
+
+    // 使挂起的网络恢复回调失效，供新的主动播放请求调用
+    fun cancelRecoveryWait() {
+        recoveryCallback = null
     }
 
     // 注册网络回调

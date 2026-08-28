@@ -6,12 +6,14 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.lin0721.linmusic.core.log.AppLogger
+import com.lin0721.linmusic.core.network.AppError
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +21,15 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 private const val TAG = "PlayerManager"
+
+// 网络类失败原地重试同一首的退避间隔，耗尽后转为等待网络恢复
+private val NETWORK_RETRY_DELAYS_MS = longArrayOf(2000L, 5000L, 10000L)
+
+// 距当前曲目结束的下一首链接预取阈值，用于消除播完到起播下一首之间的网络等待间隙
+private const val PREFETCH_URL_WINDOW_MS = 8000L
+
+// 预取到的下一首播放链接，按 songId 校验有效性
+private data class PrefetchedUrl(val songId: Long, val url: String)
 
 // 播放门面：对外暴露播放状态与控制入口，队列、控制器、进度、持久化等职责交由协作者承担
 class PlayerManager(
@@ -63,7 +74,12 @@ class PlayerManager(
     private var activePlayJob: Job? = null
     private var consecutiveErrors = 0
 
+    private var prefetchJob: Job? = null
+    private var prefetchedNextUrl: PrefetchedUrl? = null
+    private var prefetchTriggeredForSongId: Long = -1L
+
     init {
+        AppLogger.i(TAG, "PlayerManager 初始化 instanceId=${System.identityHashCode(this)}")
         networkGuard.register()
 
         scope.launch {
@@ -88,7 +104,9 @@ class PlayerManager(
                 val dur = progress.duration.value
                 val songId = _currentTrack.value?.mediaId?.toLongOrNull() ?: -1L
                 if (dur > 0L && songId != -1L) {
-                    roaming.onProgressTick(songId, dur - positionMs)
+                    val remainingMs = dur - positionMs
+                    roaming.onProgressTick(songId, remainingMs)
+                    maybePrefetchNextTrackUrl(remainingMs)
                 }
             }
         )
@@ -328,11 +346,12 @@ class PlayerManager(
         stateStore.saveQueue(playbackQueue)
     }
 
-    private fun fetchUrlAndPlay(index: Int, startPosition: Long = 0) {
+    private fun fetchUrlAndPlay(index: Int, startPosition: Long = 0, networkRetryAttempt: Int = 0, prefetchedUrl: String? = null) {
         val item = playbackQueue.itemAt(index) ?: return
 
         activePlayJob?.cancel()
         roaming.cancel()
+        networkGuard.cancelRecoveryWait()
 
         activePlayJob = scope.launch {
             if (networkGuard.blockPlaybackOnMobile()) return@launch
@@ -345,15 +364,73 @@ class PlayerManager(
 
             roaming.prefetchOnPlay(item.songId, index)
 
+            // 命中预取缓存时跳过网络请求，最大限度缩短切歌间隙
+            if (prefetchedUrl != null) {
+                val mediaItem = item.toMediaItem(prefetchedUrl, playbackQueue.playContext.value)
+                controllerHolder.playItem(mediaItem, playbackQueue.playMode.value, startPosition)
+                return@launch
+            }
+
             repository.getSongUrl(item.songId).collect { result ->
                 result.onSuccess { url ->
                     val mediaItem = item.toMediaItem(url, playbackQueue.playContext.value)
                     controllerHolder.playItem(mediaItem, playbackQueue.playMode.value, startPosition)
                 }.onFailure { throwable ->
-                    AppLogger.w(TAG, "获取播放URL失败 songId=${item.songId} index=$index", throwable)
-                    skipToNextOnError(index)
+                    AppLogger.w(TAG, "获取播放URL失败 songId=${item.songId} index=$index networkRetryAttempt=$networkRetryAttempt", throwable)
+                    if (throwable is AppError.NetworkError) {
+                        handleNetworkFailure(index, startPosition, networkRetryAttempt)
+                    } else {
+                        skipToNextOnError(index)
+                    }
                 }
             }
+        }
+    }
+
+    // 临近播完时提前预取下一首链接，供 playNextOnEnded 命中缓存零等待衔接
+    private fun maybePrefetchNextTrackUrl(remainingMs: Long) {
+        if (remainingMs > PREFETCH_URL_WINDOW_MS) return
+        if (playbackQueue.playMode.value == PlayMode.SINGLE_LOOP) return
+        val nextItem = playbackQueue.nextItemByMode() ?: return
+        if (prefetchTriggeredForSongId == nextItem.songId) return
+        prefetchTriggeredForSongId = nextItem.songId
+
+        prefetchJob?.cancel()
+        prefetchJob = scope.launch {
+            repository.getSongUrl(nextItem.songId).collect { result ->
+                result.onSuccess { url ->
+                    prefetchedNextUrl = PrefetchedUrl(nextItem.songId, url)
+                }
+            }
+        }
+    }
+
+    // 歌曲自然播完时自动切下一首，优先使用预取缓存实现无缝衔接
+    private fun playNextOnEnded() {
+        if (playbackQueue.isEmpty) return
+        consecutiveErrors = 0
+        val nextIndex = playbackQueue.nextIndex()
+        val nextItem = playbackQueue.itemAt(nextIndex)
+        val cachedUrl = prefetchedNextUrl?.takeIf { it.songId == nextItem?.songId }?.url
+        prefetchedNextUrl = null
+        fetchUrlAndPlay(nextIndex, prefetchedUrl = cachedUrl)
+    }
+
+    // 网络类失败原地重试同一首（退避延迟），重试耗尽后不放弃，转为等待网络恢复自动续播
+    private fun handleNetworkFailure(index: Int, startPosition: Long, attempt: Int) {
+        if (attempt < NETWORK_RETRY_DELAYS_MS.size) {
+            val delayMs = NETWORK_RETRY_DELAYS_MS[attempt]
+            activePlayJob = scope.launch {
+                delay(delayMs)
+                fetchUrlAndPlay(index, startPosition, attempt + 1)
+            }
+            return
+        }
+
+        val songId = playbackQueue.itemAt(index)?.songId
+        AppLogger.e(TAG, "网络异常重试 $attempt 次后仍失败，等待网络恢复后自动续播 songId=$songId index=$index")
+        networkGuard.awaitNetworkRecovery {
+            fetchUrlAndPlay(index, startPosition)
         }
     }
 
@@ -361,6 +438,7 @@ class PlayerManager(
         networkGuard.unregister()
         sleepTimer.cancel()
         activePlayJob?.cancel()
+        prefetchJob?.cancel()
         roaming.cancel()
     }
 
@@ -418,7 +496,7 @@ class PlayerManager(
         }
         // 单曲循环由 ExoPlayer REPEAT_MODE_ONE 处理，不会到达 STATE_ENDED
         if (playbackState == Player.STATE_ENDED && playbackQueue.playMode.value != PlayMode.SINGLE_LOOP) {
-            playNext()
+            playNextOnEnded()
         }
     }
 
