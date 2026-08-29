@@ -11,7 +11,7 @@ import com.lin0721.linmusic.core.ui.components.PlaylistCollectSheet
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 
-// 全屏播放器的五个底部弹层：播放队列、更多操作、收藏到歌单、睡眠定时、评论
+// 全屏播放器的底部弹层：播放队列、更多操作、收藏到歌单、睡眠定时、评论、连接设备
 @Composable
 fun FullPlayerSheets(
     songState: PlayerSongDetailState,
@@ -21,6 +21,7 @@ fun FullPlayerSheets(
     collectState: PlaylistCollectState,
     showTimerSheet: Boolean,
     showCommentsSheet: Boolean,
+    showOutputDeviceSheet: Boolean,
     queue: List<QueueItem>,
     currentQueueIndex: Int,
     playMode: PlayMode,
@@ -56,7 +57,9 @@ fun FullPlayerSheets(
     onTimerDismiss: () -> Unit,
     onLikeComment: (CommentItem) -> Unit,
     onRetryComments: () -> Unit,
-    onCommentsDismiss: () -> Unit
+    onCommentsDismiss: () -> Unit,
+    onOutputDeviceSelected: (Int) -> Unit,
+    onOutputDeviceDismiss: () -> Unit
 ) {
     if (showQueueSheet) {
         PlayQueueSheet(
@@ -123,6 +126,13 @@ fun FullPlayerSheets(
             onLikeComment = onLikeComment,
             onDismiss = onCommentsDismiss,
             onRetry = onRetryComments
+        )
+    }
+
+    if (showOutputDeviceSheet) {
+        OutputDeviceSheet(
+            onDeviceSelected = onOutputDeviceSelected,
+            onDismiss = onOutputDeviceDismiss
         )
     }
 }

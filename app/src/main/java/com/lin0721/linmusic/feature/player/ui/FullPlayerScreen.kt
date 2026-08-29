@@ -1,6 +1,5 @@
 package com.lin0721.linmusic.feature.player.ui
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
@@ -73,6 +72,7 @@ fun FullPlayerScreen(
     var showTimerSheet by remember { mutableStateOf(false) }
     var showCommentsSheet by remember { mutableStateOf(false) }
     var collectSongId by remember { mutableStateOf<Long?>(null) }
+    var showOutputDeviceSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
@@ -98,6 +98,10 @@ fun FullPlayerScreen(
 
     BackHandler(enabled = showCommentsSheet) {
         showCommentsSheet = false
+    }
+
+    BackHandler(enabled = showOutputDeviceSheet) {
+        showOutputDeviceSheet = false
     }
 
     // 全屏歌词逐字滚动需要更密的进度回调
@@ -258,16 +262,7 @@ fun FullPlayerScreen(
                 onToggleShuffle = viewModel.playerManager::toggleShuffle,
                 onToggleRepeat = viewModel.playerManager::toggleRepeat,
                 onDisableRoaming = { viewModel.playerManager.disableRoaming() },
-                onOutputDeviceClick = {
-                    try {
-                        val intent = Intent("com.android.settings.panel.action.MEDIA_OUTPUT").apply {
-                            putExtra("com.android.settings.panel.extra.PACKAGE_NAME", context.packageName)
-                        }
-                        context.startActivity(intent)
-                    } catch (e: ActivityNotFoundException) {
-                        ToastManager.showToast("当前设备不支持输出设备切换")
-                    }
-                },
+                onOutputDeviceClick = { showOutputDeviceSheet = true },
                 onQueueClick = { showQueueSheet = true },
                 onShareClick = { shareCurrentSong() }
             )
@@ -347,6 +342,7 @@ fun FullPlayerScreen(
             collectState = collectState,
             showTimerSheet = showTimerSheet,
             showCommentsSheet = showCommentsSheet,
+            showOutputDeviceSheet = showOutputDeviceSheet,
             queue = queue,
             currentQueueIndex = currentQueueIndex,
             playMode = playMode,
@@ -418,7 +414,9 @@ fun FullPlayerScreen(
             onTimerDismiss = { showTimerSheet = false },
             onLikeComment = viewModel::likeComment,
             onRetryComments = { viewModel.retryComments() },
-            onCommentsDismiss = { showCommentsSheet = false }
+            onCommentsDismiss = { showCommentsSheet = false },
+            onOutputDeviceSelected = { deviceId -> viewModel.playerManager.setPreferredAudioDevice(deviceId) },
+            onOutputDeviceDismiss = { showOutputDeviceSheet = false }
         )
     }
 }

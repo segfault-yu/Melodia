@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.core.player
 
+import android.media.AudioManager
 import android.os.Bundle
 import androidx.annotation.OptIn
 import androidx.media3.common.ForwardingPlayer
@@ -300,6 +301,7 @@ class MelodiaPlaybackService : MediaSessionService() {
 
             availableSessionCommands.add(SessionCommand("ACTION_TOGGLE_LIKE", Bundle()))
             availableSessionCommands.add(SessionCommand("ACTION_TOGGLE_PLAY_MODE", Bundle()))
+            availableSessionCommands.add(SessionCommand("ACTION_SET_PREFERRED_AUDIO_DEVICE", Bundle()))
 
             return MediaSession.ConnectionResult.accept(
                 availableSessionCommands.build(),
@@ -312,6 +314,7 @@ class MelodiaPlaybackService : MediaSessionService() {
             updateCustomLayoutForController(session, controller)
         }
 
+        @OptIn(UnstableApi::class)
         override fun onCustomCommand(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -331,6 +334,20 @@ class MelodiaPlaybackService : MediaSessionService() {
                 "ACTION_TOGGLE_PLAY_MODE" -> {
                     playerManager.rotatePlayMode()
                     updateCustomLayout()
+                    return com.google.common.util.concurrent.Futures.immediateFuture(
+                        SessionResult(SessionResult.RESULT_SUCCESS)
+                    )
+                }
+                "ACTION_SET_PREFERRED_AUDIO_DEVICE" -> {
+                    val deviceId = args.getInt("device_id", -1)
+                    val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+                    val targetDevice = if (deviceId == -1) {
+                        null
+                    } else {
+                        audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+                            .firstOrNull { it.id == deviceId }
+                    }
+                    exoPlayer?.setPreferredAudioDevice(targetDevice)
                     return com.google.common.util.concurrent.Futures.immediateFuture(
                         SessionResult(SessionResult.RESULT_SUCCESS)
                     )

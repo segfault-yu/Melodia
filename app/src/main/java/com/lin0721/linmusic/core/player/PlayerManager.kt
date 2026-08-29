@@ -265,6 +265,10 @@ class PlayerManager(
         progress.setPosition(positionMs)
     }
 
+    fun setPreferredAudioDevice(deviceId: Int) {
+        controllerHolder.setPreferredAudioDevice(deviceId)
+    }
+
     fun togglePlayPause() {
         val item = _currentTrack.value ?: return
         if (!_isPlaying.value && item.localConfiguration == null) {

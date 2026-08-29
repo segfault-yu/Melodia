@@ -2,10 +2,12 @@ package com.lin0721.linmusic.core.player
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
 import com.lin0721.linmusic.core.log.AppLogger
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -100,5 +102,13 @@ class MediaControllerHolder(private val context: Context) {
     fun stopAndClear() {
         controller?.stop()
         controller?.clearMediaItems()
+    }
+
+    // deviceId 为 -1 表示恢复自动路由，交给 Service 端反查匹配的 AudioDeviceInfo
+    fun setPreferredAudioDevice(deviceId: Int) {
+        controller?.sendCustomCommand(
+            SessionCommand("ACTION_SET_PREFERRED_AUDIO_DEVICE", Bundle()),
+            Bundle().apply { putInt("device_id", deviceId) }
+        )
     }
 }
