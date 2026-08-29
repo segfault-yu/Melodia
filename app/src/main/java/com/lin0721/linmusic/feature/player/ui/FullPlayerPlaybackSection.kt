@@ -33,7 +33,7 @@ fun LazyListScope.fullPlayerPlaybackSection(
     onToggleShuffle: () -> Unit,
     onToggleRepeat: () -> Unit,
     onDisableRoaming: () -> Unit,
-    onTimerClick: () -> Unit,
+    onOutputDeviceClick: () -> Unit,
     onQueueClick: () -> Unit,
     onShareClick: () -> Unit
 ) {
@@ -98,7 +98,7 @@ fun LazyListScope.fullPlayerPlaybackSection(
 
     item(key = "actions") {
         ActionButtons(
-            onTimerClick = onTimerClick,
+            onOutputDeviceClick = onOutputDeviceClick,
             onQueueClick = onQueueClick,
             onShareClick = onShareClick
         )

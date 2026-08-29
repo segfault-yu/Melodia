@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.feature.player.ui
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
@@ -62,6 +63,7 @@ fun FullPlayerScreen(
     val sleepTimerRemaining by viewModel.sleepTimerRemaining.collectAsStateWithLifecycle()
     val commentsState by viewModel.commentsState.collectAsStateWithLifecycle()
     val activeQuality by viewModel.activeQuality.collectAsStateWithLifecycle()
+    val collectState by viewModel.collectState.collectAsStateWithLifecycle()
     val playMode by viewModel.playerManager.playMode.collectAsStateWithLifecycle()
     val queue by viewModel.playerManager.queue.collectAsStateWithLifecycle()
     val currentQueueIndex by viewModel.playerManager.currentIndex.collectAsStateWithLifecycle()
@@ -70,6 +72,7 @@ fun FullPlayerScreen(
     var showMoreOptionsSheet by remember { mutableStateOf(false) }
     var showTimerSheet by remember { mutableStateOf(false) }
     var showCommentsSheet by remember { mutableStateOf(false) }
+    var collectSongId by remember { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
@@ -120,6 +123,15 @@ fun FullPlayerScreen(
     val artist = currentTrack.mediaMetadata.artist?.toString() ?: ""
     val coverUrl = currentTrack.mediaMetadata.artworkUri?.toString()
         ?.replace("?param=300y300", "") ?: ""
+
+    fun shareCurrentSong() {
+        val shareText = "《$title》- $artist https://music.163.com/song?id=${currentTrack.mediaId}"
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+        }
+        context.startActivity(Intent.createChooser(intent, "分享歌曲"))
+    }
 
     val listState = rememberLazyListState()
     val hazeState = remember { HazeState() }
@@ -246,16 +258,18 @@ fun FullPlayerScreen(
                 onToggleShuffle = viewModel.playerManager::toggleShuffle,
                 onToggleRepeat = viewModel.playerManager::toggleRepeat,
                 onDisableRoaming = { viewModel.playerManager.disableRoaming() },
-                onTimerClick = { showTimerSheet = true },
-                onQueueClick = { showQueueSheet = true },
-                onShareClick = {
-                    val shareText = "《$title》- $artist https://music.163.com/song?id=${currentTrack.mediaId}"
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, shareText)
+                onOutputDeviceClick = {
+                    try {
+                        val intent = Intent("com.android.settings.panel.action.MEDIA_OUTPUT").apply {
+                            putExtra("com.android.settings.panel.extra.PACKAGE_NAME", context.packageName)
+                        }
+                        context.startActivity(intent)
+                    } catch (e: ActivityNotFoundException) {
+                        ToastManager.showToast("当前设备不支持输出设备切换")
                     }
-                    context.startActivity(Intent.createChooser(intent, "分享歌曲"))
-                }
+                },
+                onQueueClick = { showQueueSheet = true },
+                onShareClick = { shareCurrentSong() }
             )
 
             fullPlayerInfoSection(
@@ -329,6 +343,8 @@ fun FullPlayerScreen(
             songState = songDetailState,
             showQueueSheet = showQueueSheet,
             showMoreOptionsSheet = showMoreOptionsSheet,
+            collectSongId = collectSongId,
+            collectState = collectState,
             showTimerSheet = showTimerSheet,
             showCommentsSheet = showCommentsSheet,
             queue = queue,
@@ -383,6 +399,17 @@ fun FullPlayerScreen(
                 val songId = currentTrack.mediaId.toLongOrNull() ?: 0L
                 viewModel.insertSimilarSongs(songId)
             },
+            onCollectClick = {
+                val songId = currentTrack.mediaId.toLongOrNull()
+                if (songId != null) {
+                    collectSongId = songId
+                    viewModel.prepareCollectDialog(songId)
+                }
+            },
+            onShareClick = { shareCurrentSong() },
+            onSaveCollection = { songId, items -> viewModel.savePlaylistCollection(songId, items) },
+            onSaveNewCollection = { name, songId -> viewModel.createPlaylistAndAddSong(name, songId) },
+            onCollectDismiss = { collectSongId = null },
             onMoreOptionsDismiss = { showMoreOptionsSheet = false },
             onSetTimer = { minutes ->
                 viewModel.setSleepTimer(minutes)

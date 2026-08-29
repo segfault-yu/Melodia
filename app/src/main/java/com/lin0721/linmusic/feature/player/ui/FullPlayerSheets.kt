@@ -6,13 +6,19 @@ import com.lin0721.linmusic.core.comment.ui.CommentsState
 import com.lin0721.linmusic.core.model.CommentItem
 import com.lin0721.linmusic.core.player.PlayMode
 import com.lin0721.linmusic.core.player.QueueItem
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectSheet
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 
-// 全屏播放器的四个底部弹层：播放队列、更多操作、睡眠定时、评论
+// 全屏播放器的五个底部弹层：播放队列、更多操作、收藏到歌单、睡眠定时、评论
 @Composable
 fun FullPlayerSheets(
     songState: PlayerSongDetailState,
     showQueueSheet: Boolean,
     showMoreOptionsSheet: Boolean,
+    collectSongId: Long?,
+    collectState: PlaylistCollectState,
     showTimerSheet: Boolean,
     showCommentsSheet: Boolean,
     queue: List<QueueItem>,
@@ -40,6 +46,11 @@ fun FullPlayerSheets(
     onQualitySelected: (String) -> Unit,
     onStartSimilarRoaming: () -> Unit,
     onInsertSimilarSongs: () -> Unit,
+    onCollectClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
+    onSaveNewCollection: (String, Long) -> Unit,
+    onCollectDismiss: () -> Unit,
     onMoreOptionsDismiss: () -> Unit,
     onSetTimer: (Int) -> Unit,
     onTimerDismiss: () -> Unit,
@@ -81,7 +92,20 @@ fun FullPlayerSheets(
             onQualitySelected = onQualitySelected,
             onStartSimilarRoaming = onStartSimilarRoaming,
             onInsertSimilarSongs = onInsertSimilarSongs,
+            onCollectClick = onCollectClick,
+            onShareClick = onShareClick,
             onDismiss = onMoreOptionsDismiss
+        )
+    }
+
+    if (collectSongId != null) {
+        PlaylistCollectSheet(
+            songId = collectSongId,
+            collectState = collectState,
+            onDismiss = onCollectDismiss,
+            onSaveCollection = onSaveCollection,
+            onSaveNewCollection = onSaveNewCollection,
+            sheetShape = BottomSheetShape
         )
     }
 

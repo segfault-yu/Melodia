@@ -30,7 +30,9 @@ import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.model.ArtistInfo
+import com.lin0721.linmusic.feature.player.domain.SongWikiCreatorRole
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
+import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
@@ -41,6 +43,8 @@ fun SongDetailCard(
     songDetail: Track?,
     cardColor: Color
 ) {
+    var showCreatorsSheet by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -127,10 +131,82 @@ fun SongDetailCard(
                         SongDetailRow(
                             label = "制作",
                             value = songWiki.creators,
-                            showChevron = true,
-                            maxLines = 15
+                            showChevron = songWiki.creatorRoles.isNotEmpty(),
+                            maxLines = 15,
+                            onClick = if (songWiki.creatorRoles.isNotEmpty()) {
+                                { showCreatorsSheet = true }
+                            } else null
                         )
                     }
+                }
+            }
+
+            if (showCreatorsSheet) {
+                SongCreatorsSheet(
+                    creatorRoles = songWiki?.creatorRoles.orEmpty(),
+                    onDismiss = { showCreatorsSheet = false }
+                )
+            }
+        }
+    }
+}
+
+// "制作"详情面板：按角色分组展示词曲编曲等制作人员
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SongCreatorsSheet(
+    creatorRoles: List<SongWikiCreatorRole>,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = BackgroundDark,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
+                    .width(36.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color.White.copy(alpha = 0.3f))
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = MelodiaSpacing.md)
+        ) {
+            Text(
+                text = "制作信息",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = MelodiaSpacing.md)
+            )
+            creatorRoles.forEach { role ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = MelodiaSpacing.xs),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = role.roleName,
+                        color = TextGray.copy(alpha = 0.6f),
+                        fontSize = 14.sp,
+                        modifier = Modifier.width(70.dp)
+                    )
+                    Text(
+                        text = role.artistNames.joinToString(" / "),
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
@@ -142,11 +218,13 @@ fun SongDetailRow(
     label: String,
     value: String,
     showChevron: Boolean = false,
-    maxLines: Int = 3
+    maxLines: Int = 3,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(vertical = MelodiaSpacing.xxs),
         verticalAlignment = Alignment.CenterVertically
     ) {

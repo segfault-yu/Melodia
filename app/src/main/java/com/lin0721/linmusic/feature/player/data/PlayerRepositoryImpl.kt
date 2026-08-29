@@ -4,6 +4,7 @@ import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.network.apiFlow
 import com.lin0721.linmusic.core.network.mapToAppError
+import com.lin0721.linmusic.feature.player.domain.SongWikiCreatorRole
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -133,20 +134,13 @@ class PlayerRepositoryImpl(
                 }
             }
 
-            // 解析制作人员信息：提取全部角色，拼接为详细制作名单
-            val creatorRoles = creatorsResult?.data?.songCreatorsRoleVos
-            val creatorsStr = if (!creatorRoles.isNullOrEmpty()) {
-                val parts = mutableListOf<String>()
-                creatorRoles.forEach { role ->
+            // 解析制作人员信息：按角色分组，供"制作"详情面板展示；同时拼一份摘要文本用于列表行
+            val creatorRoles = (creatorsResult?.data?.songCreatorsRoleVos ?: emptyList())
+                .mapNotNull { role ->
                     val artists = role.creatorMetaVOS.map { it.artistName }.filter { it.isNotEmpty() }
-                    if (artists.isNotEmpty()) {
-                        parts.add("${role.roleName} ${artists.joinToString(" ")}")
-                    }
+                    if (artists.isNotEmpty()) SongWikiCreatorRole(role.roleName, artists) else null
                 }
-                parts.joinToString(" / ")
-            } else {
-                ""
-            }
+            val creatorsStr = creatorRoles.joinToString(" / ") { "${it.roleName} ${it.artistNames.joinToString(" ")}" }
 
             emit(Result.success(
                 SongWikiData(
@@ -156,6 +150,7 @@ class PlayerRepositoryImpl(
                     publishTime = publishDateStr,
                     bpm = bpm,
                     creators = creatorsStr,
+                    creatorRoles = creatorRoles,
                     entertainment = entertainment,
                     background = background,
                     awards = awards

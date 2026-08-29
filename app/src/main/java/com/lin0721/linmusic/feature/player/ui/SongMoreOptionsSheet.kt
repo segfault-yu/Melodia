@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -55,6 +56,8 @@ fun SongMoreOptionsSheet(
     onQualitySelected: (String) -> Unit,
     onStartSimilarRoaming: () -> Unit,
     onInsertSimilarSongs: () -> Unit,
+    onCollectClick: () -> Unit,
+    onShareClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -159,6 +162,19 @@ fun SongMoreOptionsSheet(
                 )
 
 
+                // 3. 收藏到歌单
+                OptionRow(
+                    icon = Icons.AutoMirrored.Rounded.PlaylistAdd,
+                    text = "收藏到歌单",
+                    onClick = {
+                        scope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                            onCollectClick()
+                        }
+                    }
+                )
+
                 // 4. 开始相似歌曲漫游
                 OptionRow(
                     icon = Icons.Rounded.Explore,
@@ -185,6 +201,19 @@ fun SongMoreOptionsSheet(
                     }
                 )
 
+
+                // 6. 分享
+                OptionRow(
+                    icon = Icons.Rounded.Share,
+                    text = "分享",
+                    onClick = {
+                        scope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                            onShareClick()
+                        }
+                    }
+                )
 
                 // 7. 音质（带有 VIP Tag）
                 var showQualityDialog by remember { mutableStateOf(false) }

@@ -15,6 +15,9 @@ import com.lin0721.linmusic.feature.artist.data.ArtistRepository
 import com.lin0721.linmusic.core.comment.data.CommentRepository
 import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.core.songlike.SongLikeRepository
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
+import com.lin0721.linmusic.feature.playlist.domain.SongCollectDelegate
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.core.player.PlayerManager
@@ -65,6 +68,7 @@ class PlayerViewModel(
     private val artistRepository: ArtistRepository,
     private val commentRepository: CommentRepository,
     private val songLikeRepository: SongLikeRepository,
+    private val songCollectDelegate: SongCollectDelegate,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val settingsPreferences: SettingsPreferences,
@@ -132,6 +136,8 @@ class PlayerViewModel(
     private val likedSongIds = mutableSetOf<Long>()
     private var likedListLoaded = false
 
+    val collectState: StateFlow<PlaylistCollectState> = songCollectDelegate.state
+
     private var currentSongId: Long = -1L
 
     init {
@@ -169,6 +175,35 @@ class PlayerViewModel(
                     _toastEvent.emit(it.toUserMessage(resourceProvider))
                 }
             }
+        }
+    }
+
+    // 打开"收藏到歌单"面板前先拉取歌单勾选状态
+    fun prepareCollectDialog(songId: Long) {
+        viewModelScope.launch {
+            songCollectDelegate.prepare(songId, likedSongIds) { _toastEvent.emit(it) }
+        }
+    }
+
+    fun savePlaylistCollection(songId: Long, items: List<PlaylistCollectItem>) {
+        viewModelScope.launch {
+            songCollectDelegate.save(
+                songId = songId,
+                items = items,
+                likedSongIds = likedSongIds,
+                onToast = { _toastEvent.emit(it) },
+                onLikedChanged = { newLiked ->
+                    likedSongIds.clear()
+                    likedSongIds.addAll(newLiked)
+                    _songDetailState.update { it.copy(isLiked = currentSongId in likedSongIds) }
+                }
+            )
+        }
+    }
+
+    fun createPlaylistAndAddSong(name: String, songId: Long) {
+        viewModelScope.launch {
+            songCollectDelegate.createAndAdd(name, songId, likedSongIds) { _toastEvent.emit(it) }
         }
     }
 
