@@ -44,11 +44,13 @@ fun PlaylistScreen(
     val userProfile  by viewModel.userProfile.collectAsStateWithLifecycle()
     val commentsState by viewModel.commentsState.collectAsStateWithLifecycle()
     val historyRecommendState by viewModel.historyRecommendState.collectAsStateWithLifecycle()
+    val importState by viewModel.importState.collectAsStateWithLifecycle()
 
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
     var showCommentsSheet by remember { mutableStateOf(false) }
     var showMoreMenuSheet by remember { mutableStateOf(false) }
+    var showImportTargetSheet by remember { mutableStateOf(false) }
     var selectedHistoryDate by remember { mutableStateOf("今天") }
 
     LaunchedEffect(historyRecommendState.selectedDate) {
@@ -85,9 +87,18 @@ fun PlaylistScreen(
                         TextButton(onClick = onBack) { Text("返回", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
-            is PlaylistUiState.Success ->
+            is PlaylistUiState.Success -> {
+                val profile = userProfile
+                val isOwnedPlaylist = profile != null &&
+                    state.playlist.id > 0L &&
+                    state.playlist.id != profile.uid &&
+                    state.playlist.creator?.userId == profile.uid
                 PlaylistContent(
                     playlist       = state.playlist,
+                    canRemoveFromPlaylist = isOwnedPlaylist,
+                    onRemoveFromPlaylist = { songId ->
+                        viewModel.removeTrackFromPlaylist(state.playlist.id, songId)
+                    },
                     currentTrackId = currentTrack?.mediaId,
                     isPlaying      = isPlaying,
                     likedSongIds   = likedSongIds,
@@ -158,6 +169,7 @@ fun PlaylistScreen(
                     onLoadHistoryDetail = { viewModel.loadHistoryDetail(it) },
                     onLoadDailyRecommend = { viewModel.loadPlaylist(-1L) }
                 )
+            }
 
         }
 
@@ -258,7 +270,12 @@ fun PlaylistScreen(
                             subtitle = "将全部歌曲导入到其他歌单"
                         ) {
                             showMoreMenuSheet = false
-                            com.lin0721.linmusic.core.ui.components.ToastManager.showToast("批量导入功能开发中，敬请期待")
+                            if (userProfile == null) {
+                                showLoginSheet = true
+                            } else {
+                                viewModel.prepareImportTargets(playlist.id)
+                                showImportTargetSheet = true
+                            }
                         }
                     )
 
@@ -301,6 +318,21 @@ fun PlaylistScreen(
                     }
                 }
             }
+        }
+
+        if (showImportTargetSheet) {
+            PlaylistImportTargetSheet(
+                importState = importState,
+                onDismiss = { showImportTargetSheet = false },
+                onSelectTarget = { targetId ->
+                    viewModel.importAllTracksTo(targetId)
+                    showImportTargetSheet = false
+                },
+                onCreateAndImport = { name ->
+                    viewModel.createPlaylistAndImportAll(name)
+                    showImportTargetSheet = false
+                }
+            )
         }
 
     }

@@ -1,11 +1,17 @@
 package com.lin0721.linmusic.feature.playlist.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +30,8 @@ fun SearchBarItem(
     onQueryChange: (String) -> Unit,
     topPadding: Dp,
     backgroundColor: Color,
+    sortOption: PlaylistSortOption,
+    onSortOptionChange: (PlaylistSortOption) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth().background(backgroundColor)) {
@@ -66,7 +74,36 @@ fun SearchBarItem(
                 Spacer(Modifier.width(10.dp))
             }
             Spacer(Modifier.width(12.dp))
-            Text("排序", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+
+            var showSortMenu by remember { mutableStateOf(false) }
+            Box {
+                Text(
+                    text = sortOption.label,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                    modifier = Modifier.clickable { showSortMenu = true }
+                )
+                DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
+                    PlaylistSortOption.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.label) },
+                            trailingIcon = {
+                                if (option == sortOption) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            },
+                            onClick = {
+                                onSortOptionChange(option)
+                                showSortMenu = false
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }

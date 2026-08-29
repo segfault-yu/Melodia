@@ -64,13 +64,13 @@ class PlaylistRepositoryImpl(
         transform = { Unit }
     )
 
-    override fun manipulatePlaylistTracks(op: String, playlistId: Long, trackId: Long): Flow<Result<Unit>> = apiFlow(
+    override fun manipulatePlaylistTracks(op: String, playlistId: Long, trackIds: List<Long>): Flow<Result<Unit>> = apiFlow(
         request = {
             apiService.manipulatePlaylistTracks(
                 PlaylistTracksManipulateRequest(
                     op = op,
                     pid = playlistId,
-                    trackIds = "[\"$trackId\"]"
+                    trackIds = trackIds.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }
                 )
             )
         },

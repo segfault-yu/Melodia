@@ -67,7 +67,9 @@ fun PlaylistContent(
     selectedHistoryDate: String = "今天",
     onSelectedHistoryDateChange: (String) -> Unit = {},
     onLoadHistoryDetail: (String) -> Unit = {},
-    onLoadDailyRecommend: () -> Unit = {}
+    onLoadDailyRecommend: () -> Unit = {},
+    canRemoveFromPlaylist: Boolean = false,
+    onRemoveFromPlaylist: (Long) -> Unit = {}
 ) {
     val density = LocalDensity.current
 
@@ -75,6 +77,8 @@ fun PlaylistContent(
     // 搜索栏不再是 list item，header 统一为 item 0，无需按是否每日推荐区分初始位置
     val listState = rememberLazyListState()
     var searchQuery by remember { mutableStateOf("") }
+    var sortOption by remember { mutableStateOf(PlaylistSortOption.DEFAULT) }
+    val sortedTracks = remember(playlist.tracks, sortOption) { sortOption.sort(playlist.tracks) }
 
     // 从封面提取的主色调，默认为深灰色
     var dominantColor by remember { mutableStateOf(FallbackDominant) }
@@ -176,7 +180,7 @@ fun PlaylistContent(
                 }
             } else {
                 playlistTrackItems(
-                    tracks         = playlist.tracks,
+                    tracks         = sortedTracks,
                     searchQuery    = searchQuery,
                     currentTrackId = currentTrackId,
                     isPlaying      = isPlaying,
@@ -203,11 +207,13 @@ fun PlaylistContent(
         // ── 2. 搜索栏浮层：隐藏时整体位移到屏幕外上方，随 revealPx 跟手展开 ─────
         if (!isDailyRecommend) {
             SearchBarItem(
-                query           = searchQuery,
-                onQueryChange   = { searchQuery = it },
-                topPadding      = overlayHeight,
-                backgroundColor = dominantColor,
-                modifier        = Modifier
+                query              = searchQuery,
+                onQueryChange      = { searchQuery = it },
+                topPadding         = overlayHeight,
+                backgroundColor    = dominantColor,
+                sortOption         = sortOption,
+                onSortOptionChange = { sortOption = it },
+                modifier           = Modifier
                     .onSizeChanged { searchBarRevealState.searchBarHeightPx = it.height.toFloat() }
                     .graphicsLayer {
                         translationY = searchBarRevealState.revealPx - searchBarRevealState.searchBarHeightPx
@@ -260,7 +266,9 @@ fun PlaylistContent(
             },
             onArtistClick = onArtistClick,
             onAlbumClick = onAlbumClick,
-            onRequireLogin = onRequireLogin
+            onRequireLogin = onRequireLogin,
+            canRemoveFromPlaylist = canRemoveFromPlaylist,
+            onRemoveFromPlaylist = onRemoveFromPlaylist
         )
     }
 }

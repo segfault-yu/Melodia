@@ -87,7 +87,7 @@ class SongCollectDelegate(
                     ?.onFailure { onToast(it.toUserMessage(resourceProvider)) }
             } else {
                 val op = if (item.isContains) "add" else "del"
-                playlistRepository.manipulatePlaylistTracks(op, item.playlistId, songId).firstOrNull()
+                playlistRepository.manipulatePlaylistTracks(op, item.playlistId, listOf(songId)).firstOrNull()
                     ?.onFailure { onToast(it.toUserMessage(resourceProvider)) }
             }
         }
@@ -101,7 +101,7 @@ class SongCollectDelegate(
         likedSongIds: Set<Long>,
         onToast: suspend (String) -> Unit
     ) {
-        createPlaylistAndAddSongUseCase(name, songId).firstOrNull()
+        createPlaylistAndAddSongUseCase(name, listOf(songId)).firstOrNull()
             ?.onSuccess {
                 onToast("创建并加入歌单成功")
                 prepare(songId, likedSongIds, onToast)

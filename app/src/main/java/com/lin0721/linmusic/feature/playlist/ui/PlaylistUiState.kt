@@ -3,6 +3,7 @@ package com.lin0721.linmusic.feature.playlist.ui
 import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.model.Track
+import com.lin0721.linmusic.core.userplaylist.UserPlaylist
 
 // 歌单/专辑详情页 UI 状态
 sealed interface PlaylistUiState {
@@ -23,4 +24,10 @@ data class HistoryRecommendState(
     val songs: List<DailySong> = emptyList(),
     val selectedDate: String? = null,
     val songsLoading: Boolean = false
+)
+
+// "添加到歌单"批量导入目标选择的浏览状态
+data class PlaylistImportState(
+    val items: List<UserPlaylist> = emptyList(),
+    val isLoading: Boolean = false
 )

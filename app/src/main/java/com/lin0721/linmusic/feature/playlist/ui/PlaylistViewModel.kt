@@ -9,6 +9,7 @@ import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
 import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
 import com.lin0721.linmusic.core.comment.data.CommentRepository
+import com.lin0721.linmusic.feature.playlist.domain.CreatePlaylistAndAddSongUseCase
 import com.lin0721.linmusic.feature.playlist.domain.SongCollectDelegate
 import com.lin0721.linmusic.feature.home.data.HomeRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
@@ -17,6 +18,7 @@ import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
+import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Job
@@ -40,6 +42,8 @@ class PlaylistViewModel(
     private val playlistRepository: PlaylistRepository,
     private val songLikeRepository: SongLikeRepository,
     private val playbackRepository: PlaybackRepository,
+    private val userPlaylistRepository: UserPlaylistRepository,
+    private val createPlaylistAndAddSongUseCase: CreatePlaylistAndAddSongUseCase,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val resourceProvider: ResourceProvider
@@ -74,6 +78,10 @@ class PlaylistViewModel(
     // 历史日推（每日推荐/听歌排行）浏览状态
     private val _historyRecommendState = MutableStateFlow(HistoryRecommendState())
     val historyRecommendState: StateFlow<HistoryRecommendState> = _historyRecommendState.asStateFlow()
+
+    // "添加到歌单"批量导入目标选择状态
+    private val _importState = MutableStateFlow(PlaylistImportState())
+    val importState: StateFlow<PlaylistImportState> = _importState.asStateFlow()
 
     init {
         loadLikedSongIds()
@@ -287,7 +295,7 @@ class PlaylistViewModel(
 
     fun addRecommendSongToPlaylist(playlistId: Long, track: Track) {
         viewModelScope.launch {
-            playlistRepository.manipulatePlaylistTracks("add", playlistId, track.id).collect { result ->
+            playlistRepository.manipulatePlaylistTracks("add", playlistId, listOf(track.id)).collect { result ->
                 result.onSuccess {
                     _toastEvent.emit("已添加到歌单")
                     allRecommendedTracks = allRecommendedTracks.filter { it.id != track.id }
@@ -303,6 +311,77 @@ class PlaylistViewModel(
                             state.copy(playlist = state.playlist.copy(tracks = updatedTracks))
                         } else state
                     }
+                }.onFailure { e ->
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
+                }
+            }
+        }
+    }
+
+    // 从当前歌单中删除一首歌，仅限歌单创建者可调用（由调用方按 UI 状态判断是否展示入口）
+    fun removeTrackFromPlaylist(playlistId: Long, trackId: Long) {
+        viewModelScope.launch {
+            playlistRepository.manipulatePlaylistTracks("del", playlistId, listOf(trackId)).collect { result ->
+                result.onSuccess {
+                    _toastEvent.emit("已从歌单中删除")
+                    _uiState.update { state ->
+                        if (state is PlaylistUiState.Success && state.playlist.id == playlistId) {
+                            val updatedTracks = state.playlist.tracks.filter { it.id != trackId }
+                            state.copy(playlist = state.playlist.copy(tracks = updatedTracks))
+                        } else state
+                    }
+                }.onFailure { e ->
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
+                }
+            }
+        }
+    }
+
+    // 拉取当前用户自建的歌单，供"添加到歌单"批量导入选择目标；排除当前歌单本身与"我喜欢的音乐"
+    fun prepareImportTargets(excludePlaylistId: Long) {
+        viewModelScope.launch {
+            val profile = userPreferences.userProfile.first()
+            if (profile == null) {
+                _toastEvent.emit("请先登录账号")
+                return@launch
+            }
+            _importState.update { it.copy(isLoading = true) }
+            userPlaylistRepository.getUserPlaylists(profile.uid).collect { result ->
+                result.onSuccess { playlists ->
+                    val items = playlists.filter {
+                        it.userId == profile.uid && it.id != excludePlaylistId && it.id != profile.uid
+                    }
+                    _importState.value = PlaylistImportState(items = items, isLoading = false)
+                }.onFailure { e ->
+                    _importState.update { it.copy(isLoading = false) }
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
+                }
+            }
+        }
+    }
+
+    // 把当前歌单全部歌曲一次性导入到已有的目标歌单
+    fun importAllTracksTo(targetPlaylistId: Long) {
+        val tracks = (_uiState.value as? PlaylistUiState.Success)?.playlist?.tracks.orEmpty()
+        if (tracks.isEmpty()) return
+        viewModelScope.launch {
+            playlistRepository.manipulatePlaylistTracks("add", targetPlaylistId, tracks.map { it.id }).collect { result ->
+                result.onSuccess {
+                    _toastEvent.emit("已导入 ${tracks.size} 首歌曲")
+                }.onFailure { e ->
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
+                }
+            }
+        }
+    }
+
+    // 新建歌单并把当前歌单全部歌曲导入进去
+    fun createPlaylistAndImportAll(name: String) {
+        val tracks = (_uiState.value as? PlaylistUiState.Success)?.playlist?.tracks.orEmpty()
+        viewModelScope.launch {
+            createPlaylistAndAddSongUseCase(name, tracks.map { it.id }).collect { result ->
+                result.onSuccess {
+                    _toastEvent.emit("已创建歌单并导入 ${tracks.size} 首歌曲")
                 }.onFailure { e ->
                     _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }

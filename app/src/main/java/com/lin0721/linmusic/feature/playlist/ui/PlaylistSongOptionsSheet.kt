@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Person
@@ -44,7 +45,10 @@ fun PlaylistSongOptionsSheet(
     onAlbumClick: (Long) -> Unit,
     onRequireLogin: () -> Unit,
     // 歌手详情页场景下点击「歌手」等于跳到当前页本身，传 false 隐藏该项
-    showArtistOption: Boolean = true
+    showArtistOption: Boolean = true,
+    // 仅当前歌单创建者可从歌单中移除歌曲，由调用方按登录态与创建者身份算好传入
+    canRemoveFromPlaylist: Boolean = false,
+    onRemoveFromPlaylist: (Long) -> Unit = {}
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -151,6 +155,17 @@ fun PlaylistSongOptionsSheet(
                             track.ar.firstOrNull()?.id?.let { artistId ->
                                 onArtistClick(artistId)
                             }
+                        }
+                    )
+                }
+
+                if (canRemoveFromPlaylist) {
+                    OptionRow(
+                        icon = Icons.Default.Delete,
+                        text = "从歌单中删除",
+                        onClick = {
+                            onDismiss()
+                            onRemoveFromPlaylist(track.id)
                         }
                     )
                 }
