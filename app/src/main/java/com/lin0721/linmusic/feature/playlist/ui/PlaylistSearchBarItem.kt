@@ -16,11 +16,17 @@ import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // ────────────────────────────────────────────────────────────────────────────
-// 搜索栏（LazyColumn Item 0）
+// 搜索栏：悬浮在列表上方的独立浮层，展开位移由调用方通过 modifier 的 graphicsLayer 驱动
 // ────────────────────────────────────────────────────────────────────────────
 @Composable
-fun SearchBarItem(query: String, onQueryChange: (String) -> Unit, topPadding: Dp, backgroundColor: Color) {
-    Column(modifier = Modifier.fillMaxWidth().background(backgroundColor)) {
+fun SearchBarItem(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    topPadding: Dp,
+    backgroundColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth().background(backgroundColor)) {
         // 占据 overlay 的高度，防止下拉后搜索栏被返回键等遮挡
         Spacer(modifier = Modifier.height(topPadding))
 

@@ -8,7 +8,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -70,8 +72,8 @@ fun PlaylistContent(
     val density = LocalDensity.current
 
     val isDailyRecommend = playlist.id == -1L || playlist.id == -2L
-    // 初始显示 index=1（封面），搜索栏 index=0 藏于上方，下拉可见（每日推荐无搜索栏，初始显示 index=0）
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = if (isDailyRecommend) 0 else 1)
+    // 搜索栏不再是 list item，header 统一为 item 0，无需按是否每日推荐区分初始位置
+    val listState = rememberLazyListState()
     var searchQuery by remember { mutableStateOf("") }
 
     // 从封面提取的主色调，默认为深灰色
@@ -82,23 +84,14 @@ fun PlaylistContent(
     // Overlay 总高度：状态栏 + 操作区(56dp)
     val overlayHeight = TOP_BAR_HEIGHT + statusBarHeight
 
-    // 折叠进度 0f→1f（从封面完整显示到完全折叠）
+    // 折叠进度 0f→1f（从封面完整显示到完全折叠）；header 恒为 item 0，两种歌单共用同一套计算
     val collapseThresholdPx = with(density) { 300.dp.toPx() }
     val progress by remember {
         derivedStateOf {
-            if (isDailyRecommend) {
-                when {
-                    listState.firstVisibleItemIndex == 0 ->
-                        (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
-                    else -> 1f
-                }
+            if (listState.firstVisibleItemIndex == 0) {
+                (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
             } else {
-                when {
-                    listState.firstVisibleItemIndex == 0 -> 0f
-                    listState.firstVisibleItemIndex == 1 ->
-                        (listState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
-                    else -> 1f
-                }
+                1f
             }
         }
     }
@@ -112,33 +105,22 @@ fun PlaylistContent(
     var collectSongId by remember { mutableStateOf<Long?>(null) }
     var activeSongMoreOptions by remember { mutableStateOf<Track?>(null) }
 
-    val searchBarSnapConnection = rememberSearchBarSnapConnection(
+    val searchBarRevealState = rememberSearchBarRevealState(
         listState        = listState,
         isDailyRecommend = isDailyRecommend
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // ── 1. 滚动内容 ───────────────────────────────────────────────────
+        // ── 1. 滚动内容：整体随 revealPx 下移，让出顶部空间给搜索栏 ───────────
         LazyColumn(
             state          = listState,
             contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp),
-            modifier       = Modifier.nestedScroll(searchBarSnapConnection)
+            modifier       = Modifier
+                .graphicsLayer { translationY = searchBarRevealState.revealPx }
+                .nestedScroll(searchBarRevealState.connection)
         ) {
-            // Item 0：搜索栏（下拉可见）
-            if (!isDailyRecommend) {
-                item(key = "search") {
-                    SearchBarItem(
-                        query           = searchQuery,
-                        onQueryChange   = { searchQuery = it },
-                        topPadding      = overlayHeight,
-                        backgroundColor = dominantColor
-                    )
-                }
-            }
-
-
-            // Item 1：全出血 Hero
+            // Item 0：全出血 Hero
             item(key = "header") {
                 PlaylistHeaderItem(
                     playlist            = playlist,
@@ -218,7 +200,22 @@ fun PlaylistContent(
             }
         }
 
-        // ── 2. 固定 Overlay ───────────────────────────────────────────────
+        // ── 2. 搜索栏浮层：隐藏时整体位移到屏幕外上方，随 revealPx 跟手展开 ─────
+        if (!isDailyRecommend) {
+            SearchBarItem(
+                query           = searchQuery,
+                onQueryChange   = { searchQuery = it },
+                topPadding      = overlayHeight,
+                backgroundColor = dominantColor,
+                modifier        = Modifier
+                    .onSizeChanged { searchBarRevealState.searchBarHeightPx = it.height.toFloat() }
+                    .graphicsLayer {
+                        translationY = searchBarRevealState.revealPx - searchBarRevealState.searchBarHeightPx
+                    }
+            )
+        }
+
+        // ── 3. 固定 Overlay ───────────────────────────────────────────────
         PlaylistTopBar(
             title           = playlist.name,
             progress        = progress,
