@@ -1,17 +1,20 @@
 package com.lin0721.linmusic.feature.player.ui
 
 import android.content.Context
+import android.content.Intent
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.BluetoothAudio
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Headset
@@ -71,6 +74,10 @@ private fun deviceTypeLabel(type: Int): String = when (type) {
     AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "有线耳机"
     AudioDeviceInfo.TYPE_USB_HEADSET -> "USB 音频"
     else -> "音频设备"
+}
+
+private fun openBluetoothSettings(context: Context) {
+    context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -217,6 +224,37 @@ fun OutputDeviceSheet(
                             )
                         }
                     }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { openBluetoothSettings(context) }
+                        .padding(horizontal = MelodiaSpacing.md, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.08f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(MelodiaSpacing.sm))
+                    Text(
+                        text = "添加新设备",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
