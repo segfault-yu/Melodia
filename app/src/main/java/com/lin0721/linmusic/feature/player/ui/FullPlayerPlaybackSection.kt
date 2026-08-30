@@ -67,7 +67,6 @@ fun LazyListScope.fullPlayerPlaybackSection(
         MiniLyricLine(
             lyrics = songState.lyrics,
             currentLyricIndex = currentLyricIndex,
-            lyricsHighlight = colors.lyricsHighlight,
             isPlaying = isPlaying
         )
     }

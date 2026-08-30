@@ -94,12 +94,24 @@ fun OutputDeviceSheet(
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
     var devices by remember { mutableStateOf(listOutputDevices(audioManager)) }
-    // -1 表示用户还没手动点过；系统没有公开 API 能查真实路由，只能启发式猜：优先蓝牙，其次手机扬声器
+    // -1 表示用户还没手动点过；系统没有公开 API 能查真实路由，只能启发式猜：
+    // 有线插入会被系统立刻抢走路由，优先级最高；其次蓝牙；最后手机扬声器
     var selectedDeviceId by remember { mutableIntStateOf(-1) }
     val heuristicDefaultId = remember(devices) {
-        devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET }?.id
+        devices.firstOrNull {
+            it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+                it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+                it.type == AudioDeviceInfo.TYPE_USB_HEADSET
+        }?.id
+            ?: devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET }?.id
             ?: devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.id
             ?: -1
+    }
+    // 之前手动选的设备如果已经断开（比如拔了耳机），不能再继续高亮它，退回启发式猜测
+    LaunchedEffect(devices) {
+        if (selectedDeviceId != -1 && devices.none { it.id == selectedDeviceId }) {
+            selectedDeviceId = -1
+        }
     }
     val effectiveSelectedId = if (selectedDeviceId != -1) selectedDeviceId else heuristicDefaultId
 

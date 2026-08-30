@@ -32,7 +32,6 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 fun MiniLyricLine(
     lyrics: List<LyricLine>,
     currentLyricIndex: Int,
-    lyricsHighlight: Color,
     isPlaying: Boolean
 ) {
     val isPureMusic = lyrics.size == 1 && lyrics[0].text == "纯音乐"
@@ -62,7 +61,7 @@ fun MiniLyricLine(
             } else {
                 Text(
                     text = text,
-                    color = lyricsHighlight.copy(alpha = 0.7f),
+                    color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
