@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -123,6 +124,12 @@ fun SearchScreen(
 
     LaunchedEffect(isSearchActive) {
         if (isSearchActive) focusRequester.requestFocus()
+    }
+
+    // 搜索态是页面内部状态，不在导航栈里；系统返回手势要先退出搜索态回到发现页，
+    // 而不是直接被外层全局 BackHandler 接住退回首页
+    BackHandler(enabled = isSearchActive) {
+        viewModel.deactivateSearch()
     }
 
     Column(
