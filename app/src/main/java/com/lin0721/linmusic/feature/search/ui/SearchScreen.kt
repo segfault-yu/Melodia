@@ -191,7 +191,9 @@ fun SearchScreen(
             }
         }
 
-        val defaultKeywordText = (discoveryState as? DiscoveryUiState.Success)?.defaultKeyword ?: "搜索你想听的"
+        // 网易返回的真实推荐词，仅用于兜底触发搜索；未成功加载时为 null，不能拿占位文案当关键词去搜
+        val remoteDefaultKeyword = (discoveryState as? DiscoveryUiState.Success)?.defaultKeyword
+        val defaultKeywordText = remoteDefaultKeyword ?: "搜索你想听的"
 
         Row(
             modifier = Modifier
@@ -225,13 +227,14 @@ fun SearchScreen(
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
-                        // 联想词下拉开着时按回车，视为采用第一条联想词（自动填充），不追问用户此刻具体点的是哪一条
-                        val keyword = if (inputState.isSuggesting && inputState.suggestions.isNotEmpty()) {
-                            inputState.suggestions.first().keyword
-                        } else {
-                            inputState.query
+                        // 联想词下拉开着时按回车/搜索键，视为采用第一条联想词（自动填充）；
+                        // 输入框还空着（没打字）时，退到搜索框占位显示的推荐词，对齐点这两处的直觉预期
+                        val keyword = when {
+                            inputState.isSuggesting && inputState.suggestions.isNotEmpty() -> inputState.suggestions.first().keyword
+                            inputState.query.isNotBlank() -> inputState.query
+                            else -> remoteDefaultKeyword
                         }
-                        if (keyword.isNotBlank()) viewModel.searchWithKeyword(keyword)
+                        if (!keyword.isNullOrBlank()) viewModel.searchWithKeyword(keyword)
                         focusManager.clearFocus()
                     }),
                     decorationBox = { inner ->
