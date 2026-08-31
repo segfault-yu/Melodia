@@ -218,7 +218,13 @@ fun SearchScreen(
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
-                        if (inputState.query.isNotBlank()) viewModel.searchWithKeyword(inputState.query)
+                        // 联想词下拉开着时按回车，视为采用第一条联想词（自动填充），不追问用户此刻具体点的是哪一条
+                        val keyword = if (inputState.isSuggesting && inputState.suggestions.isNotEmpty()) {
+                            inputState.suggestions.first().keyword
+                        } else {
+                            inputState.query
+                        }
+                        if (keyword.isNotBlank()) viewModel.searchWithKeyword(keyword)
                         focusManager.clearFocus()
                     }),
                     decorationBox = { inner ->

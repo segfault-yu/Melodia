@@ -159,9 +159,12 @@ class SearchViewModel(
     }
 
     // 明确提交搜索：选中联想词 / 历史词 / 热搜词，写入历史并立即执行（不走防抖）
+    // 热搜/精品歌单等入口是在发现页（isSearchActive 尚为 false）触发的，必须一并置为激活态，
+    // 否则 query 已经写入但 UI 判断展示结果区的条件不满足，页面停留在发现页看起来像没反应
     fun searchWithKeyword(keyword: String) {
         searchJob?.cancel()
         suggestJob?.cancel()
+        _isSearchActive.value = true
         _inputState.value = _inputState.value.copy(query = keyword, isSuggesting = false, suggestions = emptyList())
         viewModelScope.launch { historyPreferences.addKeyword(keyword) }
 
