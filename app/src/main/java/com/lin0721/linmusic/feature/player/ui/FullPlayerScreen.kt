@@ -73,6 +73,7 @@ fun FullPlayerScreen(
     var showCommentsSheet by remember { mutableStateOf(false) }
     var collectSongId by remember { mutableStateOf<Long?>(null) }
     var showOutputDeviceSheet by remember { mutableStateOf(false) }
+    val connectedDevice = rememberCurrentOutputDevice()
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { message ->
@@ -264,7 +265,8 @@ fun FullPlayerScreen(
                 onDisableRoaming = { viewModel.playerManager.disableRoaming() },
                 onOutputDeviceClick = { showOutputDeviceSheet = true },
                 onQueueClick = { showQueueSheet = true },
-                onShareClick = { shareCurrentSong() }
+                onShareClick = { shareCurrentSong() },
+                connectedDevice = connectedDevice
             )
 
             fullPlayerInfoSection(

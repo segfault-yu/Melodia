@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.feature.player.ui
 
+import android.media.AudioDeviceInfo
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -7,7 +8,6 @@ import com.lin0721.linmusic.core.player.PlayMode
 import com.lin0721.linmusic.core.ui.theme.ColorPalette
 
 // 播放器主区：封面、歌名歌手、单行歌词、进度条、播放控制、快捷操作
-// 拆成多个 item 而非包一层，保证滚动回收与 firstVisibleItemIndex 判定不受影响
 fun LazyListScope.fullPlayerPlaybackSection(
     songState: PlayerSongDetailState,
     colors: FullPlayerColors,
@@ -35,7 +35,8 @@ fun LazyListScope.fullPlayerPlaybackSection(
     onDisableRoaming: () -> Unit,
     onOutputDeviceClick: () -> Unit,
     onQueueClick: () -> Unit,
-    onShareClick: () -> Unit
+    onShareClick: () -> Unit,
+    connectedDevice: AudioDeviceInfo? = null
 ) {
     item(key = "cover") {
         FullPlayerCoverArt(
@@ -99,7 +100,8 @@ fun LazyListScope.fullPlayerPlaybackSection(
         ActionButtons(
             onOutputDeviceClick = onOutputDeviceClick,
             onQueueClick = onQueueClick,
-            onShareClick = onShareClick
+            onShareClick = onShareClick,
+            connectedDevice = connectedDevice
         )
     }
 }

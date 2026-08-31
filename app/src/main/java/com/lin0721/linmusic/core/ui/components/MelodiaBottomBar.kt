@@ -1,6 +1,7 @@
 package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -51,6 +52,9 @@ import com.lin0721.linmusic.core.ui.theme.FallbackDominant
 import com.lin0721.linmusic.core.ui.theme.FallbackSecondary
 import com.lin0721.linmusic.core.ui.theme.NavPillSelected
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.feature.player.ui.deviceIcon
+import com.lin0721.linmusic.feature.player.ui.deviceLabel
+import com.lin0721.linmusic.feature.player.ui.rememberCurrentOutputDevice
 
 //悬浮播放控制卡片
 
@@ -160,28 +164,42 @@ fun MiniPlayerCard(
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                // 歌名和歌手信息
+                // 歌名歌手信息；连接非扬声器设备时第二行由歌手名切换成设备名，扬声器播放时不显示第二行
+                val connectedDevice = rememberCurrentOutputDevice()
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
+                    val artist = currentTrack.mediaMetadata.artist?.toString() ?: "未知歌手"
                     Text(
-                        text = currentTrack.mediaMetadata.title?.toString() ?: "未知歌名",
+                        text = "${currentTrack.mediaMetadata.title?.toString() ?: "未知歌名"} · $artist",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.basicMarquee()
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = currentTrack.mediaMetadata.artist?.toString() ?: "未知歌手",
-                        color = TextGray,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    if (connectedDevice != null) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = deviceIcon(connectedDevice.type),
+                                contentDescription = null,
+                                tint = NavPillSelected,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = deviceLabel(connectedDevice),
+                                color = NavPillSelected,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
-                
+
                 // 播放/暂停按钮
                 IconButton(onClick = onTogglePlay) {
                     Icon(

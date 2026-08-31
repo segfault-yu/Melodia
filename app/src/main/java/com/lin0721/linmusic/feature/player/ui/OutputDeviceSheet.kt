@@ -35,7 +35,7 @@ import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 只展示用户能理解的物理输出类型，蓝牙 LE/USB/有线各算一类
-private val RELEVANT_DEVICE_TYPES = setOf(
+internal val RELEVANT_DEVICE_TYPES = setOf(
     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
     AudioDeviceInfo.TYPE_WIRED_HEADSET,
     AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
@@ -44,18 +44,59 @@ private val RELEVANT_DEVICE_TYPES = setOf(
     AudioDeviceInfo.TYPE_USB_HEADSET
 )
 
-private fun listOutputDevices(audioManager: AudioManager): List<AudioDeviceInfo> =
+internal fun listOutputDevices(audioManager: AudioManager): List<AudioDeviceInfo> =
     audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
         .filter { it.type in RELEVANT_DEVICE_TYPES }
 
-private fun deviceIcon(type: Int): ImageVector = when (type) {
+// 有线插入优先级最高；其次蓝牙；两者都没有时返回 null（表示扬声器/默认）
+private fun heuristicNonSpeakerDevice(devices: List<AudioDeviceInfo>): AudioDeviceInfo? {
+    val wired = devices.firstOrNull {
+        it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+            it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+            it.type == AudioDeviceInfo.TYPE_USB_HEADSET
+    }
+    if (wired != null) return wired
+    return devices.firstOrNull {
+        it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+    }
+}
+
+// 非手机扬声器时返回设备信息用于换图标/高亮/显示设备名，否则 null
+@Composable
+internal fun rememberCurrentOutputDevice(): AudioDeviceInfo? {
+    val context = LocalContext.current
+    val audioManager = remember {
+        context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+    var devices by remember { mutableStateOf(listOutputDevices(audioManager)) }
+
+    DisposableEffect(audioManager) {
+        val callback = object : AudioDeviceCallback() {
+            override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
+                devices = listOutputDevices(audioManager)
+            }
+
+            override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
+                devices = listOutputDevices(audioManager)
+            }
+        }
+        audioManager.registerAudioDeviceCallback(callback, Handler(Looper.getMainLooper()))
+        onDispose {
+            audioManager.unregisterAudioDeviceCallback(callback)
+        }
+    }
+
+    return remember(devices) { heuristicNonSpeakerDevice(devices) }
+}
+
+internal fun deviceIcon(type: Int): ImageVector = when (type) {
     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> Icons.Rounded.Smartphone
     AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLE_HEADSET -> Icons.Rounded.BluetoothAudio
     else -> Icons.Rounded.Headset
 }
 
 // 未授予 BLUETOOTH_CONNECT 时系统只返回占位名，兜底成按类型区分的通用名称
-private fun deviceLabel(device: AudioDeviceInfo): String {
+internal fun deviceLabel(device: AudioDeviceInfo): String {
     val name = device.productName?.toString().orEmpty()
     if (name.isNotBlank() && name != "?") return name
     return when (device.type) {
@@ -94,16 +135,9 @@ fun OutputDeviceSheet(
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
     var devices by remember { mutableStateOf(listOutputDevices(audioManager)) }
-    // -1 表示用户还没手动点过；系统没有公开 API 能查真实路由，只能启发式猜：
-    // 有线插入会被系统立刻抢走路由，优先级最高；其次蓝牙；最后手机扬声器
     var selectedDeviceId by remember { mutableIntStateOf(-1) }
     val heuristicDefaultId = remember(devices) {
-        devices.firstOrNull {
-            it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-                it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-                it.type == AudioDeviceInfo.TYPE_USB_HEADSET
-        }?.id
-            ?: devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET }?.id
+        heuristicNonSpeakerDevice(devices)?.id
             ?: devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.id
             ?: -1
     }
