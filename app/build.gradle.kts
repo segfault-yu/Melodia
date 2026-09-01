@@ -88,6 +88,11 @@ android {
     }
 }
 
+// 自定义输出 APK 文件名：Melodia-v{versionName}-{buildType}.apk
+base {
+    archivesName.set("Melodia-v${android.defaultConfig.versionName}")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

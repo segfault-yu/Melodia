@@ -101,12 +101,10 @@ jobs:
             -PreleaseVersionCode=${{ steps.version.outputs.code }} \
             --no-daemon
 
-      # 四项签名 secret 缺任一项时 build.gradle.kts 会静默退回 debug 签名，此处必须拦截避免误发布
-      # AGP 默认用 APK Signature Scheme v2/v3，keytool -printcert -jarfile 只认传统 v1 JAR 签名会读取失败，
-      # 用 apksigner 才能正确识别三种签名方案
+      # 四项签名 secret 缺任一项时 build.gradle.kts 会静默退回 debug 签名
       - name: 校验正式签名生效
         run: |
-          APK=app/build/outputs/apk/release/app-release.apk
+          APK=app/build/outputs/apk/release/Melodia-v${{ steps.version.outputs.name }}-release.apk
           APKSIGNER=$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -maxdepth 1 -type d | sort -V | tail -1)/apksigner
           DN=$("$APKSIGNER" verify --print-certs "$APK" | grep -m1 'certificate DN')
           echo "$DN"
@@ -119,9 +117,7 @@ jobs:
         if: always()
         run: rm -f melodia-release.jks
 
-      # 仓库日常开发直接 push 到 main、不走 PR，GitHub 原生的 generate_release_notes
-      # 依赖 PR 记录生成"What's Changed"，这里没有 PR 可列，只能退化成空列表 + 对比链接。
-      # 改成按 commit message 的 conventional commits 前缀（feat/fix/refactor...）自己分类生成
+      # 按 commit message 的 conventional commits 前缀（feat/fix/refactor...）自己分类生成
       - name: 生成分类日志
         run: |
           PREV_TAG=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
@@ -174,4 +170,4 @@ jobs:
         with:
           body_path: release-notes.md
           prerelease: ${{ steps.version.outputs.prerelease }}
-          files: app/build/outputs/apk/release/app-release.apk
+          files: app/build/outputs/apk/release/Melodia-v${{ steps.version.outputs.name }}-release.apk
