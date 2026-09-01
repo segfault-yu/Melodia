@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.feature.home.data.RecentPlayItem
 
@@ -83,7 +84,7 @@ private fun RecentPlayRow(
     Row(
         modifier = modifier
             .height(RowHeight)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(RadiusCompact))
             .background(Color.White.copy(alpha = 0.08f))
             .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically

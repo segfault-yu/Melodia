@@ -33,7 +33,12 @@ import com.lin0721.linmusic.core.model.ArtistInfo
 import com.lin0721.linmusic.feature.player.domain.SongWikiCreatorRole
 import com.lin0721.linmusic.feature.player.domain.SongWikiData
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.PillRadius
+import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
@@ -49,7 +54,7 @@ fun SongDetailCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(InfoCardRadius),
         color = cardColor
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -161,14 +166,14 @@ private fun SongCreatorsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = BackgroundDark,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shape = BottomSheetShape,
         dragHandle = {
             Box(
                 modifier = Modifier
                     .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                     .width(36.dp)
                     .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .clip(DragHandleShape)
                     .background(Color.White.copy(alpha = 0.3f))
             )
         }
@@ -272,7 +277,7 @@ fun SimilarArtistsCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(InfoCardRadius),
         color = cardColor
     ) {
         Column(modifier = Modifier.padding(vertical = 20.dp)) {
@@ -356,7 +361,7 @@ fun AboutArtistCard(
             .fillMaxWidth()
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(InfoCardRadius),
         color = cardColor
     ) {
         Column {
@@ -421,7 +426,7 @@ fun AboutArtistCard(
                     }
                     OutlinedButton(
                         onClick = onFollowClick,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(PillRadius),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color.White,
                             containerColor = Color.Transparent
@@ -505,7 +510,7 @@ fun ArtistAlbumsCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(InfoCardRadius),
         color = cardColor
     ) {
         Column(modifier = Modifier.padding(vertical = 20.dp)) {
@@ -541,7 +546,7 @@ private fun ImperativeLazyRow(albums: List<ArtistAlbum>) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(RadiusCompact))
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(

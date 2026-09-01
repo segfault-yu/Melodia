@@ -49,6 +49,7 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.home.ui.ErrorContent
 import com.lin0721.linmusic.feature.home.ui.LoadingIndicator
@@ -212,7 +213,7 @@ private fun RadioDetailHeader(
                     AsyncImage(
                         model = detail.picUrl.withPodcastCoverParam("400y400"),
                         contentDescription = detail.name,
-                        modifier = Modifier.size(132.dp).clip(RoundedCornerShape(10.dp)),
+                        modifier = Modifier.size(132.dp).clip(RoundedCornerShape(RadiusCompact)),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -371,7 +372,7 @@ private fun RadioProgramRow(program: PodcastProgram, onClick: () -> Unit) {
         AsyncImage(
             model = program.coverUrl.withPodcastCoverParam("160y160"),
             contentDescription = program.name,
-            modifier = Modifier.size(50.dp).clip(RoundedCornerShape(5.dp)),
+            modifier = Modifier.size(50.dp).clip(RoundedCornerShape(RadiusCompact)),
             contentScale = ContentScale.Crop
         )
         Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {

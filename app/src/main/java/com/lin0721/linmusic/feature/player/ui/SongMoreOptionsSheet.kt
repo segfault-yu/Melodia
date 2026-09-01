@@ -28,6 +28,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
+import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
@@ -68,14 +71,14 @@ fun SongMoreOptionsSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = BackgroundDark,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shape = BottomSheetShape,
         dragHandle = {
             Box(
                 modifier = Modifier
                     .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                     .width(36.dp)
                     .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .clip(DragHandleShape)
                     .background(Color.White.copy(alpha = 0.3f))
             )
         }
@@ -99,7 +102,7 @@ fun SongMoreOptionsSheet(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(54.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(RadiusCompact))
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -269,14 +272,14 @@ fun SongMoreOptionsSheet(
                         onDismissRequest = { showQualityDialog = false },
                         sheetState = qualitySheetState,
                         containerColor = BackgroundDark,
-                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        shape = BottomSheetShape,
                         dragHandle = {
                             Box(
                                 modifier = Modifier
                                     .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                                     .width(36.dp)
                                     .height(4.dp)
-                                    .clip(RoundedCornerShape(2.dp))
+                                    .clip(DragHandleShape)
                                     .background(Color.White.copy(alpha = 0.3f))
                             )
                         }

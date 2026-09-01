@@ -34,6 +34,7 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.LibraryVioletGradient
 import com.lin0721.linmusic.core.ui.theme.LibraryBlueGreenGradient
 import com.lin0721.linmusic.core.ui.theme.DownloadedGreen
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 
 // ────────────────────────────────────────────────────────────────────────────
 // 未登录占位页
@@ -124,7 +125,7 @@ fun LibraryItemRow(
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(RadiusCompact))
                     .background(
                         Brush.linearGradient(
                             colors = LibraryVioletGradient
@@ -143,7 +144,7 @@ fun LibraryItemRow(
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(RadiusCompact))
                     .background(
                         Brush.linearGradient(
                             colors = LibraryBlueGreenGradient
@@ -159,7 +160,7 @@ fun LibraryItemRow(
                 )
             }
         } else {
-            val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(10.dp)
+            val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(RadiusCompact)
 
             AsyncImage(
                 model = "${item.coverUrl}?param=150y150",
@@ -222,7 +223,7 @@ fun LibraryGridItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(10.dp)
+    val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(RadiusCompact)
 
     Column(
         modifier = modifier.clickable(onClick = onClick),
@@ -233,7 +234,7 @@ fun LibraryGridItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(RadiusCompact))
                     .background(
                         Brush.linearGradient(
                             colors = LibraryVioletGradient
@@ -253,7 +254,7 @@ fun LibraryGridItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(RadiusCompact))
                     .background(
                         Brush.linearGradient(
                             colors = LibraryBlueGreenGradient

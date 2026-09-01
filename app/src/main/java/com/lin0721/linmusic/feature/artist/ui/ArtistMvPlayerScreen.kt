@@ -95,6 +95,7 @@ import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.comment.ui.CommentsBottomSheet
 import com.lin0721.linmusic.core.comment.ui.CommentsPreviewCard
 import com.lin0721.linmusic.core.log.AppLogger
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.model.ArtistMv
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import kotlinx.coroutines.delay
@@ -984,7 +985,7 @@ private fun RelatedMvRow(
             modifier = Modifier
                 .width(140.dp)
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(RadiusCompact))
         ) {
             AsyncImage(
                 model = "${mv.cover}?param=300y170",

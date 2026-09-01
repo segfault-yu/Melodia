@@ -18,14 +18,6 @@ class FullPlayerScrollMetrics(private val listState: LazyListState) {
 
     val showTitleInBar by derivedStateOf { listState.firstVisibleItemIndex > 0 }
 
-    val coverScale by derivedStateOf {
-        val coverItem = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "cover" }
-        if (coverItem != null) {
-            val fraction = (-coverItem.offset.toFloat() / coverItem.size).coerceIn(0f, 1f)
-            1f - fraction * 0.15f
-        } else 0.85f
-    }
-
     val backgroundTranslationY by derivedStateOf {
         val visibleItems = listState.layoutInfo.visibleItemsInfo
         val coverItem = visibleItems.firstOrNull { it.key == "cover" }

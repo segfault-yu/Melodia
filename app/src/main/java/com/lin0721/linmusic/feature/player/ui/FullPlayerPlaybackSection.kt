@@ -2,8 +2,6 @@ package com.lin0721.linmusic.feature.player.ui
 
 import android.media.AudioDeviceInfo
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import com.lin0721.linmusic.core.player.PlayMode
 import com.lin0721.linmusic.core.ui.theme.ColorPalette
 
@@ -20,7 +18,6 @@ fun LazyListScope.fullPlayerPlaybackSection(
     currentPositionProvider: () -> Long,
     duration: Long,
     playMode: PlayMode,
-    coverScaleProvider: () -> Float,
     onClose: () -> Unit,
     onPaletteExtracted: (ColorPalette) -> Unit,
     onMoreClick: () -> Unit,
@@ -45,12 +42,7 @@ fun LazyListScope.fullPlayerPlaybackSection(
             playContext = playContext,
             onClose = onClose,
             onPaletteExtracted = onPaletteExtracted,
-            onMoreClick = onMoreClick,
-            modifier = Modifier.graphicsLayer {
-                val scale = coverScaleProvider()
-                scaleX = scale
-                scaleY = scale
-            }
+            onMoreClick = onMoreClick
         )
     }
 

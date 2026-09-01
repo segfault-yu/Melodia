@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 enum class EntityCoverShape { Rounded, Circle }
@@ -46,7 +48,7 @@ fun EntityRow(
     onClick: () -> Unit
 ) {
     val shape: Shape = when (data.coverShape) {
-        EntityCoverShape.Rounded -> MaterialTheme.shapes.extraSmall
+        EntityCoverShape.Rounded -> RoundedCornerShape(RadiusCompact)
         EntityCoverShape.Circle -> CircleShape
     }
 

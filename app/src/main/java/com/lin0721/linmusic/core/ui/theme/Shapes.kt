@@ -14,8 +14,18 @@ val MelodiaShapes = Shapes(
     extraLarge = RoundedCornerShape(32.dp)
 )
 
-// BottomSheet 顶部圆角是非对称形状，单独定义
+// BottomSheet 顶部圆角
 val BottomSheetShape: Shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
 
 // BottomSheet 拖拽把手的胶囊圆角
 val DragHandleShape: Shape = RoundedCornerShape(2.dp)
+
+// 封面图/缩略图圆角
+val RadiusCompact = 6.dp
+
+// 播放详情页信息卡片圆角（歌词/评论/歌曲详情/类似艺人/关于艺人/艺人专辑）
+val InfoCardRadius = 16.dp
+
+// 胶囊型按钮/Chip 圆角
+val PillRadius = 20.dp
+val PillRadiusLarge = 25.dp

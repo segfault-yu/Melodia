@@ -66,7 +66,9 @@ import com.lin0721.linmusic.core.ui.components.SearchResultRowSkeleton
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PillRadius
 import com.lin0721.linmusic.feature.search.domain.HotSearch
 import com.lin0721.linmusic.feature.search.domain.PlaylistTag
 import com.lin0721.linmusic.feature.search.domain.SearchResultItem
@@ -201,7 +203,7 @@ fun SearchScreen(
                 .padding(horizontal = MelodiaSpacing.md)
                 .padding(bottom = MelodiaSpacing.sm)
                 .height(36.dp)
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(PillRadius))
                 .background(MaterialTheme.colorScheme.surface)
                 .then(
                     if (!isSearchActive) Modifier.clickable { viewModel.activateSearch() }
@@ -686,7 +688,7 @@ private fun PlaylistTagCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(RadiusCompact))
             .background(if (tag.coverUrl.isBlank()) fallbackColor else MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
     ) {

@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.model.Track
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.music.domain.MusicStyle
 import com.lin0721.linmusic.feature.music.domain.StyleHead
@@ -257,7 +258,7 @@ fun MusicStyleHeader(head: StyleHead, onPlay: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = MusicEdgePadding, vertical = 14.dp)
             .height(StyleHeaderHeight)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(RadiusCompact))
             .background(Brush.linearGradient(listOf(accent, accent.copy(alpha = 0.4f))))
     ) {
         head.coverUrl?.let {
@@ -357,7 +358,7 @@ fun MusicFavouriteSongCard(track: Track, onClick: () -> Unit) {
         AsyncImage(
             model = track.al.picUrl,
             contentDescription = track.name,
-            modifier = Modifier.size(52.dp).clip(RoundedCornerShape(6.dp)),
+            modifier = Modifier.size(52.dp).clip(RoundedCornerShape(RadiusCompact)),
             contentScale = ContentScale.Crop
         )
         Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {

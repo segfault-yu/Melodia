@@ -24,7 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.PillRadius
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
@@ -53,7 +56,7 @@ fun CreatePopupMenu(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(PillRadius))
             .background(SurfaceDark)
             .padding(vertical = MelodiaSpacing.sm)
     ) {
@@ -164,12 +167,12 @@ private fun CreatePlaylistDialog(
     ModalBottomSheet(
         onDismissRequest = { if (!isCreating) onDismiss() },
         containerColor = SurfaceDark,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = BottomSheetShape,
         dragHandle = {
             Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
                 Surface(
                     modifier = Modifier.width(40.dp).height(4.dp),
-                    shape = RoundedCornerShape(2.dp),
+                    shape = DragHandleShape,
                     color = Color.White.copy(alpha = 0.3f)
                 ) {}
             }

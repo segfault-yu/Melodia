@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
@@ -80,7 +81,7 @@ fun SongRow(
     trailingSlot: @Composable RowScope.() -> Unit = {}
 ) {
     val coverSize = if (compact) 42.dp else 48.dp
-    val coverShape: Shape = if (compact) RoundedCornerShape(10.dp) else MaterialTheme.shapes.extraSmall
+    val coverShape: Shape = RoundedCornerShape(RadiusCompact)
     val titleFontSize = if (compact) 13.sp else 15.sp
     val artistFontSize = if (compact) 11.sp else 13.sp
     val coverSpacing = if (compact) 10.dp else 12.dp
@@ -284,13 +285,13 @@ fun DraggableSongRow(
                 model = imageRequest,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp))
+                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(RadiusCompact))
             )
             if (isCurrent) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(RadiusCompact))
                         .background(Color.Black.copy(alpha = 0.4f)),
                     contentAlignment = Alignment.Center
                 ) {

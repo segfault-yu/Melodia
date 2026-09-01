@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.podcast.domain.PodcastCategory
 import com.lin0721.linmusic.feature.podcast.domain.PodcastProgram
@@ -132,7 +133,7 @@ fun PodcastProgramRow(
         AsyncImage(
             model = program.coverUrl.withPodcastCoverParam("200y200"),
             contentDescription = program.name,
-            modifier = Modifier.size(58.dp).clip(RoundedCornerShape(6.dp)),
+            modifier = Modifier.size(58.dp).clip(RoundedCornerShape(RadiusCompact)),
             contentScale = ContentScale.Crop
         )
 
@@ -211,7 +212,7 @@ fun PodcastRadioRow(
                     AsyncImage(
                         model = radio.picUrl.withPodcastCoverParam("300y300"),
                         contentDescription = radio.name,
-                        modifier = Modifier.size(120.dp).clip(RoundedCornerShape(8.dp)),
+                        modifier = Modifier.size(120.dp).clip(RoundedCornerShape(RadiusCompact)),
                         contentScale = ContentScale.Crop
                     )
                     if (showRank) {

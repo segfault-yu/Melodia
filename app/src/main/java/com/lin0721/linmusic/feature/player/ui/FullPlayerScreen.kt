@@ -242,7 +242,6 @@ fun FullPlayerScreen(
                 currentPositionProvider = currentPositionProvider,
                 duration = duration,
                 playMode = playMode,
-                coverScaleProvider = { scrollMetrics.coverScale },
                 onClose = onClose,
                 onPaletteExtracted = {
                     colorPalette = it

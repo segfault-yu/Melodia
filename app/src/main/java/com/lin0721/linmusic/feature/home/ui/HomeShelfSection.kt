@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.home.domain.HomeCard
@@ -44,8 +45,6 @@ import com.lin0721.linmusic.feature.home.domain.HomeShelf
 // 滑半天还在同一个货架里；横向滚动既压住高度又不用截断内容。
 private const val GRID_MAX_CARDS = 6
 
-// 封面圆角刻意取小值贴合高密度观感，与项目其它页面的大圆角不同
-private val CoverCorner = 4.dp
 private val GridGap = 12.dp
 private val HorizontalCardWidth = 150.dp
 
@@ -126,7 +125,7 @@ private fun HomeShelfCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(CoverCorner))
+                .clip(RoundedCornerShape(RadiusCompact))
         ) {
             AsyncImage(
                 model = card.coverUrl.withCoverParam("400y400"),

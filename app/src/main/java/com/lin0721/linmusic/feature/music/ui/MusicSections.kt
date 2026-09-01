@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.model.Track
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.music.domain.StyleArtistItem
 import com.lin0721.linmusic.feature.music.domain.StylePlaylistItem
@@ -70,7 +71,7 @@ fun MusicPlaylistRow(playlists: List<StylePlaylistItem>, onClick: (StylePlaylist
                 AsyncImage(
                     model = item.coverUrl.withStyleCoverParam("300y300"),
                     contentDescription = item.name,
-                    modifier = Modifier.size(126.dp).clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier.size(126.dp).clip(RoundedCornerShape(RadiusCompact)),
                     contentScale = ContentScale.Crop
                 )
                 Text(
@@ -115,7 +116,7 @@ fun MusicSongList(songs: List<Track>, onPlayAt: (Int) -> Unit) {
                 AsyncImage(
                     model = track.al.picUrl.withStyleCoverParam("120y120"),
                     contentDescription = track.name,
-                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(RadiusCompact)),
                     contentScale = ContentScale.Crop
                 )
                 Column(modifier = Modifier.weight(1f).padding(start = 11.dp)) {

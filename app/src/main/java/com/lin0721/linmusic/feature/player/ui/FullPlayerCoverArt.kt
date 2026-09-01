@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.ColorPalette
+import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.extractColorPalette
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
@@ -42,7 +44,7 @@ fun FullPlayerCoverArt(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = MelodiaSpacing.xl)
+            .padding(horizontal = MelodiaSpacing.md + InfoCardRadius)
             .padding(top = MelodiaSpacing.md, bottom = MelodiaSpacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -122,8 +124,8 @@ fun FullPlayerCoverArt(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .shadow(elevation = 24.dp, shape = RoundedCornerShape(16.dp), clip = false)
-                .clip(RoundedCornerShape(16.dp))
+                .shadow(elevation = 24.dp, shape = RoundedCornerShape(RadiusCompact), clip = false)
+                .clip(RoundedCornerShape(RadiusCompact))
         )
     }
 }

@@ -26,6 +26,7 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.ui.components.CreatePlaylistDialog
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.userplaylist.UserPlaylist
 
@@ -137,7 +138,7 @@ fun PlaylistImportTargetSheet(
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .size(40.dp)
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(RoundedCornerShape(RadiusCompact))
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(

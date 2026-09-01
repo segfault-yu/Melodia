@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -35,8 +37,8 @@ fun PlaylistCollectSheet(
     onDismiss: () -> Unit,
     onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
     onSaveNewCollection: (String, Long) -> Unit,
-    sheetShape: Shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
-    itemCornerRadius: Dp = 10.dp,
+    sheetShape: Shape = BottomSheetShape,
+    itemCornerRadius: Dp = RadiusCompact,
     confirmButtonShape: Shape = RoundedCornerShape(10.dp)
 ) {
     ModalBottomSheet(

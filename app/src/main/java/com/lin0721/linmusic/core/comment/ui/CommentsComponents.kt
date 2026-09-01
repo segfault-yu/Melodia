@@ -26,7 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.model.CommentItem
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
@@ -46,7 +49,7 @@ fun CommentsPreviewCard(
             .fillMaxWidth()
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
             .height(cardHeight),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(InfoCardRadius),
         color = cardColor
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -276,12 +279,12 @@ fun CommentsBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = SurfaceDark,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = BottomSheetShape,
         dragHandle = {
             Box(modifier = Modifier.padding(top = 12.dp, bottom = MelodiaSpacing.xs)) {
                 Surface(
                     modifier = Modifier.width(40.dp).height(4.dp),
-                    shape = RoundedCornerShape(2.dp),
+                    shape = DragHandleShape,
                     color = Color.White.copy(alpha = 0.3f)
                 ) {}
             }
