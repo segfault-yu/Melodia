@@ -11,6 +11,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
@@ -51,6 +52,13 @@ class MelodiaPlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         AppLogger.i(TAG, "Service onCreate instanceId=${System.identityHashCode(this)}")
+
+        // 系统媒体通知的图标
+        setMediaNotificationProvider(
+            DefaultMediaNotificationProvider.Builder(this)
+                .build()
+                .apply { setSmallIcon(R.drawable.ic_notification) }
+        )
 
         // 允许跨协议重定向（如 HTTPS 到 HTTP）
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
