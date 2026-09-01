@@ -1,37 +1,24 @@
 package com.lin0721.linmusic.feature.music.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import com.lin0721.linmusic.LocalBottomOverlayInset
-import com.lin0721.linmusic.core.auth.UserProfile
-import com.lin0721.linmusic.core.ui.theme.BackgroundDark
-import com.lin0721.linmusic.core.ui.theme.GradientStart
 import com.lin0721.linmusic.feature.home.ui.ErrorContent
-import com.lin0721.linmusic.feature.home.ui.FilterPills
 import com.lin0721.linmusic.feature.home.ui.LoadingIndicator
-import com.lin0721.linmusic.feature.home.ui.TopGreetingBar
 import com.lin0721.linmusic.feature.music.domain.StyleArtistItem
 import com.lin0721.linmusic.feature.music.domain.StylePlaylistItem
 
-// 「音乐」tab 骨架：顶栏与「全部」共用，胶囊以下是曲风体系。
+// 「音乐」tab 骨架：顶栏由 HomeScreen 统一渲染，这里只有胶囊以下的曲风体系。
 // 与「全部」并列而非塞进同一个 Content，是为了让第三个 tab 后续能独立加进来。
 @Composable
 fun MusicContent(
     uiState: MusicUiState,
-    userProfile: UserProfile?,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
-    onAvatarClick: () -> Unit,
-    onSearchClick: () -> Unit,
     onStyleSelect: (StyleSelection) -> Unit,
     onChildStyleSelect: (Long?) -> Unit,
     onPlaylistClick: (StylePlaylistItem) -> Unit,
@@ -44,22 +31,6 @@ fun MusicContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp)
     ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(GradientStart, BackgroundDark)))
-                    .statusBarsPadding()
-            ) {
-                TopGreetingBar(
-                    userProfile = userProfile,
-                    onLoginClick = onAvatarClick,
-                    onSearchClick = onSearchClick
-                )
-                FilterPills(selectedIndex = selectedTab, onSelected = onTabSelected)
-            }
-        }
-
         when (uiState) {
             is MusicUiState.Loading -> item { LoadingIndicator() }
 

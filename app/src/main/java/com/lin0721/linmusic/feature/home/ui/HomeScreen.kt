@@ -3,6 +3,7 @@ package com.lin0721.linmusic.feature.home.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -88,55 +89,53 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        when (selectedTab) {
-            TAB_MUSIC -> MusicContent(
-                uiState = musicUiState,
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 顶栏跨 tab 只渲染一次，切 tab 时不会被重建，FilterPills 的展开动画状态才能保留
+            HomeSharedHeader(
                 userProfile = userProfile,
                 selectedTab = selectedTab,
                 onTabSelected = onTabSelected,
                 onAvatarClick = onAvatarClick,
-                onSearchClick = onSearchClick,
-                onStyleSelect = { musicViewModel.selectStyle(it) },
-                onChildStyleSelect = { musicViewModel.selectChildStyle(it) },
-                onPlaylistClick = { onPlaylistClick(it.id, false) },
-                onArtistClick = { onArtistClick(it.id) },
-                onPlaySongAt = { musicViewModel.playSongAt(it) },
-                onPlayFavourite = {
-                    (musicUiState as? com.lin0721.linmusic.feature.music.ui.MusicUiState.Success)
-                        ?.data?.content?.head?.favouriteSong
-                        ?.let { musicViewModel.playFavouriteSong(it) }
-                },
-                onRetry = { musicViewModel.loadStyles() }
+                onSearchClick = onSearchClick
             )
 
-            TAB_PODCAST -> PodcastContent(
-                uiState = podcastUiState,
-                userProfile = userProfile,
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
-                onAvatarClick = onAvatarClick,
-                onSearchClick = onSearchClick,
-                onCategorySelect = { podcastViewModel.selectCategory(it) },
-                onProgramClick = { podcastViewModel.playProgramAt(it) },
-                onRadioClick = { onRadioClick(it.id) },
-                onRetry = { podcastViewModel.loadFeed() }
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                when (selectedTab) {
+                    TAB_MUSIC -> MusicContent(
+                        uiState = musicUiState,
+                        onStyleSelect = { musicViewModel.selectStyle(it) },
+                        onChildStyleSelect = { musicViewModel.selectChildStyle(it) },
+                        onPlaylistClick = { onPlaylistClick(it.id, false) },
+                        onArtistClick = { onArtistClick(it.id) },
+                        onPlaySongAt = { musicViewModel.playSongAt(it) },
+                        onPlayFavourite = {
+                            (musicUiState as? com.lin0721.linmusic.feature.music.ui.MusicUiState.Success)
+                                ?.data?.content?.head?.favouriteSong
+                                ?.let { musicViewModel.playFavouriteSong(it) }
+                        },
+                        onRetry = { musicViewModel.loadStyles() }
+                    )
 
-            else -> HomeContent(
-                uiState = uiState,
-                userProfile = userProfile,
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
-                onAvatarClick = onAvatarClick,
-                onSearchClick = onSearchClick,
-                onPlaylistClick = onPlaylistClick,
-                onSongClick = { song -> viewModel.playShelfSong(song) },
-                onVoiceClick = { voice -> viewModel.playShelfVoice(voice) },
-                onRetry = { viewModel.loadHomeData() },
-                onLoadMore = { viewModel.loadMoreShelves() },
-                onIntelligenceClick = { viewModel.startIntelligenceMode() },
-                onRoamingClick = { viewModel.startRoaming() }
-            )
+                    TAB_PODCAST -> PodcastContent(
+                        uiState = podcastUiState,
+                        onCategorySelect = { podcastViewModel.selectCategory(it) },
+                        onProgramClick = { podcastViewModel.playProgramAt(it) },
+                        onRadioClick = { onRadioClick(it.id) },
+                        onRetry = { podcastViewModel.loadFeed() }
+                    )
+
+                    else -> HomeContent(
+                        uiState = uiState,
+                        onPlaylistClick = onPlaylistClick,
+                        onSongClick = { song -> viewModel.playShelfSong(song) },
+                        onVoiceClick = { voice -> viewModel.playShelfVoice(voice) },
+                        onRetry = { viewModel.loadHomeData() },
+                        onLoadMore = { viewModel.loadMoreShelves() },
+                        onIntelligenceClick = { viewModel.startIntelligenceMode() },
+                        onRoamingClick = { viewModel.startRoaming() }
+                    )
+                }
+            }
         }
 
         // 登录相关的弹窗保持在最顶层

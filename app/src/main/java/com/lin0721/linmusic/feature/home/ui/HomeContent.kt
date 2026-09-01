@@ -1,11 +1,7 @@
 package com.lin0721.linmusic.feature.home.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -13,25 +9,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import com.lin0721.linmusic.LocalBottomOverlayInset
-import com.lin0721.linmusic.core.auth.UserProfile
-import com.lin0721.linmusic.core.ui.theme.BackgroundDark
-import com.lin0721.linmusic.core.ui.theme.GradientStart
 import com.lin0721.linmusic.feature.home.domain.HomeCard
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-// 首页信息流骨架：单个 LazyColumn 承载顶栏与服务端下发的货架序列。
+// 首页信息流骨架：单个 LazyColumn 承载服务端下发的货架序列，顶栏由 HomeScreen 统一渲染。
 // 货架内部两列是手写 Row，不能换成懒加载网格，嵌进 LazyColumn 会因无界高度约束崩溃。
 @Composable
 fun HomeContent(
     uiState: HomeUiState,
-    userProfile: UserProfile?,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
-    onAvatarClick: () -> Unit,
-    onSearchClick: () -> Unit,
     onPlaylistClick: (Long, Boolean) -> Unit,
     onSongClick: (HomeCard.Song) -> Unit,
     onVoiceClick: (HomeCard.Voice) -> Unit,
@@ -48,23 +35,6 @@ fun HomeContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = LocalBottomOverlayInset.current + 16.dp)
     ) {
-        // 渐变铺在状态栏内边距之前，色彩才能顶到状态栏后面，顶栏不至于是一块死黑
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(GradientStart, BackgroundDark)))
-                    .statusBarsPadding()
-            ) {
-                TopGreetingBar(
-                    userProfile = userProfile,
-                    onLoginClick = onAvatarClick,
-                    onSearchClick = onSearchClick
-                )
-                FilterPills(selectedIndex = selectedTab, onSelected = onTabSelected)
-            }
-        }
-
         when (uiState) {
             is HomeUiState.Loading -> item { LoadingIndicator() }
 
