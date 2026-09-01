@@ -44,7 +44,7 @@ fun MiniLyricLine(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = MelodiaSpacing.xl)
+            .padding(horizontal = MelodiaSpacing.lg)
             .padding(vertical = 6.dp),
         contentAlignment = Alignment.CenterStart
     ) {

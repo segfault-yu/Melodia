@@ -52,6 +52,8 @@ import com.lin0721.linmusic.core.ui.theme.FallbackDominant
 import com.lin0721.linmusic.core.ui.theme.FallbackSecondary
 import com.lin0721.linmusic.core.ui.theme.NavPillSelected
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.feature.player.ui.deviceIcon
 import com.lin0721.linmusic.feature.player.ui.deviceLabel
 import com.lin0721.linmusic.feature.player.ui.rememberCurrentOutputDevice
@@ -124,9 +126,9 @@ fun MiniPlayerCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(InfoCardRadius))
             .background(cardBackgroundColor)
-            .border(0.5.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+            .border(0.5.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(InfoCardRadius))
             .draggable(
                 orientation = Orientation.Vertical,
                 state = rememberDraggableState { delta ->
@@ -147,7 +149,7 @@ fun MiniPlayerCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .padding(horizontal = 12.dp, vertical = 3.dp)
             ) {
                 // 专辑封面
                 AsyncImage(
@@ -160,14 +162,15 @@ fun MiniPlayerCard(
                     },
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(10.dp)),
+                        .clip(RoundedCornerShape(RadiusCompact)),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 // 歌名歌手信息；连接非扬声器设备时第二行由歌手名切换成设备名，扬声器播放时不显示第二行
                 val connectedDevice = rememberCurrentOutputDevice()
                 Column(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
                 ) {
                     val title = currentTrack.mediaMetadata.title?.toString() ?: "未知歌名"
                     val artist = currentTrack.mediaMetadata.artist?.toString().orEmpty()
@@ -182,7 +185,7 @@ fun MiniPlayerCard(
                         modifier = Modifier.basicMarquee()
                     )
                     if (connectedDevice != null) {
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(1.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = deviceIcon(connectedDevice.type),
@@ -200,7 +203,7 @@ fun MiniPlayerCard(
                             )
                         }
                     } else if (artist.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(1.dp))
                         Text(
                             text = artist,
                             color = TextGray,
@@ -281,7 +284,8 @@ fun MelodiaNavigationBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .height(62.dp),
+                .height(60.dp)
+                .padding(top = 12.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val navItems = listOf(
@@ -315,7 +319,7 @@ fun MelodiaNavigationBar(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
                             .background(if (isSelected) NavPillSelected else Color.Transparent)
-                            .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.xs),
+                            .padding(horizontal = MelodiaSpacing.md, vertical = 1.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -325,7 +329,6 @@ fun MelodiaNavigationBar(
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = label,
                         color = if (isSelected) Color.White else TextGray,

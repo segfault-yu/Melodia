@@ -37,7 +37,7 @@ fun ActionButtons(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = MelodiaSpacing.md + InfoCardRadius)
+            .padding(horizontal = MelodiaSpacing.lg)
             .padding(top = MelodiaSpacing.sm, bottom = MelodiaSpacing.md),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

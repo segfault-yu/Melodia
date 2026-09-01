@@ -44,7 +44,7 @@ fun FullPlayerCoverArt(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = MelodiaSpacing.md + InfoCardRadius)
+            .padding(horizontal = MelodiaSpacing.lg)
             .padding(top = MelodiaSpacing.md, bottom = MelodiaSpacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -57,7 +57,9 @@ fun FullPlayerCoverArt(
         ) {
             IconButton(
                 onClick = onClose,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier
+                    .size(32.dp)
+                    .offset(x = (-4).dp)
             ) {
                 Icon(
                     Icons.Rounded.KeyboardArrowDown,
@@ -99,7 +101,9 @@ fun FullPlayerCoverArt(
             }
             IconButton(
                 onClick = onMoreClick,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier
+                    .size(32.dp)
+                    .offset(x = 4.dp)
             ) {
                 Icon(
                     Icons.Default.MoreVert,

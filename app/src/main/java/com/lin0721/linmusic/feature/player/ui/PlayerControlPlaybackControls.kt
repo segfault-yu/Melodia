@@ -49,7 +49,7 @@ fun PlaybackControls(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = MelodiaSpacing.md + InfoCardRadius)
+            .padding(horizontal = MelodiaSpacing.lg)
             .padding(top = MelodiaSpacing.xs),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

@@ -86,7 +86,7 @@ private fun HomeResourceDto.toCardOrNull(): HomeCard? {
     }
 }
 
-// 四种描述来源按信息量排优先级，labelTexts 是最像 Spotify 那行标签的形态
+// 四种描述来源按信息量排优先级
 private fun HomeUiElementDto.resolveCaption(): String {
     labelTexts.filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.let { return it.joinToString(" · ") }
     labelText?.text?.takeIf { it.isNotBlank() }?.let { return it }
