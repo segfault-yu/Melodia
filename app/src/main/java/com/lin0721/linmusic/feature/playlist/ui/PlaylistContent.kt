@@ -14,7 +14,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
@@ -22,12 +21,12 @@ import com.lin0721.linmusic.core.ui.components.PlaylistCollectSheet
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.ui.theme.FallbackDominant
+import kotlin.math.max
 
 // TopBar 操作区高度（不含状态栏）
 private val TOP_BAR_HEIGHT = 56.dp
-// 封面动画范围
+// 封面固定尺寸
 private val COVER_MAX_SIZE = 260.dp
-private val COVER_MIN_SIZE = 36.dp
 
 // ────────────────────────────────────────────────────────────────────────────
 // 主内容：折叠状态计算 + 各区块装配
@@ -74,7 +73,7 @@ fun PlaylistContent(
     val density = LocalDensity.current
 
     val isDailyRecommend = playlist.id == -1L || playlist.id == -2L
-    // 搜索栏不再是 list item，header 统一为 item 0，无需按是否每日推荐区分初始位置
+    // 搜索栏统一为 item 0，无需按是否每日推荐区分初始位置
     val listState = rememberLazyListState()
     var searchQuery by remember { mutableStateOf("") }
     var sortOption by remember { mutableStateOf(PlaylistSortOption.DEFAULT) }
@@ -83,7 +82,7 @@ fun PlaylistContent(
     // 从封面提取的主色调，默认为深灰色
     var dominantColor by remember { mutableStateOf(FallbackDominant) }
 
-    // 获取系统状态栏高度（因为开启了沉浸式，内容会画在状态栏下面）
+    // 获取系统状态栏高度
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     // Overlay 总高度：状态栏 + 操作区(56dp)
     val overlayHeight = TOP_BAR_HEIGHT + statusBarHeight
@@ -100,11 +99,16 @@ fun PlaylistContent(
         }
     }
 
-    val coverSize: Dp     = lerp(COVER_MAX_SIZE, COVER_MIN_SIZE, progress)
-    // 封面透明度优化：前 40% 不透明，之后平滑淡出
-    val coverAlpha        = 1f - ((progress - 0.4f) / 0.5f).coerceIn(0f, 1f)
-    // 到达临界点后瞬间切换，不做渐隐
-    val isCollapsed       = progress >= 0.8f
+    val coverSize: Dp     = COVER_MAX_SIZE
+    // 封面透明度：滚动一开始就同步淡出，65% 处完全消失
+    val coverAlpha        = 1f - (progress / 0.65f).coerceIn(0f, 1f)
+
+    // 播放按钮停靠位：按钮中心正好卡在顶栏下边缘
+    val dockedYPx = with(density) { (overlayHeight - 28.dp).toPx() }
+    // 按钮在完全未滚动时的基准 Y（由 PlaylistHeaderItem 里那个透明占位按钮上报，
+    // 只在滚到顶部时才接受更新，滚动过程中不重新测量）
+    // 用listState.firstVisibleItemScrollOffset 做数学换算得到实时位置
+    var playButtonBaselineYPx by remember { mutableFloatStateOf(Float.MAX_VALUE) }
 
     var collectSongId by remember { mutableStateOf<Long?>(null) }
     var activeSongMoreOptions by remember { mutableStateOf<Track?>(null) }
@@ -130,7 +134,7 @@ fun PlaylistContent(
                     playlist            = playlist,
                     coverSize           = coverSize,
                     coverAlpha          = coverAlpha,
-                    isCollapsed         = isCollapsed,
+                    progress            = progress,
                     statusBarHeight     = statusBarHeight,
                     dominantColor       = dominantColor,
                     onColorCalculated   = { dominantColor = it },
@@ -141,7 +145,12 @@ fun PlaylistContent(
                     onCommentsClick     = onCommentsClick,
                     onMoreClick         = onMoreClick,
                     onHistoryClick      = onHistoryClick,
-                    selectedHistoryDate = selectedHistoryDate
+                    selectedHistoryDate = selectedHistoryDate,
+                    onPlayButtonPositioned = { y ->
+                        if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) {
+                            playButtonBaselineYPx = y
+                        }
+                    }
                 )
             }
 
@@ -231,12 +240,18 @@ fun PlaylistContent(
             onBack          = onBack
         )
 
-        // 折叠后吸附播放按钮（每日推荐歌单隐藏）
+        // 播放按钮跟手滑动、到位后锁停
         if (!isDailyRecommend) {
-            PlaylistCollapsedPlayFab(
-                progress      = progress,
-                overlayHeight = overlayHeight,
-                onPlayAll     = onPlayAll
+            PlaylistDockedPlayButton(
+                dockedOffsetYProvider = {
+                    val naturalY = if (listState.firstVisibleItemIndex == 0) {
+                        playButtonBaselineYPx - listState.firstVisibleItemScrollOffset
+                    } else {
+                        -Float.MAX_VALUE
+                    }
+                    max(naturalY, dockedYPx)
+                },
+                onPlayAll = onPlayAll
             )
         }
     }

@@ -23,6 +23,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.extractDominantColor
 import com.lin0721.linmusic.core.model.PlaylistDetail
@@ -44,7 +47,7 @@ fun PlaylistHeaderItem(
     playlist: PlaylistDetail,
     coverSize: Dp,
     coverAlpha: Float,
-    isCollapsed: Boolean,
+    progress: Float,
     statusBarHeight: Dp,
     dominantColor: Color,
     onColorCalculated: (Color) -> Unit,
@@ -55,7 +58,9 @@ fun PlaylistHeaderItem(
     onCommentsClick: () -> Unit,
     onMoreClick: () -> Unit,
     onHistoryClick: () -> Unit = {},
-    selectedHistoryDate: String = "今天"
+    selectedHistoryDate: String = "今天",
+    // 播放按钮在根坐标系下的实时位置（用于顶层叠加的按钮跟手滑动、到位后锁停）
+    onPlayButtonPositioned: (Float) -> Unit = {}
 ) {
     val todayStr = remember {
         java.text.SimpleDateFormat("yyyy年MM月dd日", java.util.Locale.getDefault()).format(java.util.Date())
@@ -72,6 +77,10 @@ fun PlaylistHeaderItem(
             }
         }
     }
+    // 只有标题随折叠渐隐（40%-80%），跟顶栏小标题的淡入
+    // 区间（60%-100%）有重叠形成交错过渡；创建者/简介/歌曲数/操作按钮不做特殊处理，
+    // 当作普通内容随手指滚动划走即可
+    val titleAlpha = 1f - ((progress - 0.4f) / 0.4f).coerceIn(0f, 1f)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,105 +111,109 @@ fun PlaylistHeaderItem(
                 },
                 modifier           = Modifier
                     .size(coverSize)
-                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(10.dp), clip = false)
-                    .clip(RoundedCornerShape(10.dp))
+                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(RadiusCompact), clip = false)
+                    .clip(RoundedCornerShape(RadiusCompact))
                     .then(if (coverAlpha < 1f) Modifier.alpha(coverAlpha) else Modifier)
             )
         }
 
-        // 歌单信息与操作行：折叠后隐藏
-        if (!isCollapsed) {
-            Column(modifier = Modifier.padding(horizontal = MelodiaSpacing.md)) {
-                Text(playlist.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(6.dp))
-                if (playlist.id == -1L) {
-                    Text(displayDateStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                } else if (playlist.id == -2L) {
-                    Text("网易云个人听歌记录统计", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (playlist.creator != null) {
-                            AsyncImage(
-                                model = "${playlist.creator.avatarUrl}?param=50y50",
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(CircleShape)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(playlist.creator.nickname, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                        } else {
-                            Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("为你打造", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+        // 歌单信息与操作行：普通内容，随列表正常滚动划走，不做特殊处理
+        Column(modifier = Modifier.padding(horizontal = MelodiaSpacing.md)) {
+                    Text(playlist.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alpha(titleAlpha))
+                    Spacer(Modifier.height(6.dp))
+                    if (playlist.id == -1L) {
+                        Text(displayDateStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    } else if (playlist.id == -2L) {
+                        Text("网易云个人听歌记录统计", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (playlist.creator != null) {
+                                AsyncImage(
+                                    model = "${playlist.creator.avatarUrl}?param=50y50",
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(playlist.creator.nickname, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                            } else {
+                                Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("为你打造", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                            }
+                        }
+                        if (!playlist.description.isNullOrBlank()) {
+                            Spacer(Modifier.height(MelodiaSpacing.xs))
+                            Text(playlist.description, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                     }
-                    if (!playlist.description.isNullOrBlank()) {
-                        Spacer(Modifier.height(MelodiaSpacing.xs))
-                        Text(playlist.description, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    }
+                    Spacer(Modifier.height(MelodiaSpacing.xs))
+                    val playCountText = if (playlist.playCount > 0) " • 播放 ${formatPlayCount(playlist.playCount)} 次" else ""
+                    Text("${playlist.tracks.size} 首歌曲$playCountText", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 }
-                Spacer(Modifier.height(MelodiaSpacing.xs))
-                val playCountText = if (playlist.playCount > 0) " • 播放 ${formatPlayCount(playlist.playCount)} 次" else ""
-                Text("${playlist.tracks.size} 首歌曲$playCountText", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-            }
 
-            if (playlist.id != -1L && playlist.id != -2L) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = MelodiaSpacing.md, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onSubscribeClick) {
-                            Icon(
-                                imageVector = if (isSubscribed) Icons.Default.Check else Icons.Default.Add,
-                                contentDescription = if (isSubscribed) "已收藏" else "收藏",
-                                tint = if (isSubscribed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp)
-                            )
+                if (playlist.id != -1L && playlist.id != -2L) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = MelodiaSpacing.md, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = onSubscribeClick) {
+                                Icon(
+                                    imageVector = if (isSubscribed) Icons.Default.Check else Icons.Default.Add,
+                                    contentDescription = if (isSubscribed) "已收藏" else "收藏",
+                                    tint = if (isSubscribed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            IconButton(onClick = onCommentsClick) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.Comment,
+                                    contentDescription = "评论",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            IconButton(onClick = onMoreClick) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "更多",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
-                        IconButton(onClick = onCommentsClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.Comment,
-                                contentDescription = "评论",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        IconButton(onClick = onMoreClick) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "更多",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = onShufflePlay,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(Icons.Default.Shuffle, "Shuffle", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-                        }
-                        FloatingActionButton(
-                            onClick        = onPlayAll,
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            shape          = CircleShape,
-                            modifier       = Modifier
-                                .size(56.dp)
-                                .shadow(6.dp, CircleShape)
-                        ) {
-                            Icon(Icons.Default.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = onShufflePlay,
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(Icons.Default.Shuffle, "Shuffle", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                            }
+                            // 真实按钮永远透明，只用来占位和上报自身位置；
+                            // 可见的播放按钮是顶层叠加的那一个，见 PlaylistTopBar 的 PlaylistDockedPlayButton
+                            FloatingActionButton(
+                                onClick        = onPlayAll,
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                shape          = CircleShape,
+                                modifier       = Modifier
+                                    .size(56.dp)
+                                    .onGloballyPositioned { coordinates ->
+                                        onPlayButtonPositioned(coordinates.positionInRoot().y)
+                                    }
+                                    .alpha(0f)
+                            ) {
+                                Icon(Icons.Default.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
+                            }
                         }
                     }
                 }
-            }
-        }
     }
 }

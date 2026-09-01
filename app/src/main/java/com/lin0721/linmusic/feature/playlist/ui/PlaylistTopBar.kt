@@ -13,15 +13,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import kotlin.math.roundToInt
 
 // ────────────────────────────────────────────────────────────────────────────
 // 固定 Overlay 顶栏
@@ -74,33 +75,26 @@ fun PlaylistTopBar(
     }
 }
 
-// 折叠到临界点后吸附在顶栏下沿的播放按钮
+// 播放按钮的"共享元素"式停靠：全程跟随它在歌单页里的真实位置，到达停靠位后锁停。
+// 用 provider 而不是直接传 Float，是为了让状态读取发生在 offset{} 的布局阶段而不是
+// 组合阶段，避免每次位置更新都触发整棵树重组导致跟手时明显的抖动
 @Composable
-fun BoxScope.PlaylistCollapsedPlayFab(
-    progress: Float,
-    overlayHeight: Dp,
+fun BoxScope.PlaylistDockedPlayButton(
+    dockedOffsetYProvider: () -> Float,
     onPlayAll: () -> Unit
 ) {
-    val fabScale = ((progress - 0.8f) / 0.2f).coerceIn(0f, 1f)
-    if (fabScale > 0f) {
-        FloatingActionButton(
-            onClick        = onPlayAll,
-            containerColor = MaterialTheme.colorScheme.primary,
-            shape          = CircleShape,
-            modifier       = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = MelodiaSpacing.md)
-                .offset(y = overlayHeight - 28.dp)
-                .size(56.dp)
-                .zIndex(10f)
-                .graphicsLayer(
-                    scaleX = fabScale,
-                    scaleY = fabScale,
-                    alpha = fabScale
-                )
-                .shadow(8.dp * fabScale, CircleShape)
-        ) {
-            Icon(Icons.Default.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
-        }
+    FloatingActionButton(
+        onClick        = onPlayAll,
+        containerColor = MaterialTheme.colorScheme.primary,
+        shape          = CircleShape,
+        modifier       = Modifier
+            .align(Alignment.TopEnd)
+            .padding(end = MelodiaSpacing.md)
+            .offset { IntOffset(0, dockedOffsetYProvider().roundToInt()) }
+            .size(56.dp)
+            .zIndex(10f)
+            .shadow(8.dp, CircleShape)
+    ) {
+        Icon(Icons.Default.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
     }
 }
