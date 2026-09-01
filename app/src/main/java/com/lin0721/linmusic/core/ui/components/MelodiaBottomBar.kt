@@ -169,9 +169,11 @@ fun MiniPlayerCard(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    val artist = currentTrack.mediaMetadata.artist?.toString() ?: "未知歌手"
+                    val title = currentTrack.mediaMetadata.title?.toString() ?: "未知歌名"
+                    val artist = currentTrack.mediaMetadata.artist?.toString().orEmpty()
+                    val titleLine = if (connectedDevice != null && artist.isNotBlank()) "$title · $artist" else title
                     Text(
-                        text = "${currentTrack.mediaMetadata.title?.toString() ?: "未知歌名"} · $artist",
+                        text = titleLine,
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -185,18 +187,27 @@ fun MiniPlayerCard(
                             Icon(
                                 imageVector = deviceIcon(connectedDevice.type),
                                 contentDescription = null,
-                                tint = NavPillSelected,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(12.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = deviceLabel(connectedDevice),
-                                color = NavPillSelected,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontSize = 11.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                    } else if (artist.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = artist,
+                            color = TextGray,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 

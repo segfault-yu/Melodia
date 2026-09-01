@@ -47,6 +47,10 @@ class PlayerManager(
     private val _currentTrack = MutableStateFlow<MediaItem?>(null)
     val currentTrack: StateFlow<MediaItem?> = _currentTrack.asStateFlow()
 
+    // 用户在"连接设备"弹层里手动选过的输出设备 id；null 表示本次会话还没手动选过，交给启发式猜测
+    private val _preferredOutputDeviceId = MutableStateFlow<Int?>(null)
+    val preferredOutputDeviceId: StateFlow<Int?> = _preferredOutputDeviceId.asStateFlow()
+
     private val controllerHolder = MediaControllerHolder(context)
     private val playbackQueue = PlaybackQueue()
     private val progress = PlaybackProgressTracker(scope, controllerHolder)
@@ -267,6 +271,7 @@ class PlayerManager(
 
     fun setPreferredAudioDevice(deviceId: Int) {
         controllerHolder.setPreferredAudioDevice(deviceId)
+        _preferredOutputDeviceId.value = deviceId
     }
 
     fun togglePlayPause() {

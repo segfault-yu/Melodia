@@ -30,11 +30,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import org.koin.compose.koinInject
 
-// 只展示用户能理解的物理输出类型，蓝牙 LE/USB/有线各算一类
+// 只展示物理输出类型，蓝牙 LE/USB/有线各算一类
 internal val RELEVANT_DEVICE_TYPES = setOf(
     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
     AudioDeviceInfo.TYPE_WIRED_HEADSET,
@@ -48,22 +51,25 @@ internal fun listOutputDevices(audioManager: AudioManager): List<AudioDeviceInfo
     audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
         .filter { it.type in RELEVANT_DEVICE_TYPES }
 
-// 有线插入优先级最高；其次蓝牙；两者都没有时返回 null（表示扬声器/默认）
-private fun heuristicNonSpeakerDevice(devices: List<AudioDeviceInfo>): AudioDeviceInfo? {
+// 有线插入优先级最高
+// 其次是在弹层里手动选过、且还在设备列表里的那个；再退到蓝牙启发式；最后是手机扬声器
+private fun resolveEffectiveDeviceId(devices: List<AudioDeviceInfo>, preferredId: Int?): Int {
     val wired = devices.firstOrNull {
         it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
             it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
             it.type == AudioDeviceInfo.TYPE_USB_HEADSET
     }
-    if (wired != null) return wired
-    return devices.firstOrNull {
+    if (wired != null) return wired.id
+    if (preferredId != null && devices.any { it.id == preferredId }) return preferredId
+    val bluetooth = devices.firstOrNull {
         it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET
     }
+    if (bluetooth != null) return bluetooth.id
+    return devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.id ?: -1
 }
 
-// 非手机扬声器时返回设备信息用于换图标/高亮/显示设备名，否则 null
 @Composable
-internal fun rememberCurrentOutputDevice(): AudioDeviceInfo? {
+private fun rememberOutputDevices(): List<AudioDeviceInfo> {
     val context = LocalContext.current
     val audioManager = remember {
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -86,7 +92,19 @@ internal fun rememberCurrentOutputDevice(): AudioDeviceInfo? {
         }
     }
 
-    return remember(devices) { heuristicNonSpeakerDevice(devices) }
+    return devices
+}
+
+@Composable
+internal fun rememberCurrentOutputDevice(): AudioDeviceInfo? {
+    val playerManager = koinInject<PlayerManager>()
+    val preferredId by playerManager.preferredOutputDeviceId.collectAsStateWithLifecycle()
+    val devices = rememberOutputDevices()
+
+    return remember(devices, preferredId) {
+        val id = resolveEffectiveDeviceId(devices, preferredId)
+        devices.firstOrNull { it.id == id }?.takeIf { it.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+    }
 }
 
 internal fun deviceIcon(type: Int): ImageVector = when (type) {
@@ -121,9 +139,7 @@ private fun openBluetoothSettings(context: Context) {
     context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
 }
 
-// ────────────────────────────────────────────────────────────────────────────
 // "连接设备"输出切换弹层：枚举系统音频输出设备，点选后经 SessionCommand 下发给 ExoPlayer
-// ────────────────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OutputDeviceSheet(
@@ -131,40 +147,10 @@ fun OutputDeviceSheet(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val audioManager = remember {
-        context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    }
-    var devices by remember { mutableStateOf(listOutputDevices(audioManager)) }
-    var selectedDeviceId by remember { mutableIntStateOf(-1) }
-    val heuristicDefaultId = remember(devices) {
-        heuristicNonSpeakerDevice(devices)?.id
-            ?: devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.id
-            ?: -1
-    }
-    // 之前手动选的设备如果已经断开（比如拔了耳机），不能再继续高亮它，退回启发式猜测
-    LaunchedEffect(devices) {
-        if (selectedDeviceId != -1 && devices.none { it.id == selectedDeviceId }) {
-            selectedDeviceId = -1
-        }
-    }
-    val effectiveSelectedId = if (selectedDeviceId != -1) selectedDeviceId else heuristicDefaultId
-
-    // 弹层打开期间实时感知耳机插拔/蓝牙连接变化
-    DisposableEffect(audioManager) {
-        val callback = object : AudioDeviceCallback() {
-            override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
-                devices = listOutputDevices(audioManager)
-            }
-
-            override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
-                devices = listOutputDevices(audioManager)
-            }
-        }
-        audioManager.registerAudioDeviceCallback(callback, Handler(Looper.getMainLooper()))
-        onDispose {
-            audioManager.unregisterAudioDeviceCallback(callback)
-        }
-    }
+    val playerManager = koinInject<PlayerManager>()
+    val preferredId by playerManager.preferredOutputDeviceId.collectAsStateWithLifecycle()
+    val devices = rememberOutputDevices()
+    val effectiveSelectedId = remember(devices, preferredId) { resolveEffectiveDeviceId(devices, preferredId) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
@@ -226,10 +212,7 @@ fun OutputDeviceSheet(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
                             .background(rowBackground)
-                            .clickable {
-                                selectedDeviceId = device.id
-                                onDeviceSelected(device.id)
-                            }
+                            .clickable { onDeviceSelected(device.id) }
                             .padding(horizontal = MelodiaSpacing.md, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
