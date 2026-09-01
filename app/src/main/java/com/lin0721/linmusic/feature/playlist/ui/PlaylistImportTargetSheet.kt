@@ -22,7 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
 import com.lin0721.linmusic.core.ui.components.CreatePlaylistDialog
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
@@ -132,10 +133,12 @@ fun PlaylistImportTargetSheet(
                                     .padding(vertical = MelodiaSpacing.sm),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                AsyncImage(
+                                SubcomposeAsyncImage(
                                     model = "${item.coverImgUrl}?param=100y100",
                                     contentDescription = item.name,
                                     contentScale = ContentScale.Crop,
+                                    loading = { CoverPlaceholder() },
+                                    error = { CoverPlaceholder() },
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(RoundedCornerShape(RadiusCompact))

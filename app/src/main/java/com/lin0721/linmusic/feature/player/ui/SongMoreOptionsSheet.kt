@@ -25,7 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
@@ -96,10 +97,12 @@ fun SongMoreOptionsSheet(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = coverUrl.ifEmpty { null },
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() },
                     modifier = Modifier
                         .size(54.dp)
                         .clip(RoundedCornerShape(RadiusCompact))

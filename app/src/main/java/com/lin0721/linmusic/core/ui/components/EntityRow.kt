@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
@@ -70,10 +70,12 @@ fun EntityRow(
                 null
             }
         }
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = imageRequest,
             contentDescription = data.title,
             contentScale = ContentScale.Crop,
+            loading = { CoverPlaceholder() },
+            error = { CoverPlaceholder() },
             modifier = Modifier.size(48.dp).clip(shape)
         )
         Spacer(Modifier.width(12.dp))

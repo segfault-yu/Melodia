@@ -8,15 +8,20 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,10 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 
 // 扫光骨架屏背景：surfaceVariant/surface 之间无限循环平移渐变，贴合项目深色低调基调
 @Composable
@@ -50,6 +57,25 @@ fun Modifier.shimmerBackground(shape: Shape = RectangleShape): Modifier {
         end = Offset(translateAnim + 400f, 0f)
     )
     return this.background(brush = brush, shape = shape)
+}
+
+// 封面图未加载/加载失败时的静态占位：色块 + 居中音符图标，不做动画。
+// 配合 SubcomposeAsyncImage 的 loading/error 插槽使用，外层的 .clip() 决定最终形状
+@Composable
+fun CoverPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(SurfaceLight),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            Icons.Rounded.MusicNote,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.3f),
+            modifier = Modifier.fillMaxSize(0.34f)
+        )
+    }
 }
 
 // 模拟一行 EntityRow/SongRow：方块封面 + 两行条状高光，供搜索结果首屏加载使用

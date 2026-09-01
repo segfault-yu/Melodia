@@ -9,9 +9,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
 import com.lin0721.linmusic.core.ui.theme.extractDominantColor
 
 // 顶部大图背景层：固定不动，由上层滚动列表的不透明内容自然覆盖，并回传封面主色
@@ -27,7 +28,7 @@ fun BoxScope.ArtistBackdrop(
             .height(380.dp)
     ) {
         val bgUrl = artist.cover.ifEmpty { artist.avatar }
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(if (bgUrl.isNotEmpty()) "$bgUrl?param=640y640" else "")
                 .allowHardware(false)
@@ -38,6 +39,8 @@ fun BoxScope.ArtistBackdrop(
             onSuccess = { state ->
                 onDominantColorChange(extractDominantColor(state.result.drawable))
             },
+            loading = { CoverPlaceholder() },
+            error = { CoverPlaceholder() },
             modifier = Modifier.fillMaxSize()
         )
     }

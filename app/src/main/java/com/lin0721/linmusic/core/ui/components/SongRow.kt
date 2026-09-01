@@ -50,7 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
@@ -116,10 +116,12 @@ fun SongRow(
                 null
             }
         }
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = imageRequest,
             contentDescription = data.title,
             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            loading = { CoverPlaceholder() },
+            error = { CoverPlaceholder() },
             modifier = Modifier.size(coverSize).clip(coverShape)
         )
         Spacer(Modifier.width(coverSpacing))
@@ -281,10 +283,12 @@ fun DraggableSongRow(
                     null
                 }
             }
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = imageRequest,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() },
                 modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(RadiusCompact))
             )
             if (isCurrent) {

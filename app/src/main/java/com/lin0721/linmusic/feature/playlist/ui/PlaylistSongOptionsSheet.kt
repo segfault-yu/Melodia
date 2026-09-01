@@ -19,7 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.components.ToastManager
@@ -68,10 +69,12 @@ fun PlaylistSongOptionsSheet(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = "${track.al.picUrl}?param=150y150",
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() },
                     modifier = Modifier
                         .size(54.dp)
                         .clip(MaterialTheme.shapes.small)
