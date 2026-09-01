@@ -22,9 +22,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 
-// 与封面圆角（PlaylistHeaderItem 里的 10.dp）保持一致
-private val SearchBarCornerRadius = 10.dp
 private val SearchBarHeight = 40.dp
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -56,7 +55,7 @@ fun SearchBarItem(
                 modifier = Modifier
                     .weight(1f)
                     .height(SearchBarHeight)
-                    .clip(RoundedCornerShape(SearchBarCornerRadius))
+                    .clip(RoundedCornerShape(RadiusCompact))
                     .background(Color.White.copy(alpha = 0.12f)),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -88,7 +87,7 @@ fun SearchBarItem(
             Row(
                 modifier = Modifier
                     .height(SearchBarHeight)
-                    .clip(RoundedCornerShape(SearchBarCornerRadius))
+                    .clip(RoundedCornerShape(RadiusCompact))
                     .background(Color.White.copy(alpha = 0.12f))
                     .clickable { showSortSheet = true }
                     .padding(horizontal = 16.dp),
