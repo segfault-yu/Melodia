@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PillRadius
 import com.lin0721.linmusic.core.ui.theme.TimerWarningRed
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -252,7 +253,7 @@ fun SleepTimerSheet(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(36.dp)
-                                    .clip(RoundedCornerShape(18.dp))
+                                    .clip(RoundedCornerShape(PillRadius))
                                     .background(Color.White.copy(alpha = 0.05f))
                                     .clickable {
                                         val totalMin = customHours * 60 + customMinutes + delta
@@ -291,7 +292,7 @@ fun SleepTimerSheet(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(36.dp)
-                                    .clip(RoundedCornerShape(18.dp))
+                                    .clip(RoundedCornerShape(PillRadius))
                                     .background(
                                         if (label == "重置") MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
                                     )

@@ -39,6 +39,7 @@ import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PillRadiusLarge
 
 
  // 侧边栏 
@@ -181,7 +182,7 @@ fun ProfileSidebar(
                         scaleX = scale
                         scaleY = scale
                     },
-                shape = RoundedCornerShape(25.dp),
+                shape = RoundedCornerShape(PillRadiusLarge),
                 color = Color.Transparent,
                 border = BorderStroke(1.dp, NeteaseRed.copy(alpha = 0.6f)),
                 interactionSource = interactionSource

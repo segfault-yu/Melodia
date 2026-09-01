@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.comment.ui.CommentsBottomSheet
 import org.koin.androidx.compose.koinViewModel
@@ -210,7 +211,7 @@ fun PlaylistScreen(
             ModalBottomSheet(
                 onDismissRequest = { showMoreMenuSheet = false },
                 containerColor = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                shape = BottomSheetShape,
                 dragHandle = { MelodiaDragHandle() }
             ) {
                 Column(

@@ -39,6 +39,8 @@ import com.lin0721.linmusic.core.player.QueueItem
 import com.lin0721.linmusic.core.ui.components.DraggableSongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
+import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
@@ -113,14 +115,14 @@ fun PlayQueueSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = BackgroundDark,
-        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
+        shape = BottomSheetShape,
         dragHandle = {
             Box(
                 modifier = Modifier
                     .padding(top = 12.dp, bottom = MelodiaSpacing.xs)
                     .width(36.dp)
                     .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .clip(DragHandleShape)
                     .background(Color.White.copy(alpha = 0.3f))
             )
         }

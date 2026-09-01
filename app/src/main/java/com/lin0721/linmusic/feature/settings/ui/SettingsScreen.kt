@@ -195,7 +195,7 @@ private fun MainSettingsMenu(
                             scaleX = scale
                             scaleY = scale
                         },
-                    shape = RoundedCornerShape(25.dp),
+                    shape = RoundedCornerShape(PillRadiusLarge),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     border = BorderStroke(1.dp, NeteaseRed.copy(alpha = 0.6f)),
                     interactionSource = logoutInteraction

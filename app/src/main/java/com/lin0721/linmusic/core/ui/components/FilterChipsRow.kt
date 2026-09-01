@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PillRadius
 
 // 受控的横向筛选药丸组：Library 的分类过滤、Home 的内容筛选共用
 @Composable
@@ -38,7 +39,7 @@ fun FilterChipsRow(
             val isSelected = index == selectedIndex
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(PillRadius))
                     .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f))
                     .clickable { onSelected(index) }
                     .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),

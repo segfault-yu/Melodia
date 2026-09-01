@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PillRadius
 
 // 操作控制行：粉丝数、关注状态、更多菜单与随机/全部播放
 @Composable
@@ -80,11 +81,11 @@ fun ArtistActionBar(
                 // 关注状态卡片
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(PillRadius))
                         .border(
                             border = if (isFollowed) BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
                             else BorderStroke(0.dp, Color.Transparent),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(PillRadius)
                         )
                         .background(if (isFollowed) Color.Transparent else MaterialTheme.colorScheme.primary)
                         .clickable(onClick = onFollowClick)

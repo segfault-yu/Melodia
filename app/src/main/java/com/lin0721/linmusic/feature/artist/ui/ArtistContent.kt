@@ -19,7 +19,6 @@ import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectSheet
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
-import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.ArtistInfo
@@ -232,8 +231,6 @@ fun ArtistContent(
                 onDismiss = { collectSongId = null },
                 onSaveCollection = onSaveCollection,
                 onSaveNewCollection = onSaveNewCollection,
-                sheetShape = BottomSheetShape,
-                itemCornerRadius = 6.dp,
                 confirmButtonShape = RoundedCornerShape(12.dp)
             )
         }

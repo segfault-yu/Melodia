@@ -42,6 +42,7 @@ import com.lin0721.linmusic.core.ui.theme.EntryHotGradient
 import com.lin0721.linmusic.core.ui.theme.EntryRadarGradient
 import com.lin0721.linmusic.core.ui.theme.EntryRoamingGradient
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PillRadius
 import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.feature.home.data.PersonalizedPlaylist
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
@@ -157,7 +158,7 @@ fun ForYouSection(
                 Box(
                     modifier = Modifier
                         .size(EntryCardSize)
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(RoundedCornerShape(PillRadius))
                         .background(Brush.linearGradient(entry.gradient))
                         .clickable { entry.onClick() }
                 ) {

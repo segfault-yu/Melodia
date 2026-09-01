@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PillRadius
 
 // ────────────────────────────────────────────────────────────────────────────
 // 听歌排行时间范围筛选行
@@ -38,7 +39,7 @@ fun PlaylistRecordFilterRow(
             val isSelected = filter == selectedHistoryDate
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(PillRadius))
                     .background(
                         if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f)
                     )
