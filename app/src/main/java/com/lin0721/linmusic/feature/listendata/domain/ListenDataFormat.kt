@@ -65,3 +65,16 @@ fun monthDayLabel(period: String): String {
     val day = period.split("-").getOrNull(2)?.trimStart('0').orEmpty()
     return day.ifBlank { period }
 }
+
+// 选中某根柱子时展示的完整日期。周视图给星期，月视图给月日
+fun fullWeekdayLabel(period: String): String {
+    val label = weekdayLabel(period)
+    return if (label.length == 1) "周$label" else label
+}
+
+fun fullMonthDayLabel(period: String): String {
+    val parts = period.split("-")
+    val month = parts.getOrNull(1)?.trimStart('0')
+    val day = parts.getOrNull(2)?.trimStart('0')
+    return if (month.isNullOrBlank() || day.isNullOrBlank()) period else "${month}月${day}日"
+}

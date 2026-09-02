@@ -1,6 +1,8 @@
 package com.lin0721.linmusic.feature.listendata.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -34,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,6 +75,10 @@ private val BarMinHeight = 3.dp
 
 // 背景墙取前若干张封面，再多在遮罩下也分辨不出，徒增图片请求
 private const val CoverWallCount = 6
+
+// 柱顶数值的固定槽位。数值只在峰值或选中的那一根上出现，但每根都得占住这段高度，
+// 否则切换选中态时整张图会因 Row 高度变化而上下跳
+private val BarValueSlotHeight = 16.dp
 
 // 把总进度换算成组内第 index 项的进度：前 DataEnterStaggerFraction 用于错开各项起始，
 // 余下比例是单项自身的生长时长，于是首项先动、末项收尾时整组同时结束
@@ -383,11 +390,21 @@ fun HighlightSection(highlights: List<Highlight>, periodLabel: String, onSongCli
 // ======================= 每日时长 =======================
 
 @Composable
-fun DailyChartSection(days: List<DayDuration>, progress: Float) {
+fun DailyChartSection(
+    days: List<DayDuration>,
+    progress: Float,
+    selectedIndex: Int?,
+    onSelect: (Int?) -> Unit
+) {
     if (days.isEmpty()) return
     val maxMinutes = days.maxOf { it.minutes }.coerceAtLeast(1)
+    val selected = selectedIndex?.let { days.getOrNull(it) }
 
-    SectionTitle("每日时长")
+    // 选中时标题右侧顶替成该日详情，省去在细柱子上做气泡定位
+    SectionTitle(
+        text = "每日时长",
+        trailing = selected?.let { "${it.fullLabel} · ${it.minutes} 分钟" }
+    )
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Bottom,
@@ -398,35 +415,51 @@ fun DailyChartSection(days: List<DayDuration>, progress: Float) {
             val grow = itemProgress(progress, index, days.size)
             val ratio = day.minutes.toFloat() / maxMinutes * grow
             val isPeak = day.minutes == maxMinutes
+            val isSelected = selectedIndex == index
+            // 选中态接管强调色；未选中时把其余柱子压暗，只留选中那根跳出来
+            val barColor = when {
+                isSelected -> MaterialTheme.colorScheme.primary
+                selectedIndex != null -> MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+                isPeak -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+            }
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    // 柱子本身只有几 dp 宽，整列（含横轴标签）都做成命中区
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onSelect(if (isSelected) null else index) },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 只标峰值那天，逐根标注在月视图的三十根柱子上会糊成一片
-                if (isPeak) {
-                    Text(
-                        text = "${day.minutes.byProgress(grow)}分",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp,
-                        maxLines = 1,
-                        modifier = Modifier
-                            .wrapContentWidth(unbounded = true)
-                            .padding(bottom = MelodiaSpacing.xxs)
-                    )
+                // 未选中标峰值，选中则改标选中那根；逐根都标在月视图上会糊成一片
+                val showValue = if (selectedIndex == null) isPeak else isSelected
+                Box(
+                    modifier = Modifier.height(BarValueSlotHeight),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    if (showValue) {
+                        Text(
+                            text = "${day.minutes.byProgress(grow)}分",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            modifier = Modifier.wrapContentWidth(unbounded = true)
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(BarMaxHeight * ratio + BarMinHeight)
                         .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
-                        .background(
-                            if (isPeak) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
-                        )
+                        .background(barColor)
                 )
                 Text(
                     text = day.label,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isSelected) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                     // 11sp 以下「日」这类笔画密的字在横轴上会糊成方块
                     fontSize = 11.sp,
                     maxLines = 1,
@@ -455,17 +488,37 @@ private fun periodIcon(key: String): ImageVector = when (key) {
 }
 
 @Composable
-fun TimePeriodSection(periods: List<TimePeriod>, progress: Float) {
+fun TimePeriodSection(
+    periods: List<TimePeriod>,
+    progress: Float,
+    selectedIndex: Int?,
+    onSelect: (Int?) -> Unit
+) {
     if (periods.isEmpty()) return
     // 按时长降序，最长的时段排在最上，弱化全天几乎为零的时段
     val sorted = periods.sortedByDescending { it.minutes }
     val maxMinutes = sorted.first().minutes.coerceAtLeast(1)
+    val totalMinutes = sorted.sumOf { it.minutes }
+    val selected = selectedIndex?.let { sorted.getOrNull(it) }
 
-    SectionTitle("时段偏好")
+    SectionTitle(
+        text = "时段偏好",
+        trailing = selected?.let {
+            // 全天为零时不显示占比，避免除零后给出 0% 的误导结论
+            if (totalMinutes > 0) "${it.label}占 ${it.minutes * 100 / totalMinutes}%" else it.label
+        }
+    )
     sorted.forEachIndexed { index, period ->
         val grow = itemProgress(progress, index, sorted.size)
+        val isSelected = selectedIndex == index
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onSelect(if (isSelected) null else index) }
+                .padding(vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -490,23 +543,29 @@ fun TimePeriodSection(periods: List<TimePeriod>, progress: Float) {
                     .background(TrackColor)
             ) {
                 if (period.minutes > 0) {
+                    val barColor = when {
+                        isSelected -> MaterialTheme.colorScheme.primary
+                        selectedIndex != null -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        period.minutes == maxMinutes -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(period.minutes.toFloat() / maxMinutes * grow)
                             .height(14.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(
-                                if (period.minutes == maxMinutes) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                            )
+                            .background(barColor)
                     )
                 }
             }
             Spacer(Modifier.width(MelodiaSpacing.sm))
             Text(
                 text = "${period.minutes.byProgress(grow)}分",
-                color = if (period.minutes == maxMinutes) MaterialTheme.colorScheme.onSurface
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isSelected || (selectedIndex == null && period.minutes == maxMinutes)) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 fontSize = 11.sp,
                 modifier = Modifier.width(40.dp),
                 textAlign = TextAlign.End

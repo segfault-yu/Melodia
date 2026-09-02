@@ -1,7 +1,14 @@
 package com.lin0721.linmusic.feature.listendata.ui
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +52,10 @@ import org.koin.androidx.compose.koinViewModel
 private const val SKELETON_ROW_COUNT = 6
 private const val COLLAPSED_RANK_COUNT = 5
 
+// Tab 过渡比数据入场短，切换要跟手不能拖沓
+private val TabSwitchSpec = tween<Float>(220, easing = FastOutSlowInEasing)
+private val TabSwitchOffsetSpec = tween<IntOffset>(220, easing = FastOutSlowInEasing)
+
 @Composable
 fun ListenDataScreen(
     viewModel: ListenDataViewModel = koinViewModel(),
@@ -63,8 +75,23 @@ fun ListenDataScreen(
 
         // 药丸行固定在顶部，列表须限定在剩余空间内，否则滚动内容会画到药丸上
         Box(modifier = Modifier.weight(1f)) {
-            Crossfade(targetState = uiState.content, label = "listen_data_content") { content ->
-                when (content) {
+            AnimatedContent(
+                targetState = uiState,
+                // 顺着药丸的左右次序滑动，切走的方向和手指选中的方向一致
+                transitionSpec = {
+                    val forward = targetState.selectedTab.ordinal >= initialState.selectedTab.ordinal
+                    val offset = if (forward) 1 else -1
+                    (slideInHorizontally(TabSwitchOffsetSpec) { it / 6 * offset } + fadeIn(TabSwitchSpec))
+                        .togetherWith(
+                            slideOutHorizontally(TabSwitchOffsetSpec) { -it / 6 * offset } +
+                                fadeOut(TabSwitchSpec)
+                        )
+                },
+                // Tab 与内容之外的字段（如累计时长后到）变化时不重播过渡
+                contentKey = { it.selectedTab to it.content },
+                label = "listen_data_content"
+            ) { state ->
+                when (val content = state.content) {
                     ListenDataContent.Loading -> {
                         Column(modifier = Modifier.padding(top = MelodiaSpacing.md)) {
                             repeat(SKELETON_ROW_COUNT) { SearchResultRowSkeleton() }
@@ -86,8 +113,9 @@ fun ListenDataScreen(
 
                     is ListenDataContent.Period -> PeriodList(
                         content = content,
-                        totalSeconds = uiState.totalSeconds,
-                        periodLabel = uiState.selectedTab.label,
+                        // 取动画帧自己的快照，退场那一份才不会串到新 Tab 的标签
+                        totalSeconds = state.totalSeconds,
+                        periodLabel = state.selectedTab.label,
                         currentTrackId = currentTrack?.mediaId,
                         isPlaying = isPlaying,
                         onSongClick = { viewModel.playSongAt(it) },
@@ -185,6 +213,9 @@ private fun PeriodList(
     val rankSongs = rank?.songs.orEmpty()
     val visibleSongs = if (expanded) rankSongs else rankSongs.take(COLLAPSED_RANK_COUNT)
     val enterProgress = rememberDataEnterProgress(content)
+    // 图表选中是纯展示状态，不入 ViewModel；切 Tab 时随 periodLabel 重置
+    var selectedDay by rememberSaveable(periodLabel) { mutableStateOf<Int?>(null) }
+    var selectedPeriod by rememberSaveable(periodLabel) { mutableStateOf<Int?>(null) }
 
     LazyColumn(contentPadding = bottomInsetPadding()) {
         if (report != null) {
@@ -205,8 +236,22 @@ private fun PeriodList(
             paddedItem("highlight") {
                 HighlightSection(report.highlights, periodLabel, onHighlightClick)
             }
-            paddedItem("daily") { DailyChartSection(report.dailyDurations, enterProgress) }
-            paddedItem("period") { TimePeriodSection(report.timePeriods, enterProgress) }
+            paddedItem("daily") {
+                DailyChartSection(
+                    days = report.dailyDurations,
+                    progress = enterProgress,
+                    selectedIndex = selectedDay,
+                    onSelect = { selectedDay = it }
+                )
+            }
+            paddedItem("period") {
+                TimePeriodSection(
+                    periods = report.timePeriods,
+                    progress = enterProgress,
+                    selectedIndex = selectedPeriod,
+                    onSelect = { selectedPeriod = it }
+                )
+            }
         }
 
         if (rankSongs.isNotEmpty()) {

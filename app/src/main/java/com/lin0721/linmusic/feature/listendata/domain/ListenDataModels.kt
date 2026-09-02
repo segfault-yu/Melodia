@@ -36,8 +36,10 @@ data class Highlight(
 )
 
 data class DayDuration(
-    // 星期几，周视图用；月视图退化为日期
+    // 横轴刻度文案。月视图柱子密集，只在间隔位置给值，其余为空串
     val label: String,
+    // 选中该柱时展示的完整日期，横轴留空的日子也有
+    val fullLabel: String,
     val minutes: Int
 )
 

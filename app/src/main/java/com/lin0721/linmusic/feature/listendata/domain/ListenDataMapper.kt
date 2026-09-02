@@ -39,6 +39,8 @@ fun ListenReportData.toDomain(isWeek: Boolean): ListenReport {
                     index % MONTH_LABEL_STEP == 0 -> monthDayLabel(detail.period)
                     else -> ""
                 },
+                fullLabel = if (isWeek) fullWeekdayLabel(detail.period)
+                else fullMonthDayLabel(detail.period),
                 minutes = detail.duration
             )
         },
