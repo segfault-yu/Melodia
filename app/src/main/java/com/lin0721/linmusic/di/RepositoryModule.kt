@@ -26,6 +26,8 @@ import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepository
 import com.lin0721.linmusic.core.userplaylist.UserPlaylistRepositoryImpl
 import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepositoryImpl
+import com.lin0721.linmusic.feature.listendata.data.ListenDataRepository
+import com.lin0721.linmusic.feature.listendata.data.ListenDataRepositoryImpl
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepositoryImpl
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
@@ -64,6 +66,9 @@ val repositoryModule = module {
 
     // 最近播放数据仓储（feature/recent，首页区块与侧边栏二级页共用）
     singleOf(::RecentRepositoryImpl) { bind<RecentRepository>() }
+
+    // 听歌数据仓储（feature/listendata）
+    singleOf(::ListenDataRepositoryImpl) { bind<ListenDataRepository>() }
 
     // 歌手数据仓储（feature/artist）
     singleOf(::ArtistRepositoryImpl) { bind<ArtistRepository>() }

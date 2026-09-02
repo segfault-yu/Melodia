@@ -7,6 +7,7 @@ import com.lin0721.linmusic.feature.music.ui.MusicViewModel
 import com.lin0721.linmusic.feature.podcast.ui.PodcastViewModel
 import com.lin0721.linmusic.feature.podcast.ui.RadioDetailViewModel
 import com.lin0721.linmusic.feature.library.ui.LibraryViewModel
+import com.lin0721.linmusic.feature.listendata.ui.ListenDataViewModel
 import com.lin0721.linmusic.feature.player.ui.PlayerViewModel
 import com.lin0721.linmusic.feature.playlist.ui.PlaylistViewModel
 import com.lin0721.linmusic.feature.recent.ui.RecentPlayViewModel
@@ -35,6 +36,7 @@ val viewModelModule = module {
     viewModelOf(::PlaylistCategoryViewModel)
     viewModelOf(::LibraryViewModel)
     viewModelOf(::RecentPlayViewModel)
+    viewModelOf(::ListenDataViewModel)
     viewModelOf(::CreateViewModel)
     viewModelOf(::PlayerViewModel)
     viewModelOf(::SettingsViewModel)

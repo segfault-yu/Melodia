@@ -12,6 +12,14 @@ const val PressUpDurationMs = 130
 val PressDownSpec = tween<Float>(PressDownDurationMs, easing = LinearEasing)
 val PressUpSpec = tween<Float>(PressUpDurationMs, easing = FastOutSlowInEasing)
 
+// 数据入场：图表从零生长、数值从零递增，一次走完不循环
+const val DataEnterDurationMs = 700
+
+// 同组内各项错开起始所占的进度比例，余下比例是单项自身的生长时长
+const val DataEnterStaggerFraction = 0.4f
+
+val DataEnterSpec = tween<Float>(DataEnterDurationMs, easing = FastOutSlowInEasing)
+
 // scale 为按下时的缩放比；highlightAlpha 为垫在内容之下的纯黑层透明度（1f 即底色完全熄灭），
 // 该层只在长按超过系统阈值后才出现，轻点不触发
 @Immutable

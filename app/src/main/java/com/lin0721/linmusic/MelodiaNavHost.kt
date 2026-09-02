@@ -153,7 +153,10 @@ fun MelodiaNavHost(
                 )
             }
             Screen.ListenData -> {
-                com.lin0721.linmusic.feature.listendata.ui.ListenDataScreen(onBack = onBack)
+                com.lin0721.linmusic.feature.listendata.ui.ListenDataScreen(
+                    onBack = onBack,
+                    onArtistClick = onNavigateToArtist
+                )
             }
             Screen.NewWorks -> {
                 com.lin0721.linmusic.feature.newworks.ui.NewWorksScreen(onBack = onBack)
