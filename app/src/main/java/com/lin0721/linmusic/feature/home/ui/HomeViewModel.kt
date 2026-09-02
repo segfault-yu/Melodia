@@ -9,6 +9,7 @@ import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.feature.home.data.DailySong
 import com.lin0721.linmusic.core.auth.SyncProfileAfterLoginUseCase
 import com.lin0721.linmusic.feature.home.data.HomeRepository
+import com.lin0721.linmusic.feature.recent.data.RecentRepository
 import com.lin0721.linmusic.feature.home.data.PersonalizedData
 import com.lin0721.linmusic.feature.home.domain.HomeCard
 import com.lin0721.linmusic.core.player.data.PlaybackRepository
@@ -37,6 +38,7 @@ class HomeViewModel(
     private val syncProfileAfterLoginUseCase: SyncProfileAfterLoginUseCase,
     private val playbackRepository: PlaybackRepository,
     private val homeRepository: HomeRepository,
+    private val recentRepository: RecentRepository,
     val playerManager: PlayerManager,
     private val userPreferences: UserPreferences,
     private val resourceProvider: ResourceProvider
@@ -74,7 +76,7 @@ class HomeViewModel(
                 }
 
                 val recentDeferred = async {
-                    runCatching { homeRepository.getRecentPlaylists().first() }
+                    runCatching { recentRepository.getRecentPlaylists().first() }
                         .getOrDefault(Result.success(emptyList()))
                 }
 

@@ -48,7 +48,7 @@ fun HomeContent(
                 item {
                     RecentPlaySection(
                         items = data.recentPlaylists,
-                        onClick = { item -> onPlaylistClick(item.data.id, false) }
+                        onClick = { item -> onPlaylistClick(item.id, false) }
                     )
                 }
 

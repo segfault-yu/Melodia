@@ -3,7 +3,6 @@ package com.lin0721.linmusic
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Box
@@ -32,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lin0721.linmusic.core.ui.components.ProfileSidebar
 import com.lin0721.linmusic.core.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.feature.home.ui.HomeViewModel
 import dev.chrisbanes.haze.HazeState
@@ -126,6 +127,12 @@ fun MelodiaApp() {
                         sidebar.close()
                     },
                     onDismiss = { sidebar.close() },
+                    onNavigateToRecentPlay = { navigation.openRecentPlay() },
+                    onNavigateToListenData = { navigation.openListenData() },
+                    onNavigateToNewWorks = { navigation.openNewWorks() },
+                    onNavigateToCloud = { navigation.openCloud() },
+                    onNavigateToMessage = { navigation.openMessage() },
+                    onNavigateToAccount = { navigation.openAccount() },
                     onNavigateToSettings = { navigation.navigateTo(Screen.Settings) }
                 )
             }
@@ -180,7 +187,7 @@ fun MelodiaApp() {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(Color.Black.copy(alpha = 0.4f))
-                                .clickable { showCreateSheet = false }
+                                .pressable(MelodiaPress.None) { showCreateSheet = false }
                         )
                     }
 
@@ -213,7 +220,8 @@ fun MelodiaApp() {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(Color.Black.copy(alpha = 0.4f * sidebar.progress))
-                                .clickable(
+                                .pressable(
+                                    style = MelodiaPress.None,
                                     enabled = sidebar.isOpen,
                                     onClick = { sidebar.close() }
                                 )

@@ -26,13 +26,6 @@ class HomeRepositoryImpl(
         transform = { PersonalizedData(playlists = it.result) }
     )
 
-    override fun getRecentPlaylists(): Flow<Result<List<RecentPlayItem>>> = apiFlow(
-        request = { apiService.getRecentPlaylists() },
-        isSuccess = { it.isSuccess && it.data != null },
-        code = { it.code },
-        transform = { it.data!!.list }
-    )
-
     override fun getToplistDetail(): Flow<Result<List<ToplistInfo>>> = apiFlow(
         request = { apiService.getToplistDetail() },
         isSuccess = { it.code == 200 },

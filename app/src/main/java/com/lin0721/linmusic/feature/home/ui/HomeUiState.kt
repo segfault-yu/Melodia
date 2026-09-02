@@ -1,8 +1,8 @@
 package com.lin0721.linmusic.feature.home.ui
 
 import com.lin0721.linmusic.feature.home.data.PersonalizedPlaylist
-import com.lin0721.linmusic.feature.home.data.RecentPlayItem
 import com.lin0721.linmusic.feature.home.data.DailySong
+import com.lin0721.linmusic.feature.recent.domain.RecentPlaylist
 import com.lin0721.linmusic.feature.home.domain.HomeShelf
 import com.lin0721.linmusic.feature.home.domain.ToplistInfo
 
@@ -20,7 +20,7 @@ sealed interface HomeUiState {
 data class HomeFeedData(
     val shelves: List<HomeShelf> = emptyList(),
     val recommendPlaylists: List<PersonalizedPlaylist> = emptyList(),
-    val recentPlaylists: List<RecentPlayItem> = emptyList(),
+    val recentPlaylists: List<RecentPlaylist> = emptyList(),
     val dailySongs: List<DailySong> = emptyList(),
     val toplistItems: List<ToplistInfo> = emptyList(),
     // 翻页游标，null 表示服务端已无更多货架

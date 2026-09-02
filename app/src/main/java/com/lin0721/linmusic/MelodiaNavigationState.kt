@@ -9,7 +9,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
 enum class Screen {
-    Home, Playlist, Search, Library, Settings, Artist, Radio, MvPlayer, PlaylistCategory
+    Home, Playlist, Search, Library, Settings, Artist, Radio, MvPlayer, PlaylistCategory,
+    // 侧边栏二级页
+    RecentPlay, ListenData, NewWorks, Cloud, Message, Account
 }
 
 // 应用级导航状态：回退栈与各页面所需的跳转参数
@@ -104,6 +106,30 @@ class MelodiaNavigationState {
     fun openPlaylistCategory(category: String) {
         activePlaylistCategory = category
         navigateTo(Screen.PlaylistCategory)
+    }
+
+    fun openRecentPlay() {
+        navigateTo(Screen.RecentPlay)
+    }
+
+    fun openListenData() {
+        navigateTo(Screen.ListenData)
+    }
+
+    fun openNewWorks() {
+        navigateTo(Screen.NewWorks)
+    }
+
+    fun openCloud() {
+        navigateTo(Screen.Cloud)
+    }
+
+    fun openMessage() {
+        navigateTo(Screen.Message)
+    }
+
+    fun openAccount() {
+        navigateTo(Screen.Account)
     }
 
     // 从主页搜索框进入时自动弹键盘，从底栏进入时展示发现内容

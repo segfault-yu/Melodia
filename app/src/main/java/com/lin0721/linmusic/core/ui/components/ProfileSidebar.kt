@@ -1,13 +1,8 @@
 package com.lin0721.linmusic.core.ui.components
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -23,31 +18,36 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.auth.UserProfile
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.interaction.pressScale
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
-import com.lin0721.linmusic.core.ui.theme.SurfaceDark
-import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.PillRadiusLarge
 
 
- // 侧边栏 
+ // 侧边栏
 @Composable
 fun ProfileSidebar(
     userProfile: UserProfile,
     onLogout: () -> Unit,
     onDismiss: () -> Unit,
+    onNavigateToRecentPlay: () -> Unit,
+    onNavigateToListenData: () -> Unit,
+    onNavigateToNewWorks: () -> Unit,
+    onNavigateToCloud: () -> Unit,
+    onNavigateToMessage: () -> Unit,
+    onNavigateToAccount: () -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
     Column(
@@ -73,9 +73,9 @@ fun ProfileSidebar(
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             // 昵称与查看资料
             Column {
                 Text(
@@ -103,85 +103,64 @@ fun ProfileSidebar(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. 核心功能菜单区
+        // 2. 菜单区。每项跳二级页，进入前先收起抽屉
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
             SidebarMenuItem(
-                icon = Icons.Outlined.FlashOn,
-                title = "新增内容",
-                onClick = { }
-            )
-            SidebarMenuItem(
-                icon = Icons.Outlined.Timeline,
-                title = "收听统计信息",
-                onClick = { }
-            )
-            SidebarMenuItem(
                 icon = Icons.Outlined.History,
                 title = "最近播放",
-                onClick = { }
+                onClick = { onDismiss(); onNavigateToRecentPlay() }
             )
             SidebarMenuItem(
-                icon = Icons.Outlined.Campaign,
-                title = "你的更新",
-                onClick = { }
+                icon = Icons.Outlined.Insights,
+                title = "听歌数据",
+                onClick = { onDismiss(); onNavigateToListenData() }
+            )
+            SidebarMenuItem(
+                icon = Icons.Outlined.NewReleases,
+                title = "关注歌手新作",
+                onClick = { onDismiss(); onNavigateToNewWorks() }
+            )
+            SidebarMenuItem(
+                icon = Icons.Outlined.CloudQueue,
+                title = "我的云盘",
+                onClick = { onDismiss(); onNavigateToCloud() }
+            )
+            SidebarMenuItem(
+                icon = Icons.Outlined.Notifications,
+                title = "消息",
+                onClick = { onDismiss(); onNavigateToMessage() }
+            )
+            SidebarMenuItem(
+                icon = Icons.Outlined.WorkspacePremium,
+                title = "账号与会员",
+                onClick = { onDismiss(); onNavigateToAccount() }
             )
             SidebarMenuItem(
                 icon = Icons.Outlined.Settings,
                 title = "设置和隐私",
-                onClick = {
-                    onDismiss()
-                    onNavigateToSettings()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 3. 消息预览区
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("消息", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Icon(Icons.Outlined.EditNote, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
-                }
-            }
-            Text(
-                text = "直接在 Melodia 上与好友分享你的心头好。",
-                color = TextGray,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm)
+                onClick = { onDismiss(); onNavigateToSettings() }
             )
         }
 
-        // 4. 底部
+        // 3. 底部
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
+            // Surface 自带 onClick，插不进 clickable，缩放走 pressScale 并共用 interactionSource
             val interactionSource = remember { MutableInteractionSource() }
-            val isPressed by interactionSource.collectIsPressedAsState()
-            val scale by animateFloatAsState(targetValue = if (isPressed) 0.98f else 1f, label = "")
 
             Surface(
                 onClick = onLogout,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
+                    .pressScale(MelodiaPress.Action, interactionSource),
                 shape = RoundedCornerShape(PillRadiusLarge),
                 color = Color.Transparent,
                 border = BorderStroke(1.dp, NeteaseRed.copy(alpha = 0.6f)),
@@ -212,35 +191,17 @@ fun ProfileSidebar(
 }
 
 // 菜单项组件 (SidebarMenuItem)
- 
- 
 @Composable
 private fun SidebarMenuItem(
     icon: ImageVector,
     title: String,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
-        label = "itemScale"
-    )
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clickable(
-                interactionSource = interactionSource,
-                indication = ripple(color = Color.White.copy(alpha = 0.1f)),
-                onClick = onClick
-            )
+            .pressable(MelodiaPress.Row, onClick = onClick)
             .padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -256,29 +217,14 @@ private fun SidebarMenuItem(
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Normal,
-            letterSpacing = 0.5.sp // 稍微拉开字间距
+            letterSpacing = 0.5.sp, // 稍微拉开字间距
+            modifier = Modifier.weight(1f)
         )
-    }
-}
-
-// 社交圆圈项组件
-@Composable
-private fun SocialCircleItem(
-    content: @Composable () -> Unit,
-    label: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        content()
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = label,
-            color = Color.White,
-            fontSize = 12.sp,
-            textAlign = TextAlign.Center,
-            lineHeight = 16.sp
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = TextGray,
+            modifier = Modifier.size(20.dp)
         )
     }
 }

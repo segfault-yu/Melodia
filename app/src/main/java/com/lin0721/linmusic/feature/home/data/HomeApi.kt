@@ -3,7 +3,6 @@ package com.lin0721.linmusic.feature.home.data
 import com.lin0721.linmusic.core.model.Album
 import com.lin0721.linmusic.core.model.Artist
 import com.lin0721.linmusic.core.model.EmptyBody
-import com.lin0721.linmusic.core.model.PlaylistCreator
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
@@ -24,12 +23,6 @@ interface HomeApi {
     suspend fun getPersonalizedPlaylists(
         @Body body: PersonalizedRequest = PersonalizedRequest()
     ): PersonalizedResponse
-
-    // 获取最近播放歌单
-    @POST("/eapi/play-record/playlist/list")
-    suspend fun getRecentPlaylists(
-        @Body body: RecentPlaylistRequest = RecentPlaylistRequest()
-    ): RecentPlaylistResponse
 
     // 获取每日推荐歌曲（需登录，每天 06:00 更新）
     @POST("/eapi/v3/discovery/recommend/songs")
@@ -85,40 +78,6 @@ data class PersonalizedPlaylist(
     val name: String = "",
     // 歌单封面
     val picUrl: String = "",
-)
-
-// ======================= 最近播放 =======================
-
-@Serializable
-data class RecentPlaylistRequest(
-    val limit: Int = 100
-)
-
-@Serializable
-data class RecentPlaylistResponse(
-    val code: Int = 0,
-    val data: RecentPlaylistData? = null
-) {
-    val isSuccess: Boolean get() = code == 200
-}
-
-@Serializable
-data class RecentPlaylistData(
-    val list: List<RecentPlayItem> = emptyList()
-)
-
-@Serializable
-data class RecentPlayItem(
-    val data: RecentPlaylistInfo
-)
-
-@Serializable
-data class RecentPlaylistInfo(
-    val id: Long = 0,
-    val name: String = "",
-    @SerialName("coverImgUrl")
-    val picUrl: String = "",
-    val creator: PlaylistCreator? = null
 )
 
 // ======================= 每日推荐歌曲模型 =======================

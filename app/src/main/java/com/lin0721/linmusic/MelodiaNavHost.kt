@@ -145,6 +145,28 @@ fun MelodiaNavHost(
                     )
                 }
             }
+            Screen.RecentPlay -> {
+                com.lin0721.linmusic.feature.recent.ui.RecentPlayScreen(
+                    onBack = onBack,
+                    onPlaylistClick = { id -> onNavigateToPlaylist(id, false) },
+                    onAlbumClick = { id -> onNavigateToPlaylist(id, true) }
+                )
+            }
+            Screen.ListenData -> {
+                com.lin0721.linmusic.feature.listendata.ui.ListenDataScreen(onBack = onBack)
+            }
+            Screen.NewWorks -> {
+                com.lin0721.linmusic.feature.newworks.ui.NewWorksScreen(onBack = onBack)
+            }
+            Screen.Cloud -> {
+                com.lin0721.linmusic.feature.cloud.ui.CloudScreen(onBack = onBack)
+            }
+            Screen.Message -> {
+                com.lin0721.linmusic.feature.message.ui.MessageScreen(onBack = onBack)
+            }
+            Screen.Account -> {
+                com.lin0721.linmusic.feature.account.ui.AccountScreen(onBack = onBack)
+            }
             Screen.PlaylistCategory -> {
                 activePlaylistCategory?.let { category ->
                     com.lin0721.linmusic.feature.search.ui.PlaylistCategoryScreen(

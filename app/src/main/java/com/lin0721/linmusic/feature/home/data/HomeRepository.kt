@@ -13,9 +13,6 @@ interface HomeRepository {
     // 获取个性化推荐歌单（公开接口，无需登录）
     fun getPersonalizedPlaylists(): Flow<Result<PersonalizedData>>
 
-    // 获取最近播放歌单
-    fun getRecentPlaylists(): Flow<Result<List<RecentPlayItem>>>
-
     // 获取排行榜详情（DTO 映射至领域模型）
     fun getToplistDetail(): Flow<Result<List<ToplistInfo>>>
 
