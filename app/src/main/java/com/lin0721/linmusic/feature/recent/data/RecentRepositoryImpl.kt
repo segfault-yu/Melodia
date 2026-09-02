@@ -18,29 +18,20 @@ class RecentRepositoryImpl(
         request = { apiService.getRecentSongs() },
         isSuccess = { it.isSuccess && it.data != null },
         code = { it.code },
-        transform = { response ->
-            val now = System.currentTimeMillis()
-            response.data!!.list.take(MAX_RECORDS).map { it.toDomain(now) }
-        }
+        transform = { response -> response.data!!.list.take(MAX_RECORDS).map { it.toDomain() } }
     )
 
     override fun getRecentPlaylists(): Flow<Result<List<RecentPlaylist>>> = apiFlow(
         request = { apiService.getRecentPlaylists() },
         isSuccess = { it.isSuccess && it.data != null },
         code = { it.code },
-        transform = { response ->
-            val now = System.currentTimeMillis()
-            response.data!!.list.take(MAX_RECORDS).map { it.toDomain(now) }
-        }
+        transform = { response -> response.data!!.list.take(MAX_RECORDS).map { it.toDomain() } }
     )
 
     override fun getRecentAlbums(): Flow<Result<List<RecentAlbum>>> = apiFlow(
         request = { apiService.getRecentAlbums() },
         isSuccess = { it.isSuccess && it.data != null },
         code = { it.code },
-        transform = { response ->
-            val now = System.currentTimeMillis()
-            response.data!!.list.take(MAX_RECORDS).map { it.toDomain(now) }
-        }
+        transform = { response -> response.data!!.list.take(MAX_RECORDS).map { it.toDomain() } }
     )
 }

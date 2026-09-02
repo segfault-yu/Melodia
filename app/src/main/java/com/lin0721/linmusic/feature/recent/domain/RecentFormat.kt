@@ -1,36 +1,29 @@
 package com.lin0721.linmusic.feature.recent.domain
 
 import java.util.Calendar
-import java.util.Locale
 
-// 播放时间转相对文案。超过一周退化成日期，避免出现「37 天前」这种没有参考价值的表述
-fun formatPlayedAt(timeMs: Long, nowMs: Long = System.currentTimeMillis()): String {
+// Calendar.DAY_OF_WEEK 从周日(1)到周六(7)，数组下标与之对齐
+private val WEEKDAY_NAMES = arrayOf("周日", "周一", "周二", "周三", "周四", "周五", "周六")
+
+// 区块内的行内时间，仅到分钟——所在日期已由分区头承担
+fun formatClockTime(timeMs: Long): String {
     if (timeMs <= 0) return ""
-    val diff = nowMs - timeMs
-    // 设备时钟回拨或服务端时间超前时按刚刚处理，不显示负数
-    if (diff < 0) return "刚刚"
-
-    val minutes = diff / 60_000
-    val hours = diff / 3_600_000
-    val days = diff / 86_400_000
-    return when {
-        minutes < 1 -> "刚刚"
-        minutes < 60 -> "$minutes 分钟前"
-        hours < 24 -> "$hours 小时前"
-        days < 7 -> "$days 天前"
-        else -> formatPlayedDate(timeMs, nowMs)
-    }
+    val cal = Calendar.getInstance().apply { timeInMillis = timeMs }
+    return String.format("%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
 }
 
-// 跨年才带年份，当年只显示月日
-private fun formatPlayedDate(timeMs: Long, nowMs: Long): String {
+// 按天分区块的头部文案，中文日期+星期，跨年补年份
+fun formatDayHeaderLabel(timeMs: Long, nowMs: Long = System.currentTimeMillis()): String {
+    if (timeMs <= 0) return ""
     val target = Calendar.getInstance().apply { timeInMillis = timeMs }
     val now = Calendar.getInstance().apply { timeInMillis = nowMs }
     val month = target.get(Calendar.MONTH) + 1
     val day = target.get(Calendar.DAY_OF_MONTH)
-    return if (target.get(Calendar.YEAR) == now.get(Calendar.YEAR)) {
-        String.format(Locale.US, "%02d-%02d", month, day)
+    val weekday = WEEKDAY_NAMES[target.get(Calendar.DAY_OF_WEEK) - 1]
+    val datePart = if (target.get(Calendar.YEAR) == now.get(Calendar.YEAR)) {
+        "${month}月${day}日"
     } else {
-        String.format(Locale.US, "%d-%02d-%02d", target.get(Calendar.YEAR), month, day)
+        "${target.get(Calendar.YEAR)}年${month}月${day}日"
     }
+    return "$datePart $weekday"
 }
