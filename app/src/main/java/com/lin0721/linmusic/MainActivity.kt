@@ -1,10 +1,15 @@
 package com.lin0721.linmusic
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.lin0721.linmusic.core.player.FloatingLyricService
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
@@ -18,9 +23,13 @@ class MainActivity : ComponentActivity() {
 
     private val settingsPreferences: SettingsPreferences by inject()
 
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        requestNotificationPermissionIfNeeded()
 
         // 监听悬浮歌词开关
         lifecycleScope.launch {
@@ -50,7 +59,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // 有悬浮窗权限则直接启动桌面歌词，否则引导用户前往系统设置授权
+    // Android 13+ 需要运行时授权才能显示系统通知
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // 有悬浮窗权限则直接启动桌面歌词，否则需要前往系统设置授权
     private fun startFloatingLyricOrRequestPermission() {
         if (android.provider.Settings.canDrawOverlays(this)) {
             startService(Intent(this, FloatingLyricService::class.java))

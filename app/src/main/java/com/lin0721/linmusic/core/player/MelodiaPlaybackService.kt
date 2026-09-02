@@ -1,5 +1,7 @@
 package com.lin0721.linmusic.core.player
 
+import android.app.PendingIntent
+import android.content.Intent
 import android.media.AudioManager
 import android.os.Bundle
 import androidx.annotation.OptIn
@@ -17,6 +19,7 @@ import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.CommandButton
+import com.lin0721.linmusic.MainActivity
 import com.lin0721.linmusic.R
 import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.preferences.SettingsPreferences
@@ -128,8 +131,21 @@ class MelodiaPlaybackService : MediaSessionService() {
         }
             
         player = forwardingPlayer
+
+        // 点击通知时跳转回应用；REORDER_TO_FRONT 避免每次新建 Activity 实例导致重新加载
+        val sessionActivityIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        }
+        val sessionActivityPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            sessionActivityIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
         mediaSession = MediaSession.Builder(this, forwardingPlayer)
             .setCallback(CustomSessionCallback())
+            .setSessionActivity(sessionActivityPendingIntent)
             .build()
 
         // 监听歌曲切换以更新控制栏上的红心图标状态
