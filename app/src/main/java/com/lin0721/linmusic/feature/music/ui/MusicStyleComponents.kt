@@ -34,8 +34,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.lin0721.linmusic.core.model.Track
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.music.domain.MusicStyle
@@ -102,13 +105,13 @@ private fun StyleChip(
 ) {
     Box(
         modifier = Modifier
+            .pressable(MelodiaPress.Pill) { onClick() }
             .clip(RoundedCornerShape(9.dp))
             .background(if (selected) color else color.copy(alpha = 0.45f))
             .then(
                 if (selected) Modifier.border(2.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(9.dp))
                 else Modifier
             )
-            .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 7.dp)
     ) {
         Text(
@@ -151,12 +154,12 @@ fun MusicSubStyleChips(
 private fun SubStyleChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .pressable(MelodiaPress.Pill) { onClick() }
             .clip(CircleShape)
             .then(
                 if (selected) Modifier.background(Color.White)
                 else Modifier.border(1.dp, Color.White.copy(alpha = 0.18f), CircleShape)
             )
-            .clickable { onClick() }
             .padding(horizontal = 11.dp, vertical = 5.dp)
     ) {
         Text(
@@ -262,12 +265,14 @@ fun MusicStyleHeader(head: StyleHead, onPlay: () -> Unit) {
             .background(Brush.linearGradient(listOf(accent, accent.copy(alpha = 0.4f))))
     ) {
         head.coverUrl?.let {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = it,
                 contentDescription = head.name,
                 modifier = Modifier.fillMaxWidth().height(StyleHeaderHeight),
                 contentScale = ContentScale.Crop,
-                alpha = 0.42f
+                alpha = 0.42f,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() }
             )
         }
 
@@ -319,9 +324,9 @@ fun MusicStyleHeader(head: StyleHead, onPlay: () -> Unit) {
                 .align(Alignment.BottomEnd)
                 .padding(14.dp)
                 .size(40.dp)
+                .pressable(MelodiaPress.Icon) { onPlay() }
                 .clip(CircleShape)
-                .background(Color.White)
-                .clickable { onPlay() },
+                .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -355,11 +360,13 @@ fun MusicFavouriteSongCard(track: Track, onClick: () -> Unit) {
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = track.al.picUrl,
             contentDescription = track.name,
             modifier = Modifier.size(52.dp).clip(RoundedCornerShape(RadiusCompact)),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            loading = { CoverPlaceholder() },
+            error = { CoverPlaceholder() }
         )
         Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
             Text(

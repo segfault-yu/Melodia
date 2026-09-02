@@ -46,8 +46,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.lin0721.linmusic.LocalBottomOverlayInset
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
 import com.lin0721.linmusic.core.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
@@ -152,9 +156,9 @@ fun RadioDetailScreen(
                 .statusBarsPadding()
                 .padding(start = 12.dp, top = 8.dp)
                 .size(36.dp)
+                .pressable(MelodiaPress.Icon) { onBack() }
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.35f))
-                .clickable { onBack() },
+                .background(Color.Black.copy(alpha = 0.35f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -180,11 +184,13 @@ private fun RadioDetailHeader(
         Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
             // 封面拉伸铺底再压暗，省掉一次取色计算也不会有色差
             if (detail.picUrl.isNotBlank()) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = detail.picUrl.withPodcastCoverParam("500y500"),
                     contentDescription = null,
                     modifier = Modifier.fillMaxWidth().height(300.dp),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() }
                 )
             }
             Box(
@@ -210,11 +216,13 @@ private fun RadioDetailHeader(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (detail.picUrl.isNotBlank()) {
-                    AsyncImage(
+                    SubcomposeAsyncImage(
                         model = detail.picUrl.withPodcastCoverParam("400y400"),
                         contentDescription = detail.name,
                         modifier = Modifier.size(132.dp).clip(RoundedCornerShape(RadiusCompact)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        loading = { CoverPlaceholder() },
+                        error = { CoverPlaceholder() }
                     )
                 }
                 Text(
@@ -270,9 +278,8 @@ private fun RadioDetailHeader(
                 modifier = Modifier
                     .weight(1f)
                     .height(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable { onPlayLatest() },
+                    .pressable(MelodiaPress.Action, shape = CircleShape) { onPlayLatest() }
+                    .background(MaterialTheme.colorScheme.primary),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -296,7 +303,11 @@ private fun RadioDetailHeader(
                 modifier = Modifier
                     .padding(start = 10.dp)
                     .height(40.dp)
-                    .clip(CircleShape)
+                    .pressable(
+                        style = MelodiaPress.Action,
+                        shape = CircleShape,
+                        enabled = !isSubscribing
+                    ) { onToggleSubscribe() }
                     .then(
                         if (detail.subscribed) {
                             Modifier.border(1.dp, Color.White.copy(alpha = 0.28f), CircleShape)
@@ -304,7 +315,6 @@ private fun RadioDetailHeader(
                             Modifier.background(Color.White.copy(alpha = 0.14f))
                         }
                     )
-                    .clickable(enabled = !isSubscribing) { onToggleSubscribe() }
                     .padding(horizontal = 18.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -369,11 +379,13 @@ private fun RadioProgramRow(program: PodcastProgram, onClick: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.size(width = 26.dp, height = 20.dp)
         )
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = program.coverUrl.withPodcastCoverParam("160y160"),
             contentDescription = program.name,
             modifier = Modifier.size(50.dp).clip(RoundedCornerShape(RadiusCompact)),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            loading = { CoverPlaceholder() },
+            error = { CoverPlaceholder() }
         )
         Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
             Text(

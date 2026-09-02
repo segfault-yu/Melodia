@@ -7,7 +7,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +40,7 @@ fun CreatePlaylistDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            MelodiaTextButton(
                 onClick = {
                     if (nameInput.isNotBlank()) {
                         onCreate(nameInput)
@@ -56,7 +55,7 @@ fun CreatePlaylistDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            MelodiaTextButton(onClick = onDismiss) {
                 Text("取消", color = MaterialTheme.colorScheme.onSurface)
             }
         },

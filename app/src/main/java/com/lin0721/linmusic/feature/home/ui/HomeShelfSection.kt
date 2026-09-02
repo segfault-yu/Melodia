@@ -1,7 +1,6 @@
 package com.lin0721.linmusic.feature.home.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,7 +33,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.TextGray
@@ -120,18 +122,20 @@ private fun HomeShelfCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    Column(modifier = modifier.clickable { onClick() }) {
+    Column(modifier = modifier.pressable(MelodiaPress.Card) { onClick() }) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(RadiusCompact))
         ) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = card.coverUrl.withCoverParam("400y400"),
                 contentDescription = card.title,
                 modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() }
             )
 
             rank?.let {

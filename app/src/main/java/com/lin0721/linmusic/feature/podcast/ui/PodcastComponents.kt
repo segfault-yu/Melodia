@@ -31,7 +31,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.podcast.domain.PodcastCategory
@@ -100,12 +103,12 @@ fun PodcastCategoryChips(
 private fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .pressable(MelodiaPress.Pill) { onClick() }
             .clip(CircleShape)
             .then(
                 if (selected) Modifier.background(Color.White)
                 else Modifier.border(1.dp, Color.White.copy(alpha = 0.18f), CircleShape)
             )
-            .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 5.dp)
     ) {
         Text(
@@ -130,11 +133,13 @@ fun PodcastProgramRow(
             .padding(horizontal = PodcastEdgePadding, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = program.coverUrl.withPodcastCoverParam("200y200"),
             contentDescription = program.name,
             modifier = Modifier.size(58.dp).clip(RoundedCornerShape(RadiusCompact)),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            loading = { CoverPlaceholder() },
+            error = { CoverPlaceholder() }
         )
 
         Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
@@ -207,13 +212,15 @@ fun PodcastRadioRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         itemsIndexed(radios, key = { index, item -> "${item.id}_$index" }) { index, radio ->
-            Column(modifier = Modifier.width(120.dp).clickable { onClick(radio) }) {
+            Column(modifier = Modifier.width(120.dp).pressable(MelodiaPress.Card) { onClick(radio) }) {
                 Box {
-                    AsyncImage(
+                    SubcomposeAsyncImage(
                         model = radio.picUrl.withPodcastCoverParam("300y300"),
                         contentDescription = radio.name,
                         modifier = Modifier.size(120.dp).clip(RoundedCornerShape(RadiusCompact)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        loading = { CoverPlaceholder() },
+                        error = { CoverPlaceholder() }
                     )
                     if (showRank) {
                         Text(

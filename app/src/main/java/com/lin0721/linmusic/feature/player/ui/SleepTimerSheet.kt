@@ -22,6 +22,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
@@ -151,7 +153,7 @@ fun SleepTimerSheet(
                         .padding(bottom = MelodiaSpacing.md),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
+                    MelodiaIconButton(
                         onClick = { isCustomMode = false },
                         modifier = Modifier.size(36.dp)
                     ) {
@@ -328,7 +330,7 @@ fun SleepTimerSheet(
 
                 // 开启定时关闭确定按钮
                 val totalTargetMinutes = customHours * 60 + customMinutes
-                Button(
+                MelodiaButton(
                     onClick = {
                         if (totalTargetMinutes > 0) {
                             onSetTimer(totalTargetMinutes)

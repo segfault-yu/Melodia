@@ -14,6 +14,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -42,20 +43,17 @@ import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -90,11 +88,20 @@ import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
+import com.lin0721.linmusic.core.ui.components.MelodiaTextButton
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.comment.ui.CommentsBottomSheet
 import com.lin0721.linmusic.core.comment.ui.CommentsPreviewCard
 import com.lin0721.linmusic.core.log.AppLogger
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.interaction.pressScale
+import com.lin0721.linmusic.core.ui.interaction.pressHighlight
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.model.ArtistMv
 import com.lin0721.linmusic.core.ui.components.ToastManager
@@ -211,9 +218,8 @@ fun ArtistMvPlayerScreen(
         } else {
             insetsController?.show(WindowInsetsCompat.Type.systemBars())
         }
-        // 手动按钮强制转向只是为了"推"一下物理方向，到位后的收尾状态：
         // 系统开启自动旋转 -> 放开为自由感应，允许之后用物理转屏切换；
-        // 系统未开启 -> 按当前全屏态锁定一个固定方向，不跟随传感器（尊重用户的旋转锁定设置）
+        // 系统未开启 -> 按当前全屏态锁定一个固定方向，不跟随传感器
         activity?.requestedOrientation = when {
             systemAutoRotateEnabled -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
             isFullscreen -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
@@ -412,7 +418,7 @@ fun ArtistMvPlayerScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(state.message, color = Color.White, fontSize = 14.sp)
                         Spacer(Modifier.height(16.dp))
-                        Button(
+                        MelodiaButton(
                             onClick = { viewModel.loadMvUrl(mvId, quality) },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
@@ -425,9 +431,9 @@ fun ArtistMvPlayerScreen(
                         Text("已开启「仅 Wi-Fi 播放」，当前是移动网络", color = Color.White, fontSize = 14.sp)
                         Spacer(Modifier.height(16.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = onBack) { Text("返回", color = Color.White) }
+                            MelodiaTextButton(onClick = onBack) { Text("返回", color = Color.White) }
                             Spacer(Modifier.width(16.dp))
-                            Button(
+                            MelodiaButton(
                                 onClick = { viewModel.loadMvUrl(mvId, quality, forcePlayOnMobile = true) },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
@@ -470,9 +476,10 @@ fun ArtistMvPlayerScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        IconButton(
+                        MelodiaIconButton(
                             onClick = { exoPlayer.seekTo(0); exoPlayer.play() },
-                            modifier = Modifier.size(64.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                            modifier = Modifier.size(64.dp),
+                            containerColor = Color.White.copy(alpha = 0.2f)
                         ) {
                             Icon(Icons.Default.Replay, contentDescription = "重播", tint = Color.White, modifier = Modifier.size(36.dp))
                         }
@@ -490,7 +497,7 @@ fun ArtistMvPlayerScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(message, color = Color.White, fontSize = 14.sp)
                         Spacer(Modifier.height(16.dp))
-                        Button(
+                        MelodiaButton(
                             onClick = {
                                 val url = (uiState as? MvPlayerUiState.Success)?.videoUrl
                                 if (url != null) {
@@ -554,7 +561,7 @@ fun ArtistMvPlayerScreen(
                             .padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { if (isFullscreen) exitFullscreen() else onBack() }) {
+                        MelodiaIconButton(onClick = { if (isFullscreen) exitFullscreen() else onBack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
                                 contentDescription = "返回",
@@ -575,8 +582,10 @@ fun ArtistMvPlayerScreen(
                             Spacer(Modifier.weight(1f))
                         }
                         Box {
+                            val qualityInteraction = remember { MutableInteractionSource() }
                             AssistChip(
                                 onClick = { showQualityMenu = true },
+                                interactionSource = qualityInteraction,
                                 label = { Text("${quality}P", fontSize = 12.sp) },
                                 trailingIcon = {
                                     Icon(
@@ -591,15 +600,20 @@ fun ArtistMvPlayerScreen(
                                     trailingIconContentColor = Color.White
                                 ),
                                 border = null,
-                                modifier = Modifier.height(32.dp)
+                                modifier = Modifier
+                                    .pressScale(MelodiaPress.Pill, qualityInteraction)
+                                    .height(32.dp)
                             )
                             DropdownMenu(expanded = showQualityMenu, onDismissRequest = { showQualityMenu = false }) {
                                 QUALITY_OPTIONS.forEach { q ->
+                                    val itemInteraction = remember { MutableInteractionSource() }
                                     DropdownMenuItem(
                                         text = { Text("${q}P") },
                                         trailingIcon = if (q == quality) {
                                             { Icon(Icons.Default.Check, contentDescription = null) }
                                         } else null,
+                                        interactionSource = itemInteraction,
+                                        modifier = Modifier.pressHighlight(MelodiaPress.Row, itemInteraction),
                                         onClick = {
                                             showQualityMenu = false
                                             quality = q
@@ -618,7 +632,7 @@ fun ArtistMvPlayerScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(36.dp)
                         ) {
-                            IconButton(onClick = { seekBy(-10_000L) }, modifier = Modifier.size(40.dp)) {
+                            MelodiaIconButton(onClick = { seekBy(-10_000L) }, modifier = Modifier.size(40.dp)) {
                                 Icon(
                                     imageVector = Icons.Default.Replay10,
                                     contentDescription = "快退 10 秒",
@@ -626,7 +640,7 @@ fun ArtistMvPlayerScreen(
                                     modifier = Modifier.size(30.dp)
                                 )
                             }
-                            IconButton(
+                            MelodiaIconButton(
                                 onClick = { if (isPlaying) exoPlayer.pause() else exoPlayer.play() },
                                 modifier = Modifier
                                     .size(64.dp)
@@ -639,7 +653,7 @@ fun ArtistMvPlayerScreen(
                                     modifier = Modifier.size(32.dp)
                                 )
                             }
-                            IconButton(onClick = { seekBy(10_000L) }, modifier = Modifier.size(40.dp)) {
+                            MelodiaIconButton(onClick = { seekBy(10_000L) }, modifier = Modifier.size(40.dp)) {
                                 Icon(
                                     imageVector = Icons.Default.Forward10,
                                     contentDescription = "快进 10 秒",
@@ -695,7 +709,7 @@ fun ArtistMvPlayerScreen(
                                 )
                             )
                         }
-                        IconButton(
+                        MelodiaIconButton(
                             onClick = { if (isFullscreen) exitFullscreen() else enterFullscreen() },
                             modifier = Modifier.size(32.dp).padding(start = 4.dp)
                         ) {
@@ -799,7 +813,7 @@ fun ArtistMvPlayerScreen(
                                         }
                                     }
                                     Spacer(Modifier.width(8.dp))
-                                    Button(
+                                    MelodiaButton(
                                         onClick = { viewModel.toggleArtistFollow() },
                                         colors = if (isArtistFollowed) {
                                             ButtonDefaults.buttonColors(
@@ -946,9 +960,9 @@ private fun MvActionButton(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
+            .pressable(MelodiaPress.Pill, onClick = onClick)
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .clickable(onClick = onClick)
             .padding(vertical = 10.dp)
     ) {
         Icon(
@@ -987,10 +1001,12 @@ private fun RelatedMvRow(
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(RadiusCompact))
         ) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = "${mv.cover}?param=300y170",
                 contentDescription = mv.name,
                 contentScale = ContentScale.Crop,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() },
                 modifier = Modifier.fillMaxSize()
             )
         }

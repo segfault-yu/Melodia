@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
@@ -46,6 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.player.domain.LyricLine
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.PillRadius
 
@@ -217,11 +218,9 @@ private fun PlayCapsule(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
+                    .pressable(MelodiaPress.Pill) { onSeek(targetLine.timeMs) }
                     .clip(RoundedCornerShape(PillRadius))
                     .background(Color.White.copy(alpha = 0.2f))
-                    .clickable {
-                        onSeek(targetLine.timeMs)
-                    }
                     .padding(horizontal = 14.dp, vertical = MelodiaSpacing.sm)
             ) {
                 Icon(

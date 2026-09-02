@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.core.ui.components.MelodiaTextButton
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
@@ -100,7 +101,7 @@ fun LyricsSettingsView(viewModel: SettingsViewModel) {
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showSizeDialog = false }) {
+                    MelodiaTextButton(onClick = { showSizeDialog = false }) {
                         Text("取消", color = NeteaseRed)
                     }
                 },
@@ -149,7 +150,7 @@ fun LyricsSettingsView(viewModel: SettingsViewModel) {
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showColorDialog = false }) {
+                    MelodiaTextButton(onClick = { showColorDialog = false }) {
                         Text("取消", color = NeteaseRed)
                     }
                 },

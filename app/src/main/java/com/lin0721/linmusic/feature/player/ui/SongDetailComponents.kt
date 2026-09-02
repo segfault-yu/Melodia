@@ -26,6 +26,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.components.MelodiaOutlinedButton
 import com.lin0721.linmusic.core.model.ArtistAlbum
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.model.Track
@@ -370,11 +373,13 @@ fun AboutArtistCard(
                     .fillMaxWidth()
                     .height(260.dp)
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = coverUrl,
                     contentDescription = artistDetail.name,
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() },
                     modifier = Modifier.fillMaxSize()
                 )
                 Box(
@@ -424,7 +429,7 @@ fun AboutArtistCard(
                             fontSize = 13.sp
                         )
                     }
-                    OutlinedButton(
+                    MelodiaOutlinedButton(
                         onClick = onFollowClick,
                         shape = RoundedCornerShape(PillRadius),
                         colors = ButtonDefaults.outlinedButtonColors(
@@ -539,10 +544,12 @@ private fun ImperativeLazyRow(albums: List<ArtistAlbum>) {
             Column(
                 modifier = Modifier.width(120.dp)
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = "${album.picUrl}?param=250y250",
                     contentDescription = album.name,
                     contentScale = ContentScale.Crop,
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)

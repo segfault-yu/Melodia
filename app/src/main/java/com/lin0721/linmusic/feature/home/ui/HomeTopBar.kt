@@ -51,9 +51,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.auth.UserProfile
+import com.lin0721.linmusic.core.ui.interaction.pressable
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.ui.theme.FilterPillInactive
 import com.lin0721.linmusic.core.ui.theme.GradientStart
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.ui.theme.PressStyle
 import com.lin0721.linmusic.core.ui.theme.PillRadius
 import java.util.Calendar
 import kotlinx.coroutines.delay
@@ -89,7 +93,10 @@ fun TopGreetingBar(
             AsyncImage(
                 model = "${userProfile.avatarUrl}?param=200y200",
                 contentDescription = "用户头像",
-                modifier = Modifier.size(40.dp).clip(CircleShape).clickable { onLoginClick() },
+                modifier = Modifier
+                    .size(40.dp)
+                    .pressable(MelodiaPress.Icon) { onLoginClick() }
+                    .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
         } else {
@@ -111,9 +118,9 @@ fun TopGreetingBar(
             Box(
                 modifier = Modifier
                     .size(40.dp)
+                    .pressable(MelodiaPress.Icon) { onSearchClick() }
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.1f))
-                    .clickable { onSearchClick() },
+                    .background(Color.White.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
@@ -213,6 +220,9 @@ fun FilterPills(selectedIndex: Int, onSelected: (Int) -> Unit) {
                 FilterPillChip(
                     text = label,
                     selected = index == selectedIndex,
+                    // 拼接态下缩放会把接缝撑开，这颗不做按压动效；
+                    // 选中色的渐变要保留——取消选中是别的药丸点出来的，关掉会变成红到灰的跳变
+                    pressStyle = if (joinsSecondary) MelodiaPress.None else MelodiaPress.Pill,
                     onClick = { onSelected(index) },
                     modifier = Modifier
                         .padding(start = if (index == 0) 0.dp else 12.dp)
@@ -241,6 +251,8 @@ fun FilterPills(selectedIndex: Int, onSelected: (Int) -> Unit) {
                             text = "最新",
                             selected = secondaryPillSelected,
                             shape = PillShapeJoinEnd,
+                            pressStyle = MelodiaPress.None,
+                            animateColors = false,
                             activeColor = MaterialTheme.colorScheme.primary.darken(SecondaryActiveDarkenFactor),
                             onClick = { secondaryPillSelected = true }
                         )
@@ -258,23 +270,24 @@ private fun FilterPillChip(
     selected: Boolean,
     onClick: () -> Unit,
     shape: Shape = PillShapeFull,
+    pressStyle: PressStyle = MelodiaPress.Pill,
+    animateColors: Boolean = true,
     activeColor: Color = MaterialTheme.colorScheme.primary,
-    inactiveColor: Color = Color.White.copy(alpha = 0.1f),
+    inactiveColor: Color = FilterPillInactive,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor by animateColorAsState(
-        targetValue = if (selected) activeColor else inactiveColor,
-        label = "pillBackground"
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.onPrimary else Color.LightGray,
-        label = "pillContent"
-    )
+    val targetBackground = if (selected) activeColor else inactiveColor
+    val targetContent = if (selected) MaterialTheme.colorScheme.onPrimary else Color.LightGray
+    // 动画值无条件求值，避免 animateColors 变化时组合槽位对不上
+    val animatedBackground by animateColorAsState(targetValue = targetBackground, label = "pillBackground")
+    val animatedContent by animateColorAsState(targetValue = targetContent, label = "pillContent")
+    val backgroundColor = if (animateColors) animatedBackground else targetBackground
+    val contentColor = if (animateColors) animatedContent else targetContent
     Box(
         modifier = modifier
+            .pressable(pressStyle, onClick = onClick)
             .clip(shape)
             .background(backgroundColor)
-            .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
         contentAlignment = Alignment.Center
     ) {

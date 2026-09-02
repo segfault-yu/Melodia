@@ -18,7 +18,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.TextGray
@@ -40,11 +42,13 @@ fun MiniPlayer(
         modifier = modifier.fillMaxWidth().height(64.dp).clickable { onClick() }
     ) {
         Row(modifier = Modifier.fillMaxSize().padding(horizontal = MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = currentTrack.mediaMetadata.artworkUri,
                 contentDescription = "Now Playing",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(RadiusCompact))
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(RadiusCompact)),
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() }
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -64,8 +68,8 @@ fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(onClick = { }) { Icon(Icons.Default.Share, "Share", tint = Color.White, modifier = Modifier.size(20.dp)) }
-            IconButton(onClick = onTogglePlay) {
+            MelodiaIconButton(onClick = { }) { Icon(Icons.Default.Share, "Share", tint = Color.White, modifier = Modifier.size(20.dp)) }
+            MelodiaIconButton(onClick = onTogglePlay) {
                 if (isPlaying) {
                     Icon(Icons.Default.Pause, "Pause", tint = Color.White, modifier = Modifier.size(28.dp))
                 } else {

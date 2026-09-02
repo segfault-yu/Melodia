@@ -1,7 +1,6 @@
 package com.lin0721.linmusic.feature.artist.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +12,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 分页 Tab 栏，索引与 ArtistContent 的内容分支一一对应
@@ -34,7 +35,7 @@ fun ArtistTabBar(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .clickable { onTabSelected(index) }
+                    .pressable(MelodiaPress.Tab) { onTabSelected(index) }
                     .padding(vertical = MelodiaSpacing.xs)
             ) {
                 Text(

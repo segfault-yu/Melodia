@@ -2,7 +2,6 @@ package com.lin0721.linmusic.feature.library.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -12,7 +11,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +27,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.LibraryVioletGradient
 import com.lin0721.linmusic.core.ui.theme.LibraryBlueGreenGradient
@@ -86,7 +88,7 @@ fun NotLoggedInView(onLoginClick: () -> Unit) {
 
         Spacer(modifier = Modifier.height(MelodiaSpacing.xl))
 
-        Button(
+        MelodiaButton(
             onClick = onLoginClick,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(10.dp),
@@ -162,13 +164,15 @@ fun LibraryItemRow(
         } else {
             val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(RadiusCompact)
 
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = "${item.coverUrl}?param=150y150",
                 contentDescription = item.title,
                 modifier = Modifier
                     .size(60.dp)
                     .clip(shape),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() }
             )
         }
 
@@ -226,7 +230,7 @@ fun LibraryGridItem(
     val shape = if (item.type == LibraryItemType.ARTIST) CircleShape else RoundedCornerShape(RadiusCompact)
 
     Column(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.pressable(MelodiaPress.Card, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (item.isLikedSongs) {
@@ -270,14 +274,16 @@ fun LibraryGridItem(
                 )
             }
         } else {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = "${item.coverUrl}?param=300y300",
                 contentDescription = item.title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .clip(shape),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() }
             )
         }
         Spacer(modifier = Modifier.height(6.dp))

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 private val TOP_BAR_HEIGHT = 56.dp
@@ -42,7 +42,7 @@ fun ArtistTopBarOverlay(
             .padding(top = statusBarHeight)
             .zIndex(8f)
     ) {
-        IconButton(
+        MelodiaIconButton(
             onClick = onBack,
             modifier = Modifier
                 .align(Alignment.CenterStart)

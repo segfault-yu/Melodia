@@ -2,7 +2,6 @@ package com.lin0721.linmusic.feature.player.ui
 
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -28,7 +26,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.player.PlayMode
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -137,8 +138,8 @@ fun FullScreenControls(
             Box(
                 modifier = Modifier
                     .size(48.dp)
+                    .pressable(MelodiaPress.Icon) { onToggleShuffle() }
                     .clip(CircleShape)
-                    .clickable { onToggleShuffle() }
                     .padding(start = 0.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
@@ -154,7 +155,7 @@ fun FullScreenControls(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onPlayPrevious) {
+                MelodiaIconButton(onClick = onPlayPrevious, style = MelodiaPress.Transport) {
                     Icon(
                         imageVector = Icons.Rounded.SkipPrevious,
                         contentDescription = null,
@@ -166,12 +167,12 @@ fun FullScreenControls(
                 Box(
                     modifier = Modifier
                         .size(72.dp)
+                        .pressable(MelodiaPress.Transport) { onTogglePlay() }
                         .graphicsLayer {
                             scaleX = bounceScale.value
                             scaleY = bounceScale.value
                         }
-                        .background(Color.White, CircleShape)
-                        .clickable { onTogglePlay() },
+                        .background(Color.White, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -182,7 +183,7 @@ fun FullScreenControls(
                     )
                 }
 
-                IconButton(onClick = onPlayNext) {
+                MelodiaIconButton(onClick = onPlayNext, style = MelodiaPress.Transport) {
                     Icon(
                         imageVector = Icons.Rounded.SkipNext,
                         contentDescription = null,
@@ -196,8 +197,8 @@ fun FullScreenControls(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(CircleShape)
-                    .clickable { onToggleRepeat() },
+                    .pressable(MelodiaPress.Icon) { onToggleRepeat() }
+                    .clip(CircleShape),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(

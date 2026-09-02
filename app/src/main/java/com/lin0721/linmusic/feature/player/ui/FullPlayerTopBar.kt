@@ -11,7 +11,6 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
@@ -49,7 +49,7 @@ fun FullPlayerTopBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onClose) {
+            MelodiaIconButton(onClick = onClose) {
                 Icon(
                     Icons.Rounded.KeyboardArrowDown,
                     contentDescription = null,
@@ -83,7 +83,7 @@ fun FullPlayerTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm)
             ) {
-                IconButton(onClick = onToggleLike) {
+                MelodiaIconButton(onClick = onToggleLike) {
                     Icon(
                         if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         contentDescription = null,
@@ -91,7 +91,7 @@ fun FullPlayerTopBar(
                         modifier = Modifier.size(26.dp)
                     )
                 }
-                IconButton(onClick = onTogglePlay) {
+                MelodiaIconButton(onClick = onTogglePlay) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = null,

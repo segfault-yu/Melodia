@@ -92,15 +92,19 @@ fun MelodiaBottomOverlay(
 
         // 悬浮播放卡片 + 导航栏：实际占用高度上报出去，供页面内容计算底部留白
         Column(
-            modifier = Modifier.onSizeChanged {
-                onOverlayHeightChanged(with(density) { it.height.toDp() })
-            }
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged {
+                    onOverlayHeightChanged(with(density) { it.height.toDp() })
+                },
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 1. 浮动播放卡片
             AnimatedVisibility(
                 visible = currentTrack != null && !isLoginScreenVisible && !isMvFullscreen,
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 MiniPlayerCard(
                     hazeState = hazeState,
@@ -113,7 +117,9 @@ fun MelodiaBottomOverlay(
                     onClick = onMiniPlayerClick,
                     onDrag = onMiniPlayerDrag,
                     onDragEnd = onMiniPlayerDragEnd,
-                    modifier = Modifier.padding(horizontal = MelodiaSpacing.sm)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = MelodiaSpacing.sm)
                 )
             }
 

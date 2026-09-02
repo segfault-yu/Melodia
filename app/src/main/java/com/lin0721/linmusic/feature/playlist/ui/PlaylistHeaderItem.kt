@@ -32,7 +32,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.extractDominantColor
@@ -102,13 +105,15 @@ fun PlaylistHeaderItem(
                     .crossfade(true)
                     .build()
             }
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model              = coverRequest,
                 contentDescription = playlist.name,
                 contentScale       = ContentScale.Crop,
                 onSuccess          = { state ->
                     onColorCalculated(extractDominantColor(state.result.drawable))
                 },
+                loading            = { CoverPlaceholder() },
+                error              = { CoverPlaceholder() },
                 modifier           = Modifier
                     .size(coverSize)
                     .shadow(elevation = 16.dp, shape = RoundedCornerShape(RadiusCompact), clip = false)
@@ -165,7 +170,7 @@ fun PlaylistHeaderItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = onSubscribeClick) {
+                            MelodiaIconButton(onClick = onSubscribeClick) {
                                 Icon(
                                     imageVector = if (isSubscribed) Icons.Default.Check else Icons.Default.Add,
                                     contentDescription = if (isSubscribed) "已收藏" else "收藏",
@@ -173,7 +178,7 @@ fun PlaylistHeaderItem(
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
-                            IconButton(onClick = onCommentsClick) {
+                            MelodiaIconButton(onClick = onCommentsClick) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Rounded.Comment,
                                     contentDescription = "评论",
@@ -181,7 +186,7 @@ fun PlaylistHeaderItem(
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
-                            IconButton(onClick = onMoreClick) {
+                            MelodiaIconButton(onClick = onMoreClick) {
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
                                     contentDescription = "更多",
@@ -191,7 +196,7 @@ fun PlaylistHeaderItem(
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
+                            MelodiaIconButton(
                                 onClick = onShufflePlay,
                                 modifier = Modifier.size(48.dp)
                             ) {

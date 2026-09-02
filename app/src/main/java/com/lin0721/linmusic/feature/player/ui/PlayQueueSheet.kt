@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
+import com.lin0721.linmusic.core.ui.components.MelodiaTextButton
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.core.player.PlayMode
 import com.lin0721.linmusic.core.player.QueueItem
 import com.lin0721.linmusic.core.ui.components.DraggableSongRow
@@ -91,7 +94,7 @@ fun PlayQueueSheet(
             title = { Text("清空播放队列", color = Color.White, fontWeight = FontWeight.Bold) },
             text = { Text("确定要清空播放队列吗？", color = TextGray, fontSize = 14.sp) },
             confirmButton = {
-                TextButton(
+                MelodiaTextButton(
                     onClick = {
                         onClearQueue()
                         showClearConfirmDialog = false
@@ -102,7 +105,7 @@ fun PlayQueueSheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearConfirmDialog = false }) {
+                MelodiaTextButton(onClick = { showClearConfirmDialog = false }) {
                     Text("取消", color = Color.White)
                 }
             },
@@ -356,7 +359,7 @@ private fun QueueHeader(
             modifier = Modifier.weight(1f)
         )
         if (queueSize > 1) {
-            IconButton(
+            MelodiaIconButton(
                 onClick = onClearClick,
                 modifier = Modifier.size(32.dp)
             ) {
@@ -375,7 +378,7 @@ private fun QueueHeader(
             fontSize = 13.sp,
             modifier = Modifier.padding(end = MelodiaSpacing.sm)
         )
-        IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+        MelodiaIconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
             Icon(Icons.Rounded.Close, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
         }
     }
@@ -457,7 +460,7 @@ private fun BottomActionRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         val isRoaming = playContext == "similar_roaming"
-        Button(
+        MelodiaButton(
             onClick = {
                 if (isRoaming) {
                     onDisableRoaming()
@@ -482,7 +485,7 @@ private fun BottomActionRow(
             Spacer(Modifier.width(8.dp))
             Text(if (isRoaming) "关闭漫游" else "随机播放", color = Color.White, fontSize = 13.sp)
         }
-        Button(
+        MelodiaButton(
             onClick = { },
             colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark),
             shape = RoundedCornerShape(10.dp),

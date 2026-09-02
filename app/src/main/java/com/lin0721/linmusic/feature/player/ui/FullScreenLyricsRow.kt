@@ -3,7 +3,6 @@ package com.lin0721.linmusic.feature.player.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +22,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.player.domain.LyricLine
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 歌词单行：按距当前行的远近做缩放与透明度递减，当前行走逐字扫色，可选附带翻译副行
@@ -66,7 +67,7 @@ fun FullScreenLyricsRow(
                 alpha = animatedAlpha
                 transformOrigin = TransformOrigin(0f, 0.5f)
             }
-            .clickable {
+            .pressable(MelodiaPress.None) {
                 onClick()
             },
         horizontalAlignment = Alignment.Start

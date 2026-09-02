@@ -24,6 +24,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.model.ArtistAlbum
@@ -40,7 +44,7 @@ fun SimilarArtistCard(
     Column(
         modifier = Modifier
             .width(100.dp)
-            .clickable(onClick = onClick),
+            .pressable(MelodiaPress.Card, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         AsyncImage(
@@ -80,10 +84,12 @@ fun ArtistAlbumRow(
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = "${album.picUrl}?param=150y150",
             contentDescription = album.name,
             contentScale = ContentScale.Crop,
+            loading = { CoverPlaceholder() },
+            error = { CoverPlaceholder() },
             modifier = Modifier
                 .size(64.dp)
                 .clip(MaterialTheme.shapes.small)
@@ -152,7 +158,7 @@ fun ArtistMvCard(
 ) {
     Column(
         modifier = modifier
-            .clickable(onClick = onClick)
+            .pressable(MelodiaPress.Card, onClick = onClick)
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
     ) {
         Box(
@@ -161,10 +167,12 @@ fun ArtistMvCard(
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(RadiusCompact))
         ) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = "${mv.cover}?param=500y280",
                 contentDescription = mv.name,
                 contentScale = ContentScale.Crop,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() },
                 modifier = Modifier.fillMaxSize()
             )
             Box(

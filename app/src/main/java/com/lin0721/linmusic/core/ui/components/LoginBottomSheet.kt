@@ -79,7 +79,7 @@ private fun LoginOptionButton(
     onClick: () -> Unit
 ) {
     if (isPrimary) {
-        Button(
+        MelodiaButton(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
@@ -108,7 +108,7 @@ private fun LoginOptionButton(
             )
         }
     } else {
-        OutlinedButton(
+        MelodiaOutlinedButton(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()

@@ -8,10 +8,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
@@ -48,7 +48,7 @@ fun LazyListScope.playlistTrackItems(
             onClick = { onPlaySong(track) },
             onArtistClick = { track.ar.firstOrNull()?.id?.let(onArtistClick) },
             trailingSlot = {
-                IconButton(
+                MelodiaIconButton(
                     onClick = { onMoreClick(track) },
                     modifier = Modifier.size(40.dp)
                 ) {

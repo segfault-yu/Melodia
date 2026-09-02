@@ -21,6 +21,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaTextButton
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
@@ -89,11 +91,11 @@ fun LibraryCreatePlaylistSheet(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(onClick = onDismiss) {
+                MelodiaTextButton(onClick = onDismiss) {
                     Text("取消", color = MaterialTheme.colorScheme.onSurface)
                 }
                 Spacer(modifier = Modifier.width(MelodiaSpacing.md))
-                Button(
+                MelodiaButton(
                     onClick = {
                         if (playlistNameInput.isNotBlank()) {
                             onCreate(playlistNameInput)

@@ -3,7 +3,6 @@ package com.lin0721.linmusic.feature.library.ui
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,11 +43,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.components.FilterChipsRow
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.PillRadius
@@ -130,7 +133,7 @@ fun LibraryScreen(
                             .padding(horizontal = MelodiaSpacing.md),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = {
+                        MelodiaIconButton(onClick = {
                             isSearchActive = false
                             viewModel.updateSearchQuery("")
                         }) {
@@ -160,7 +163,7 @@ fun LibraryScreen(
                         }
 
                         if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                            MelodiaIconButton(onClick = { viewModel.updateSearchQuery("") }) {
                                 Icon(Icons.Default.Close, contentDescription = "清除", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
@@ -181,17 +184,17 @@ fun LibraryScreen(
                                 contentDescription = "用户头像",
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .clip(CircleShape)
-                                    .clickable { onAvatarClick() },
+                                    .pressable(MelodiaPress.Icon) { onAvatarClick() }
+                                    .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
                         } else {
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
+                                    .pressable(MelodiaPress.Icon) { onAvatarClick() }
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .clickable { onAvatarClick() },
+                                    .background(MaterialTheme.colorScheme.surface),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -213,11 +216,11 @@ fun LibraryScreen(
                             modifier = Modifier.weight(1f)
                         )
 
-                        IconButton(onClick = { isSearchActive = true }) {
+                        MelodiaIconButton(onClick = { isSearchActive = true }) {
                             Icon(Icons.Default.Search, contentDescription = "搜索", tint = MaterialTheme.colorScheme.onSurface)
                         }
 
-                        IconButton(onClick = {
+                        MelodiaIconButton(onClick = {
                             if (userProfile != null) {
                                 showCreateDialog = true
                             } else {
@@ -259,7 +262,7 @@ fun LibraryScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.clickable { showSortMenu = true },
+                        modifier = Modifier.pressable(MelodiaPress.Pill) { showSortMenu = true },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -283,7 +286,7 @@ fun LibraryScreen(
 
                     }
 
-                    IconButton(
+                    MelodiaIconButton(
                         onClick = { viewModel.updateGridView(!isGridView) },
                         modifier = Modifier.size(32.dp)
                     ) {
@@ -316,7 +319,7 @@ fun LibraryScreen(
                                     textAlign = TextAlign.Center
                                 )
                                 Spacer(modifier = Modifier.height(MelodiaSpacing.md))
-                                Button(
+                                MelodiaButton(
                                     onClick = { viewModel.loadLibraryData() },
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                                 ) {

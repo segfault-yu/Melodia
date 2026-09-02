@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
@@ -144,10 +144,12 @@ fun PlaylistCollectSheet(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    AsyncImage(
+                                    SubcomposeAsyncImage(
                                         model = "${item.coverUrl}?param=100y100",
                                         contentDescription = item.playlistName,
                                         contentScale = ContentScale.Crop,
+                                        loading = { CoverPlaceholder() },
+                                        error = { CoverPlaceholder() },
                                         modifier = Modifier
                                             .size(40.dp)
                                             .clip(RoundedCornerShape(itemCornerRadius))
@@ -179,11 +181,11 @@ fun PlaylistCollectSheet(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    MelodiaTextButton(onClick = onDismiss) {
                         Text("取消", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(modifier = Modifier.width(MelodiaSpacing.sm))
-                    Button(
+                    MelodiaButton(
                         onClick = {
                             onSaveCollection(songId, localItems)
                             onDismiss()

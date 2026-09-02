@@ -1,7 +1,6 @@
 package com.lin0721.linmusic.feature.search.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,13 +33,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.model.PlaylistDetail
 import com.lin0721.linmusic.core.ui.components.DiscoverySectionSkeleton
 import com.lin0721.linmusic.core.ui.components.EmptyState
 import com.lin0721.linmusic.core.ui.components.ErrorState
 import com.lin0721.linmusic.core.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import org.koin.androidx.compose.koinViewModel
 
@@ -155,7 +157,7 @@ fun PlaylistCategoryScreen(
             }
         }
 
-        IconButton(
+        MelodiaIconButton(
             onClick = onBack,
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -205,10 +207,12 @@ private fun CategoryHeroHeader(
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (coverUrl.isNotBlank()) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = "${coverUrl}?param=500y500",
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() },
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -249,7 +253,7 @@ private fun CategoryHeroHeader(
 
 @Composable
 private fun PlaylistCategoryCard(playlist: PlaylistDetail, onClick: () -> Unit) {
-    Column(modifier = Modifier.clickable(onClick = onClick)) {
+    Column(modifier = Modifier.pressable(MelodiaPress.Card, onClick = onClick)) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -258,10 +262,12 @@ private fun PlaylistCategoryCard(playlist: PlaylistDetail, onClick: () -> Unit) 
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             if (playlist.coverImgUrl.isNotBlank()) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = "${playlist.coverImgUrl}?param=300y300",
                     contentDescription = playlist.name,
                     contentScale = ContentScale.Crop,
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() },
                     modifier = Modifier.fillMaxSize()
                 )
             }

@@ -25,7 +25,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.lin0721.linmusic.core.ui.components.MelodiaTextButton
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.core.model.CommentItem
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.DragHandleShape
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
@@ -44,10 +48,10 @@ fun CommentsPreviewCard(
     val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
     val cardHeight = cardWidth * 0.88f
     Surface(
-        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
+            .pressable(MelodiaPress.Card, onClick = onClick)
             .height(cardHeight),
         shape = RoundedCornerShape(InfoCardRadius),
         color = cardColor
@@ -116,7 +120,7 @@ fun CommentsPreviewCard(
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center
                         )
-                        TextButton(
+                        MelodiaTextButton(
                             onClick = onRetry,
                             colors = ButtonDefaults.textButtonColors(contentColor = NeteaseRed)
                         ) {
@@ -331,7 +335,7 @@ fun CommentsBottomSheet(
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        Button(
+                        MelodiaButton(
                             onClick = onRetry,
                             colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed)
                         ) {

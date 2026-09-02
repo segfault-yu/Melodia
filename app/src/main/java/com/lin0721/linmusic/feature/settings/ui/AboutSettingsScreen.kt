@@ -12,7 +12,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,6 +31,7 @@ import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.core.ui.components.MelodiaTextButton
 import com.lin0721.linmusic.BuildConfig
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.R
@@ -174,7 +174,7 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
                             }
                         },
                         confirmButton = {
-                            TextButton(onClick = { showLogLevelDialog = false }) {
+                            MelodiaTextButton(onClick = { showLogLevelDialog = false }) {
                                 Text("取消", color = NeteaseRed)
                             }
                         },

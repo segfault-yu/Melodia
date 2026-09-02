@@ -14,6 +14,9 @@ val BackgroundBlack = Color(0xFF0a0a0a)
 // 底栏选中项的药丸指示器底色
 val NavPillSelected = Color(0xFF383A4A)
 
+// 筛选药丸未选中态底色。取白 10% 叠在顶栏渐变上的等效不透明色
+val FilterPillInactive = Color(0xFF332B2B)
+
 // 全局 Toast 底色
 val ToastBackground = Color(0xFF2E2E2E)
 

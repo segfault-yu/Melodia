@@ -31,7 +31,7 @@ import com.lin0721.linmusic.core.ui.theme.WebLoginBackground
 import com.lin0721.linmusic.core.network.NeteaseEndpoints
 
 /**
- * 沉浸式网页授权登录界面
+ * 网页授权登录界面
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
@@ -43,7 +43,7 @@ fun WebViewLoginScreen(
 ) {
     var isLoading by remember { mutableStateOf(true) }
     
-    // 1. 深度伪装：净化 UA（剔除 wv/WebView 关键字）
+    // 净化 UA（剔除 wv/WebView 关键字）
     val baseUA = "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36"
     
     val loginUrl = NeteaseEndpoints.LOGIN_URL
@@ -65,7 +65,7 @@ fun WebViewLoginScreen(
 					)
 				},
 				navigationIcon = {
-					IconButton(onClick = onClose) {
+					MelodiaIconButton(onClick = onClose) {
 						Icon(
 							imageVector = Icons.Default.Close,
 							contentDescription = "关闭",
@@ -89,7 +89,7 @@ fun WebViewLoginScreen(
 			AndroidView(
 				factory = { context ->
 					WebView(context).apply {
-						// 2. 完全隔离容器：初始化前清空旧状态
+						// 完全隔离容器：初始化前清空旧状态
 						CookieManager.getInstance().let { manager ->
 							manager.setAcceptCookie(true)
 							manager.setAcceptThirdPartyCookies(this, true)

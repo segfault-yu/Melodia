@@ -2,6 +2,7 @@ package com.lin0721.linmusic.feature.player.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -15,14 +16,16 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.player.PlayMode
+import com.lin0721.linmusic.core.ui.interaction.pressScale
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
@@ -54,7 +57,7 @@ fun PlaybackControls(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(
+        MelodiaIconButton(
             onClick = {
                 if (isRoaming) {
                     onDisableRoaming()
@@ -76,14 +79,17 @@ fun PlaybackControls(
             horizontalArrangement = Arrangement.spacedBy(28.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onPlayPrevious) {
+            MelodiaIconButton(onClick = onPlayPrevious, style = MelodiaPress.Transport) {
                 Icon(Icons.Rounded.SkipPrevious, contentDescription = null, tint = Color.White, modifier = Modifier.size(46.dp))
             }
+            val playInteraction = remember { MutableInteractionSource() }
             FloatingActionButton(
                 onClick = onTogglePlay,
                 containerColor = Color.White,
                 shape = CircleShape,
+                interactionSource = playInteraction,
                 modifier = Modifier
+                    .pressScale(MelodiaPress.Transport, playInteraction)
                     .size(72.dp)
                     .graphicsLayer {
                         scaleX = bounceScale.value
@@ -97,12 +103,12 @@ fun PlaybackControls(
                     modifier = Modifier.size(42.dp)
                 )
             }
-            IconButton(onClick = onPlayNext) {
+            MelodiaIconButton(onClick = onPlayNext, style = MelodiaPress.Transport) {
                 Icon(Icons.Rounded.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(46.dp))
             }
         }
 
-        IconButton(
+        MelodiaIconButton(
             onClick = onToggleRepeat,
             modifier = Modifier.offset(x = 10.dp)
         ) {

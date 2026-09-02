@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 全屏歌词页顶部栏：折叠入口、歌曲标题与歌手、更多菜单，整行承载下拉关闭手势
@@ -56,7 +56,7 @@ fun FullScreenLyricsHeader(
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onClose) {
+        MelodiaIconButton(onClick = onClose) {
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = "折叠歌词",
@@ -83,7 +83,7 @@ fun FullScreenLyricsHeader(
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
-        IconButton(onClick = onMoreClick) {
+        MelodiaIconButton(onClick = onMoreClick) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = "更多选项",

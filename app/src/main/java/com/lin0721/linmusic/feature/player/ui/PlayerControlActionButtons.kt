@@ -1,7 +1,6 @@
 package com.lin0721.linmusic.feature.player.ui
 
 import android.media.AudioDeviceInfo
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -9,7 +8,6 @@ import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.SpeakerGroup
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -18,6 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
@@ -46,13 +47,10 @@ fun ActionButtons(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .weight(1f, fill = false)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onOutputDeviceClick
-                )
+                // 反馈交给里面的图标按钮，外层只是把设备名也纳入点击区
+                .pressable(MelodiaPress.None, onClick = onOutputDeviceClick)
         ) {
-            IconButton(
+            MelodiaIconButton(
                 onClick = onOutputDeviceClick,
                 modifier = Modifier.offset(x = (-12).dp)
             ) {
@@ -72,7 +70,7 @@ fun ActionButtons(
             }
         }
         Row {
-            IconButton(onClick = onShareClick) {
+            MelodiaIconButton(onClick = onShareClick) {
                 Icon(
                     imageVector = Icons.Rounded.Share,
                     contentDescription = "分享",
@@ -80,7 +78,7 @@ fun ActionButtons(
                     modifier = Modifier.size(24.dp)
                 )
             }
-            IconButton(
+            MelodiaIconButton(
                 onClick = onQueueClick,
                 modifier = Modifier.offset(x = 12.dp)
             ) {

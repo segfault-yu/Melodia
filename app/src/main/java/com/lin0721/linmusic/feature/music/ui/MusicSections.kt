@@ -27,7 +27,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.lin0721.linmusic.core.model.Track
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.music.domain.StyleArtistItem
@@ -67,12 +71,14 @@ fun MusicPlaylistRow(playlists: List<StylePlaylistItem>, onClick: (StylePlaylist
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         itemsIndexed(playlists, key = { index, item -> "${item.id}_$index" }) { _, item ->
-            Column(modifier = Modifier.width(126.dp).clickable { onClick(item) }) {
-                AsyncImage(
+            Column(modifier = Modifier.width(126.dp).pressable(MelodiaPress.Card) { onClick(item) }) {
+                SubcomposeAsyncImage(
                     model = item.coverUrl.withStyleCoverParam("300y300"),
                     contentDescription = item.name,
                     modifier = Modifier.size(126.dp).clip(RoundedCornerShape(RadiusCompact)),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() }
                 )
                 Text(
                     text = item.name,
@@ -113,11 +119,13 @@ fun MusicSongList(songs: List<Track>, onPlayAt: (Int) -> Unit) {
                     fontSize = 12.sp,
                     modifier = Modifier.width(18.dp)
                 )
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = track.al.picUrl.withStyleCoverParam("120y120"),
                     contentDescription = track.name,
                     modifier = Modifier.size(40.dp).clip(RoundedCornerShape(RadiusCompact)),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() }
                 )
                 Column(modifier = Modifier.weight(1f).padding(start = 11.dp)) {
                     Text(
@@ -152,7 +160,7 @@ fun MusicArtistRow(artists: List<StyleArtistItem>, onClick: (StyleArtistItem) ->
     ) {
         itemsIndexed(artists, key = { index, item -> "${item.id}_$index" }) { _, item ->
             Column(
-                modifier = Modifier.width(76.dp).clickable { onClick(item) },
+                modifier = Modifier.width(76.dp).pressable(MelodiaPress.Card) { onClick(item) },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 AsyncImage(

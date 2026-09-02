@@ -6,7 +6,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,8 +19,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.ui.theme.ColorPalette
 import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
@@ -55,7 +56,7 @@ fun FullPlayerCoverArt(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(
+            MelodiaIconButton(
                 onClick = onClose,
                 modifier = Modifier
                     .size(32.dp)
@@ -99,7 +100,7 @@ fun FullPlayerCoverArt(
                     )
                 }
             }
-            IconButton(
+            MelodiaIconButton(
                 onClick = onMoreClick,
                 modifier = Modifier
                     .size(32.dp)
@@ -114,7 +115,7 @@ fun FullPlayerCoverArt(
             }
         }
 
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = ImageRequest.Builder(context)
                 .data(coverUrl.ifEmpty { null })
                 .allowHardware(false)
@@ -125,6 +126,8 @@ fun FullPlayerCoverArt(
             onSuccess = { state ->
                 onPaletteExtracted(extractColorPalette(state.result.drawable))
             },
+            loading = { CoverPlaceholder() },
+            error = { CoverPlaceholder() },
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)

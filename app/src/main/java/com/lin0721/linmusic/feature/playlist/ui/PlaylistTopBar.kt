@@ -1,5 +1,6 @@
 package com.lin0721.linmusic.feature.playlist.ui
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -21,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
+import com.lin0721.linmusic.core.ui.interaction.pressScale
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import kotlin.math.roundToInt
 
@@ -47,7 +52,7 @@ fun PlaylistTopBar(
             .zIndex(8f)
     ) {
         // 返回键
-        IconButton(
+        MelodiaIconButton(
             onClick  = onBack,
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -83,11 +88,14 @@ fun BoxScope.PlaylistDockedPlayButton(
     dockedOffsetYProvider: () -> Float,
     onPlayAll: () -> Unit
 ) {
+    val playInteraction = remember { MutableInteractionSource() }
     FloatingActionButton(
         onClick        = onPlayAll,
         containerColor = MaterialTheme.colorScheme.primary,
         shape          = CircleShape,
+        interactionSource = playInteraction,
         modifier       = Modifier
+            .pressScale(MelodiaPress.Transport, playInteraction)
             .align(Alignment.TopEnd)
             .padding(end = MelodiaSpacing.md)
             .offset { IntOffset(0, dockedOffsetYProvider().roundToInt()) }

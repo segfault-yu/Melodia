@@ -1,7 +1,6 @@
 package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +17,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.PillRadius
 
@@ -39,9 +40,9 @@ fun FilterChipsRow(
             val isSelected = index == selectedIndex
             Box(
                 modifier = Modifier
+                    .pressable(MelodiaPress.Pill) { onSelected(index) }
                     .clip(RoundedCornerShape(PillRadius))
                     .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f))
-                    .clickable { onSelected(index) }
                     .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
                 contentAlignment = Alignment.Center
             ) {

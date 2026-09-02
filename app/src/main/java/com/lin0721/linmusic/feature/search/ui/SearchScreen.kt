@@ -54,6 +54,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.EmptyState
@@ -66,6 +69,8 @@ import com.lin0721.linmusic.core.ui.components.SearchResultRowSkeleton
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
 import com.lin0721.linmusic.core.ui.components.ToastManager
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.PillRadius
@@ -161,8 +166,8 @@ fun SearchScreen(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(36.dp)
+                        .pressable(MelodiaPress.Icon) { onOpenSidebar() }
                         .clip(CircleShape)
-                        .clickable { onOpenSidebar() }
                 )
             } else {
                 Icon(
@@ -171,7 +176,7 @@ fun SearchScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(36.dp)
-                        .clickable {
+                        .pressable(MelodiaPress.Icon) {
                             ToastManager.showToast("请先在主页登录以显示侧边栏哦！")
                         }
                 )
@@ -184,7 +189,7 @@ fun SearchScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
-            IconButton(onClick = { /* 听歌识曲，暂不实现 */ }) {
+            MelodiaIconButton(onClick = { /* 听歌识曲，暂不实现 */ }) {
                 Icon(
                     Icons.Rounded.MusicNote,
                     contentDescription = "听歌识曲",
@@ -256,7 +261,7 @@ fun SearchScreen(
                     enter = fadeIn(tween(ANIM_EXIT_DURATION)),
                     exit = fadeOut(tween(ANIM_EXIT_DURATION))
                 ) {
-                    IconButton(onClick = { viewModel.updateQuery("") }) {
+                    MelodiaIconButton(onClick = { viewModel.updateQuery("") }) {
                         Icon(
                             Icons.Rounded.Close,
                             contentDescription = "清空搜索框",
@@ -353,9 +358,9 @@ private fun SearchTypeTabRow(selectedType: SearchType, onSelect: (SearchType) ->
             val isSelected = type == selectedType
             Box(
                 modifier = Modifier
+                    .pressable(MelodiaPress.Pill) { onSelect(type) }
                     .clip(RoundedCornerShape(16.dp))
                     .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
-                    .clickable { onSelect(type) }
                     .semantics {
                         role = Role.Tab
                         selected = isSelected
@@ -604,7 +609,7 @@ private fun DiscoveryContent(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(onClick = onClearHistory) {
+                            MelodiaIconButton(onClick = onClearHistory) {
                                 Icon(
                                     Icons.Rounded.DeleteOutline,
                                     contentDescription = "清除搜索历史",
@@ -688,15 +693,17 @@ private fun PlaylistTagCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
+            .pressable(MelodiaPress.Card, onClick = onClick)
             .clip(RoundedCornerShape(RadiusCompact))
             .background(if (tag.coverUrl.isBlank()) fallbackColor else MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
     ) {
         if (tag.coverUrl.isNotBlank()) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = tag.coverUrl,
                 contentDescription = tag.name,
                 contentScale = ContentScale.Crop,
+                loading = { CoverPlaceholder() },
+                error = { CoverPlaceholder() },
                 modifier = Modifier.fillMaxSize()
             )
             Box(

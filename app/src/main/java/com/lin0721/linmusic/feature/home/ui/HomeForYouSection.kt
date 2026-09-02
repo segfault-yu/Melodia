@@ -1,7 +1,6 @@
 package com.lin0721.linmusic.feature.home.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,11 +35,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.interaction.pressable
 import com.lin0721.linmusic.core.ui.theme.EntryDailyGradient
 import com.lin0721.linmusic.core.ui.theme.EntryHeartGradient
 import com.lin0721.linmusic.core.ui.theme.EntryHotGradient
 import com.lin0721.linmusic.core.ui.theme.EntryRadarGradient
 import com.lin0721.linmusic.core.ui.theme.EntryRoamingGradient
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.PillRadius
 import com.lin0721.linmusic.feature.home.data.DailySong
@@ -158,9 +159,9 @@ fun ForYouSection(
                 Box(
                     modifier = Modifier
                         .size(EntryCardSize)
+                        .pressable(MelodiaPress.Card) { entry.onClick() }
                         .clip(RoundedCornerShape(PillRadius))
                         .background(Brush.linearGradient(entry.gradient))
-                        .clickable { entry.onClick() }
                 ) {
                     // 左上打一束高光，纯色块不至于平成一张色纸
                     Box(

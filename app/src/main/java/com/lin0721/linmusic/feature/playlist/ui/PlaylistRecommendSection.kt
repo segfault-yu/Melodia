@@ -1,7 +1,6 @@
 package com.lin0721.linmusic.feature.playlist.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -19,9 +18,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.SongRow
 import com.lin0721.linmusic.core.ui.components.SongRowData
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -55,7 +57,7 @@ fun LazyListScope.playlistRecommendItems(
             onClick = { onPlaySong(track) },
             onArtistClick = { track.ar.firstOrNull()?.id?.let(onArtistClick) },
             trailingSlot = {
-                IconButton(
+                MelodiaIconButton(
                     onClick = { onAddRecommendSong(track) },
                     modifier = Modifier.size(36.dp)
                 ) {
@@ -93,8 +95,8 @@ private fun RecommendationHeader(onRefresh: () -> Unit) {
 
         Row(
             modifier = Modifier
+                .pressable(MelodiaPress.Pill, onClick = onRefresh)
                 .clip(RoundedCornerShape(10.dp))
-                .clickable(onClick = onRefresh)
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically

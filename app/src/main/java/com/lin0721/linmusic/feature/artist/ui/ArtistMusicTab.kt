@@ -8,13 +8,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.model.Track
 import com.lin0721.linmusic.core.ui.components.FilterChipsRow
 import com.lin0721.linmusic.core.ui.components.SongRow
@@ -79,7 +79,7 @@ fun LazyListScope.artistMusicTab(
                 onClick = { onPlaySong(track) },
                 trailingSlot = {
                     val isLiked = track.id in likedSongIds
-                    IconButton(
+                    MelodiaIconButton(
                         onClick = {
                             if (!isLoggedIn) {
                                 onRequireLogin()
@@ -97,7 +97,7 @@ fun LazyListScope.artistMusicTab(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                    IconButton(
+                    MelodiaIconButton(
                         onClick = { onOpenMoreOptions(track) },
                         modifier = Modifier.size(32.dp).padding(end = MelodiaSpacing.xs)
                     ) {

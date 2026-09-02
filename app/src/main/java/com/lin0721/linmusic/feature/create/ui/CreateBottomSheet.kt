@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.core.ui.components.MelodiaTextButton
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.BottomSheetShape
 import com.lin0721.linmusic.core.ui.theme.DragHandleShape
@@ -245,14 +247,14 @@ private fun CreatePlaylistDialog(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(
+                MelodiaTextButton(
                     onClick = onDismiss,
                     enabled = !isCreating
                 ) {
                     Text("取消", color = Color.White)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Button(
+                MelodiaButton(
                     onClick = { onConfirm(name, isPrivate) },
                     enabled = !isCreating && name.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = NeteaseRed),

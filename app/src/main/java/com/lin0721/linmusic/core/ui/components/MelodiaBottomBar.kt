@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,8 +35,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.media3.common.MediaItem
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.lin0721.linmusic.Screen
+import com.lin0721.linmusic.core.ui.interaction.pressable
+import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.TextGray
@@ -140,21 +141,17 @@ fun MiniPlayerCard(
                     onDragEnd?.invoke(velocity)
                 }
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            )
+            .clickable(onClick = onClick)
     ) {
         Column {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 3.dp)
+                    .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)
             ) {
                 // 专辑封面
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = artworkRequest,
                     contentDescription = null,
                     onSuccess = { state ->
@@ -162,6 +159,8 @@ fun MiniPlayerCard(
                         colorPalette = palette
                         PaletteMemoryCache.put(currentTrack.mediaId, palette)
                     },
+                    loading = { CoverPlaceholder() },
+                    error = { CoverPlaceholder() },
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(RadiusCompact)),
@@ -229,7 +228,7 @@ fun MiniPlayerCard(
                 }
 
                 // 播放/暂停按钮
-                IconButton(onClick = onTogglePlay) {
+                MelodiaIconButton(onClick = onTogglePlay) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = "播放/暂停",
@@ -238,7 +237,7 @@ fun MiniPlayerCard(
                     )
                 }
                 // 下一首按钮
-                IconButton(onClick = onNext) {
+                MelodiaIconButton(onClick = onNext) {
                     Icon(
                         imageVector = Icons.Rounded.SkipNext,
                         contentDescription = "下一首",
@@ -315,10 +314,7 @@ fun MelodiaNavigationBar(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
+                        .pressable(MelodiaPress.Tab) {
                             if (targetScreen != null) {
                                 onNavigate(targetScreen)
                             } else {

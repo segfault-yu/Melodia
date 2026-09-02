@@ -24,6 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
+import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.theme.*
@@ -75,7 +77,7 @@ fun SettingsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(
+                    MelodiaIconButton(
                         onClick = {
                             if (activeSubMenu != null) {
                                 activeSubMenu = null
@@ -178,11 +180,7 @@ private fun MainSettingsMenu(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // 退出登录按钮
-                val logoutInteraction = remember { MutableInteractionSource() }
-                val isPressed by logoutInteraction.collectIsPressedAsState()
-                val scale by animateFloatAsState(targetValue = if (isPressed) 0.97f else 1f, label = "")
-
-                Button(
+                MelodiaButton(
                     onClick = {
                         viewModel.executeLogout {
                             onBack()
@@ -190,15 +188,10 @@ private fun MainSettingsMenu(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                        },
+                        .height(50.dp),
                     shape = RoundedCornerShape(PillRadiusLarge),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    border = BorderStroke(1.dp, NeteaseRed.copy(alpha = 0.6f)),
-                    interactionSource = logoutInteraction
+                    border = BorderStroke(1.dp, NeteaseRed.copy(alpha = 0.6f))
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
