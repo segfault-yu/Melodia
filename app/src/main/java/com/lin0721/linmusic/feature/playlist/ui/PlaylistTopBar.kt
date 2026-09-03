@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -86,6 +87,7 @@ fun PlaylistTopBar(
 @Composable
 fun BoxScope.PlaylistDockedPlayButton(
     dockedOffsetYProvider: () -> Float,
+    isCurrentlyPlayingThis: Boolean,
     onPlayAll: () -> Unit
 ) {
     val playInteraction = remember { MutableInteractionSource() }
@@ -103,6 +105,11 @@ fun BoxScope.PlaylistDockedPlayButton(
             .zIndex(10f)
             .shadow(8.dp, CircleShape)
     ) {
-        Icon(Icons.Default.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
+        Icon(
+            imageVector = if (isCurrentlyPlayingThis) Icons.Default.Pause else Icons.Default.PlayArrow,
+            contentDescription = if (isCurrentlyPlayingThis) "暂停" else "播放",
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(32.dp)
+        )
     }
 }

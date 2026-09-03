@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.*
@@ -55,7 +56,9 @@ fun PlaylistHeaderItem(
     dominantColor: Color,
     onColorCalculated: (Color) -> Unit,
     onPlayAll: () -> Unit,
-    onShufflePlay: () -> Unit,
+    onShuffleToggle: () -> Unit,
+    isShuffleActive: Boolean,
+    isCurrentlyPlayingThis: Boolean,
     isSubscribed: Boolean,
     onSubscribeClick: () -> Unit,
     onCommentsClick: () -> Unit,
@@ -197,10 +200,15 @@ fun PlaylistHeaderItem(
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
                             MelodiaIconButton(
-                                onClick = onShufflePlay,
+                                onClick = onShuffleToggle,
                                 modifier = Modifier.size(48.dp)
                             ) {
-                                Icon(Icons.Default.Shuffle, "Shuffle", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                                Icon(
+                                    Icons.Default.Shuffle,
+                                    "随机播放",
+                                    tint = if (isShuffleActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(28.dp)
+                                )
                             }
                             // 真实按钮永远透明，只用来占位和上报自身位置；
                             // 可见的播放按钮是顶层叠加的那一个，见 PlaylistTopBar 的 PlaylistDockedPlayButton
@@ -215,7 +223,12 @@ fun PlaylistHeaderItem(
                                     }
                                     .alpha(0f)
                             ) {
-                                Icon(Icons.Default.PlayArrow, "Play", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
+                                Icon(
+                                    imageVector = if (isCurrentlyPlayingThis) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = if (isCurrentlyPlayingThis) "暂停" else "播放",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(32.dp)
+                                )
                             }
                         }
                     }

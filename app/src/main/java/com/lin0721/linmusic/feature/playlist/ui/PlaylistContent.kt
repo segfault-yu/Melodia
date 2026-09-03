@@ -48,7 +48,9 @@ fun PlaylistContent(
     onPlaySong: (Track) -> Unit,
     onAddToPlayNext: (Track) -> Unit,
     onPlayAll: () -> Unit,
-    onShufflePlay: () -> Unit,
+    onShuffleToggle: () -> Unit,
+    isShuffleActive: Boolean,
+    isCurrentlyPlayingThis: Boolean,
     onLikeClick: (Long) -> Unit,
     onSaveCollection: (Long, List<PlaylistCollectItem>) -> Unit,
     onSaveNewCollection: (String, Long) -> Unit,
@@ -108,6 +110,7 @@ fun PlaylistContent(
     // 按钮在完全未滚动时的基准 Y（由 PlaylistHeaderItem 里那个透明占位按钮上报，
     // 只在滚到顶部时才接受更新，滚动过程中不重新测量）
     // 用listState.firstVisibleItemScrollOffset 做数学换算得到实时位置
+    // 已知问题：切换播放/暂停图标会让按钮跳一下，根因还没查清楚，先放着
     var playButtonBaselineYPx by remember { mutableFloatStateOf(Float.MAX_VALUE) }
 
     var collectSongId by remember { mutableStateOf<Long?>(null) }
@@ -138,8 +141,10 @@ fun PlaylistContent(
                     statusBarHeight     = statusBarHeight,
                     dominantColor       = dominantColor,
                     onColorCalculated   = { dominantColor = it },
-                    onPlayAll           = onPlayAll,
-                    onShufflePlay       = onShufflePlay,
+                    onPlayAll              = onPlayAll,
+                    onShuffleToggle        = onShuffleToggle,
+                    isShuffleActive        = isShuffleActive,
+                    isCurrentlyPlayingThis = isCurrentlyPlayingThis,
                     isSubscribed        = isSubscribed,
                     onSubscribeClick    = onSubscribeClick,
                     onCommentsClick     = onCommentsClick,
@@ -251,7 +256,8 @@ fun PlaylistContent(
                     }
                     max(naturalY, dockedYPx)
                 },
-                onPlayAll = onPlayAll
+                isCurrentlyPlayingThis = isCurrentlyPlayingThis,
+                onPlayAll              = onPlayAll
             )
         }
     }

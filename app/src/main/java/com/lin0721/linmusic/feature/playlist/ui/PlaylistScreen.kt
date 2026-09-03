@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lin0721.linmusic.core.player.PlayMode
 import com.lin0721.linmusic.core.ui.components.MelodiaTextButton
 import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
@@ -42,6 +43,8 @@ fun PlaylistScreen(
     val uiState      by viewModel.uiState.collectAsStateWithLifecycle()
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
     val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
+    val playMode by viewModel.playerManager.playMode.collectAsStateWithLifecycle()
+    val playContext by viewModel.playerManager.playContext.collectAsStateWithLifecycle()
     val likedSongIds by viewModel.likedSongIds.collectAsStateWithLifecycle()
     val collectState by viewModel.collectState.collectAsStateWithLifecycle()
     val userProfile  by viewModel.userProfile.collectAsStateWithLifecycle()
@@ -96,6 +99,10 @@ fun PlaylistScreen(
                     state.playlist.id > 0L &&
                     state.playlist.id != profile.uid &&
                     state.playlist.creator?.userId == profile.uid
+                val isShuffleActive = playMode == PlayMode.SHUFFLE
+                // 当前播放队列的来源是否就是这个歌单（playContext 存的是歌单名）
+                val isThisPlaylistContext = playContext == state.playlist.name
+                val isCurrentlyPlayingThis = isThisPlaylistContext && isPlaying
                 PlaylistContent(
                     playlist       = state.playlist,
                     canRemoveFromPlaylist = isOwnedPlaylist,
@@ -119,16 +126,23 @@ fun PlaylistScreen(
                         viewModel.addTrackToPlayNext(track)
                     },
                     onPlayAll = {
-                        state.playlist.tracks.firstOrNull()?.let { first ->
-                            viewModel.playSongInList(first, state.playlist.tracks)
+                        if (isThisPlaylistContext) {
+                            // 已经是当前播放队列，播放键只做暂停/继续切换
+                            viewModel.playerManager.togglePlayPause()
+                        } else {
+                            val tracks = state.playlist.tracks
+                            if (tracks.isNotEmpty()) {
+                                // 随机开关是全局播放模式，起播时按当前开关状态决定顺序播放还是打乱播放
+                                val ordered = if (isShuffleActive) tracks.shuffled() else tracks
+                                viewModel.playSongInList(ordered.first(), ordered)
+                            }
                         }
                     },
-                    onShufflePlay = {
-                        val tracks = state.playlist.tracks
-                        if (tracks.isNotEmpty()) {
-                            val shuffled = tracks.shuffled()
-                            viewModel.playSongInList(shuffled.first(), shuffled)
-                        }
+                    isShuffleActive = isShuffleActive,
+                    isCurrentlyPlayingThis = isCurrentlyPlayingThis,
+                    onShuffleToggle = {
+                        // 纯开关，不直接触发播放；复用全局播放模式，跟全屏播放器的随机按钮保持一致
+                        viewModel.playerManager.toggleShuffle()
                     },
                     onLikeClick = { songId ->
                         viewModel.prepareCollectDialog(songId)
