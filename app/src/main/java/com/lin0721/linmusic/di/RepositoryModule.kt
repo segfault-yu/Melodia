@@ -28,6 +28,8 @@ import com.lin0721.linmusic.feature.library.data.LibraryRepository
 import com.lin0721.linmusic.feature.library.data.LibraryRepositoryImpl
 import com.lin0721.linmusic.feature.listendata.data.ListenDataRepository
 import com.lin0721.linmusic.feature.listendata.data.ListenDataRepositoryImpl
+import com.lin0721.linmusic.feature.newworks.data.NewWorksRepository
+import com.lin0721.linmusic.feature.newworks.data.NewWorksRepositoryImpl
 import com.lin0721.linmusic.feature.player.data.PlayerRepository
 import com.lin0721.linmusic.feature.player.data.PlayerRepositoryImpl
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepository
@@ -69,6 +71,9 @@ val repositoryModule = module {
 
     // 听歌数据仓储（feature/listendata）
     singleOf(::ListenDataRepositoryImpl) { bind<ListenDataRepository>() }
+
+    // 关注歌手新作数据仓储（feature/newworks，首页音乐 tab「最新」二级药丸消费）
+    singleOf(::NewWorksRepositoryImpl) { bind<NewWorksRepository>() }
 
     // 歌手数据仓储（feature/artist）
     singleOf(::ArtistRepositoryImpl) { bind<ArtistRepository>() }

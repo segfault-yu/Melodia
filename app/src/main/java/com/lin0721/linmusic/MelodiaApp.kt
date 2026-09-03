@@ -129,7 +129,6 @@ fun MelodiaApp() {
                     onDismiss = { sidebar.close() },
                     onNavigateToRecentPlay = { navigation.openRecentPlay() },
                     onNavigateToListenData = { navigation.openListenData() },
-                    onNavigateToNewWorks = { navigation.openNewWorks() },
                     onNavigateToCloud = { navigation.openCloud() },
                     onNavigateToMessage = { navigation.openMessage() },
                     onNavigateToAccount = { navigation.openAccount() },
@@ -167,6 +166,7 @@ fun MelodiaApp() {
                         activeMvName = navigation.activeMvName,
                         activePlaylistCategory = navigation.activePlaylistCategory,
                         homeTab = navigation.homeTab,
+                        showMusicNewWorks = navigation.showMusicNewWorks,
                         searchAutoFocus = navigation.searchAutoFocus,
                         onOpenSidebar = { sidebar.open() },
                         onLoginScreenVisibilityChanged = { isLoginScreenVisible = it },
@@ -177,6 +177,7 @@ fun MelodiaApp() {
                         onMvFullscreenChanged = { isMvFullscreen = it },
                         onNavigateToPlaylistCategory = { category -> navigation.openPlaylistCategory(category) },
                         onHomeTabSelected = { navigation.selectHomeTab(it) },
+                        onShowMusicNewWorksChanged = { navigation.updateShowMusicNewWorks(it) },
                         onNavigateToSearch = { navigation.openSearch(autoFocus = true) },
                         onBack = { navigation.navigateBack() }
                     )

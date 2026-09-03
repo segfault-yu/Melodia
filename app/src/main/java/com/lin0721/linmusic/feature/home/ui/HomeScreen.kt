@@ -20,6 +20,8 @@ import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
 import com.lin0721.linmusic.feature.music.ui.MusicContent
 import com.lin0721.linmusic.feature.music.ui.MusicViewModel
+import com.lin0721.linmusic.feature.newworks.ui.NewWorksFeedContent
+import com.lin0721.linmusic.feature.newworks.ui.NewWorksViewModel
 import com.lin0721.linmusic.feature.podcast.ui.PodcastContent
 import com.lin0721.linmusic.feature.podcast.ui.PodcastViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -34,11 +36,17 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     musicViewModel: MusicViewModel = koinViewModel(),
     podcastViewModel: PodcastViewModel = koinViewModel(),
+    newWorksViewModel: NewWorksViewModel = koinViewModel(),
     selectedTab: Int = TAB_ALL,
     onTabSelected: (Int) -> Unit = {},
+    // 音乐 tab「最新」二级药丸的选中态：由 MelodiaNavigationState 持有，
+    // 避免从新作 feed 点进详情页再返回时（HomeScreen 被销毁重建）状态丢失回到曲风浏览
+    showNewWorksFeed: Boolean = false,
+    onShowNewWorksFeedChanged: (Boolean) -> Unit = {},
     onPlaylistClick: (Long, Boolean) -> Unit = { _, _ -> },
     onArtistClick: (Long) -> Unit = {},
     onRadioClick: (Long) -> Unit = {},
+    onMvClick: (Long, String) -> Unit = { _, _ -> },
     onSearchClick: () -> Unit = {},
     onOpenSidebar: () -> Unit = {},
     onLoginScreenVisibilityChanged: (Boolean) -> Unit = {}
@@ -47,6 +55,7 @@ fun HomeScreen(
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val musicUiState by musicViewModel.uiState.collectAsStateWithLifecycle()
     val podcastUiState by podcastViewModel.uiState.collectAsStateWithLifecycle()
+    val newWorksUiState by newWorksViewModel.uiState.collectAsStateWithLifecycle()
 
     var showLoginSheet by remember { mutableStateOf(false) }
     var showWebViewLogin by remember { mutableStateOf(false) }
@@ -76,6 +85,10 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(showNewWorksFeed) {
+        if (showNewWorksFeed) newWorksViewModel.loadIfNeeded()
+    }
+
     val onAvatarClick: () -> Unit = {
         if (userProfile != null) {
             onOpenSidebar()
@@ -95,13 +108,24 @@ fun HomeScreen(
                 userProfile = userProfile,
                 selectedTab = selectedTab,
                 onTabSelected = onTabSelected,
+                secondarySelected = showNewWorksFeed,
+                onSecondarySelected = { onShowNewWorksFeedChanged(true) },
                 onAvatarClick = onAvatarClick,
                 onSearchClick = onSearchClick
             )
 
             Box(modifier = Modifier.weight(1f)) {
-                when (selectedTab) {
-                    TAB_MUSIC -> MusicContent(
+                when {
+                    selectedTab == TAB_MUSIC && showNewWorksFeed -> NewWorksFeedContent(
+                        uiState = newWorksUiState,
+                        onMvClick = onMvClick,
+                        onAlbumClick = { id -> onPlaylistClick(id, true) },
+                        onSongPlay = { newWorksViewModel.playRelease(it) },
+                        onRetry = { newWorksViewModel.load() },
+                        onLoadMore = { newWorksViewModel.loadMore() }
+                    )
+
+                    selectedTab == TAB_MUSIC -> MusicContent(
                         uiState = musicUiState,
                         onStyleSelect = { musicViewModel.selectStyle(it) },
                         onChildStyleSelect = { musicViewModel.selectChildStyle(it) },
@@ -116,7 +140,7 @@ fun HomeScreen(
                         onRetry = { musicViewModel.loadStyles() }
                     )
 
-                    TAB_PODCAST -> PodcastContent(
+                    selectedTab == TAB_PODCAST -> PodcastContent(
                         uiState = podcastUiState,
                         onCategorySelect = { podcastViewModel.selectCategory(it) },
                         onProgramClick = { podcastViewModel.playProgramAt(it) },

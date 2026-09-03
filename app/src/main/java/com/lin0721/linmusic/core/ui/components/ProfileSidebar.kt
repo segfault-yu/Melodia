@@ -44,7 +44,6 @@ fun ProfileSidebar(
     onDismiss: () -> Unit,
     onNavigateToRecentPlay: () -> Unit,
     onNavigateToListenData: () -> Unit,
-    onNavigateToNewWorks: () -> Unit,
     onNavigateToCloud: () -> Unit,
     onNavigateToMessage: () -> Unit,
     onNavigateToAccount: () -> Unit,
@@ -118,11 +117,6 @@ fun ProfileSidebar(
                 icon = Icons.Outlined.Insights,
                 title = "听歌数据",
                 onClick = { onDismiss(); onNavigateToListenData() }
-            )
-            SidebarMenuItem(
-                icon = Icons.Outlined.NewReleases,
-                title = "关注歌手新作",
-                onClick = { onDismiss(); onNavigateToNewWorks() }
             )
             SidebarMenuItem(
                 icon = Icons.Outlined.CloudQueue,

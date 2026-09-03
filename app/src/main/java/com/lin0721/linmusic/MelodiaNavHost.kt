@@ -28,6 +28,7 @@ fun MelodiaNavHost(
     activeMvName: String,
     activePlaylistCategory: String?,
     homeTab: Int,
+    showMusicNewWorks: Boolean,
     searchAutoFocus: Boolean,
     onOpenSidebar: () -> Unit,
     onLoginScreenVisibilityChanged: (Boolean) -> Unit,
@@ -38,6 +39,7 @@ fun MelodiaNavHost(
     onMvFullscreenChanged: (Boolean) -> Unit,
     onNavigateToPlaylistCategory: (String) -> Unit,
     onHomeTabSelected: (Int) -> Unit,
+    onShowMusicNewWorksChanged: (Boolean) -> Unit,
     onNavigateToSearch: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -70,9 +72,12 @@ fun MelodiaNavHost(
                     viewModel = homeViewModel,
                     selectedTab = homeTab,
                     onTabSelected = onHomeTabSelected,
+                    showNewWorksFeed = showMusicNewWorks,
+                    onShowNewWorksFeedChanged = onShowMusicNewWorksChanged,
                     onPlaylistClick = onNavigateToPlaylist,
                     onArtistClick = onNavigateToArtist,
                     onRadioClick = onNavigateToRadio,
+                    onMvClick = onNavigateToMv,
                     onSearchClick = onNavigateToSearch,
                     onOpenSidebar = onOpenSidebar,
                     onLoginScreenVisibilityChanged = onLoginScreenVisibilityChanged
@@ -157,9 +162,6 @@ fun MelodiaNavHost(
                     onBack = onBack,
                     onArtistClick = onNavigateToArtist
                 )
-            }
-            Screen.NewWorks -> {
-                com.lin0721.linmusic.feature.newworks.ui.NewWorksScreen(onBack = onBack)
             }
             Screen.Cloud -> {
                 com.lin0721.linmusic.feature.cloud.ui.CloudScreen(onBack = onBack)

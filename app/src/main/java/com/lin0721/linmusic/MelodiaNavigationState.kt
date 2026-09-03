@@ -11,7 +11,7 @@ import androidx.compose.runtime.setValue
 enum class Screen {
     Home, Playlist, Search, Library, Settings, Artist, Radio, MvPlayer, PlaylistCategory,
     // 侧边栏二级页
-    RecentPlay, ListenData, NewWorks, Cloud, Message, Account
+    RecentPlay, ListenData, Cloud, Message, Account
 }
 
 // 应用级导航状态：回退栈与各页面所需的跳转参数
@@ -48,6 +48,11 @@ class MelodiaNavigationState {
     // 主页三个 tab 的选中项。存在导航状态里而非 HomeScreen 内部——
     // 页面切走时 HomeScreen 会离开 composition，记在里面的话从电台详情页退回来会跳回「全部」
     var homeTab by mutableStateOf(0)
+        private set
+
+    // 音乐 tab「最新」二级药丸的选中态，同样存在导航状态里——
+    // 从新作 feed 点进专辑详情再返回时，HomeScreen 会被销毁重建，本地 remember 状态会丢
+    var showMusicNewWorks by mutableStateOf(false)
         private set
 
     var searchAutoFocus by mutableStateOf(false)
@@ -90,6 +95,12 @@ class MelodiaNavigationState {
 
     fun selectHomeTab(index: Int) {
         homeTab = index
+        // 点任意主药丸都回到该 tab 的默认内容，「最新」只能通过下面的入口单独选中
+        showMusicNewWorks = false
+    }
+
+    fun updateShowMusicNewWorks(show: Boolean) {
+        showMusicNewWorks = show
     }
 
     fun openRadio(id: Long) {
@@ -114,10 +125,6 @@ class MelodiaNavigationState {
 
     fun openListenData() {
         navigateTo(Screen.ListenData)
-    }
-
-    fun openNewWorks() {
-        navigateTo(Screen.NewWorks)
     }
 
     fun openCloud() {

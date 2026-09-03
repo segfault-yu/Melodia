@@ -17,6 +17,7 @@ import com.lin0721.linmusic.feature.music.data.MusicApi
 import com.lin0721.linmusic.feature.podcast.data.PodcastApi
 import com.lin0721.linmusic.feature.library.data.LibraryApi
 import com.lin0721.linmusic.feature.listendata.data.ListenDataApi
+import com.lin0721.linmusic.feature.newworks.data.NewWorksApi
 import com.lin0721.linmusic.feature.player.data.PlayerApi
 import com.lin0721.linmusic.feature.playlist.data.PlaylistApi
 import com.lin0721.linmusic.feature.recent.data.RecentApi
@@ -142,6 +143,7 @@ val networkModule = module {
     single<LibraryApi> { get<Retrofit>().create(LibraryApi::class.java) }
     single<RecentApi> { get<Retrofit>().create(RecentApi::class.java) }
     single<ListenDataApi> { get<Retrofit>().create(ListenDataApi::class.java) }
+    single<NewWorksApi> { get<Retrofit>().create(NewWorksApi::class.java) }
     single<CommentApi> { get<Retrofit>().create(CommentApi::class.java) }
     single<SongLikeApi> { get<Retrofit>().create(SongLikeApi::class.java) }
     single<PlaybackApi> { get<Retrofit>().create(PlaybackApi::class.java) }

@@ -135,6 +135,8 @@ fun HomeSharedHeader(
     userProfile: UserProfile?,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
+    secondarySelected: Boolean,
+    onSecondarySelected: () -> Unit,
     onAvatarClick: () -> Unit,
     onSearchClick: () -> Unit
 ) {
@@ -149,14 +151,19 @@ fun HomeSharedHeader(
             onLoginClick = onAvatarClick,
             onSearchClick = onSearchClick
         )
-        FilterPills(selectedIndex = selectedTab, onSelected = onTabSelected)
+        FilterPills(
+            selectedIndex = selectedTab,
+            onSelected = onTabSelected,
+            secondarySelected = secondarySelected,
+            onSecondarySelected = onSecondarySelected
+        )
     }
 }
 
 // 二级药丸展开/折叠动画时长，需与下方 delay 保持一致
 private const val SecondaryPillAnimDurationMs = 280
 
-// 触发二级占位药丸展开的主分类下标，功能待定
+// 触发「最新」二级药丸展开的主分类下标（音乐 tab）
 private const val SecondaryPillTriggerIndex = 1
 
 private val PillShapeFull = RoundedCornerShape(PillRadius)
@@ -184,14 +191,19 @@ private fun Modifier.overlapStart(amount: Dp): Modifier = layout { measurable, c
     }
 }
 
-// 内容类型筛选胶囊，选中态仅作用于本地 UI；选中"音乐"时右侧联动展开占位二级药丸
+// 内容类型筛选胶囊；选中"音乐"时右侧联动展开二级药丸，"最新"的选中态由外部（HomeScreen）持有——
+// 它决定音乐 tab 内容区展示曲风浏览还是新作 feed，不是纯粹的本地视觉状态
 @Composable
-fun FilterPills(selectedIndex: Int, onSelected: (Int) -> Unit) {
+fun FilterPills(
+    selectedIndex: Int,
+    onSelected: (Int) -> Unit,
+    secondarySelected: Boolean,
+    onSecondarySelected: () -> Unit
+) {
     val labels = remember { listOf("全部", "音乐", "播客") }
     val secondaryTarget = selectedIndex == SecondaryPillTriggerIndex
     var secondaryMounted by remember { mutableStateOf(secondaryTarget) }
     var secondaryVisible by remember { mutableStateOf(secondaryTarget) }
-    var secondaryPillSelected by remember { mutableStateOf(false) }
 
     LaunchedEffect(secondaryTarget) {
         if (secondaryTarget) {
@@ -204,7 +216,6 @@ fun FilterPills(selectedIndex: Int, onSelected: (Int) -> Unit) {
             secondaryVisible = false
             delay(SecondaryPillAnimDurationMs.toLong())
             secondaryMounted = false
-            secondaryPillSelected = false
         }
     }
 
@@ -231,7 +242,7 @@ fun FilterPills(selectedIndex: Int, onSelected: (Int) -> Unit) {
                 )
             }
             if (joinsSecondary) {
-                item(key = "secondary_demo_pill") {
+                item(key = "secondary_latest_pill") {
                     AnimatedVisibility(
                         visible = secondaryVisible,
                         enter = expandHorizontally(
@@ -249,12 +260,12 @@ fun FilterPills(selectedIndex: Int, onSelected: (Int) -> Unit) {
                         // 未点击是标准未激活灰底，点击后颜色比主药丸的强调色更深，两者区分开
                         FilterPillChip(
                             text = "最新",
-                            selected = secondaryPillSelected,
+                            selected = secondarySelected,
                             shape = PillShapeJoinEnd,
                             pressStyle = MelodiaPress.None,
                             animateColors = false,
                             activeColor = MaterialTheme.colorScheme.primary.darken(SecondaryActiveDarkenFactor),
-                            onClick = { secondaryPillSelected = true }
+                            onClick = onSecondarySelected
                         )
                     }
                 }
