@@ -76,12 +76,8 @@ private val BarMinHeight = 3.dp
 // 背景墙取前若干张封面，再多在遮罩下也分辨不出，徒增图片请求
 private const val CoverWallCount = 6
 
-// 柱顶数值的固定槽位。数值只在峰值或选中的那一根上出现，但每根都得占住这段高度，
-// 否则切换选中态时整张图会因 Row 高度变化而上下跳
-private val BarValueSlotHeight = 20.dp
-
-// 数值与柱体之间的呼吸，缺了会显得数字长在柱子上
-private val BarValueGap = 4.dp
+// 柱顶数值与柱体之间的呼吸。
+private val BarValueGap = 2.dp
 
 // 把总进度换算成组内第 index 项的进度：前 DataEnterStaggerFraction 用于错开各项起始，
 // 余下比例是单项自身的生长时长，于是首项先动、末项收尾时整组同时结束
@@ -436,24 +432,17 @@ fun DailyChartSection(
                     ) { onSelect(if (isSelected) null else index) },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 未选中标峰值，选中则改标选中那根；逐根都标在月视图上会糊成一片
+
                 val showValue = if (selectedIndex == null) isPeak else isSelected
-                Box(
-                    modifier = Modifier.height(BarValueSlotHeight),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    if (showValue) {
-                        Text(
-                            text = "${day.minutes.byProgress(grow)}分",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 10.sp,
-                            maxLines = 1,
-                            modifier = Modifier
-                                .wrapContentWidth(unbounded = true)
-                                .padding(bottom = BarValueGap)
-                        )
-                    }
-                }
+                Text(
+                    text = "${day.minutes.byProgress(grow)}分",
+                    color = if (showValue) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .wrapContentWidth(unbounded = true)
+                        .padding(bottom = BarValueGap)
+                )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
