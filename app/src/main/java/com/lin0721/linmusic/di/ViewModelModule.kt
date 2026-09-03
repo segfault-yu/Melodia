@@ -12,6 +12,7 @@ import com.lin0721.linmusic.feature.newworks.ui.NewWorksViewModel
 import com.lin0721.linmusic.feature.player.ui.PlayerViewModel
 import com.lin0721.linmusic.feature.playlist.ui.PlaylistViewModel
 import com.lin0721.linmusic.feature.recent.ui.RecentPlayViewModel
+import com.lin0721.linmusic.feature.cloud.ui.CloudViewModel
 import com.lin0721.linmusic.feature.artist.ui.ArtistViewModel
 import com.lin0721.linmusic.feature.artist.ui.ArtistMvPlayerViewModel
 import com.lin0721.linmusic.feature.search.ui.SearchViewModel
@@ -37,6 +38,7 @@ val viewModelModule = module {
     viewModelOf(::PlaylistCategoryViewModel)
     viewModelOf(::LibraryViewModel)
     viewModelOf(::RecentPlayViewModel)
+    viewModelOf(::CloudViewModel)
     viewModelOf(::ListenDataViewModel)
     viewModelOf(::NewWorksViewModel)
     viewModelOf(::CreateViewModel)
