@@ -32,4 +32,6 @@ sealed interface CloudOverlay {
         val confirmTarget: Track? = null,
         val isMatching: Boolean = false
     ) : CloudOverlay
+    // 添加到歌单：只负责决定弹哪首歌的面板，具体勾选状态在 songCollectDelegate.state 里
+    data class AddToPlaylist(val song: CloudSong) : CloudOverlay
 }

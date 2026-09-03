@@ -9,8 +9,12 @@ import com.lin0721.linmusic.core.network.ResourceProvider
 import com.lin0721.linmusic.core.network.toUserMessage
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
+import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.feature.cloud.data.CloudRepository
 import com.lin0721.linmusic.feature.cloud.domain.CloudSong
+import com.lin0721.linmusic.feature.playlist.domain.SongCollectDelegate
 import com.lin0721.linmusic.feature.search.data.SearchRepository
 import com.lin0721.linmusic.feature.search.domain.SearchResultItem
 import com.lin0721.linmusic.feature.search.domain.SearchType
@@ -32,6 +36,8 @@ private const val MATCH_SEARCH_DEBOUNCE_MS = 400L
 class CloudViewModel(
     private val cloudRepository: CloudRepository,
     private val searchRepository: SearchRepository,
+    private val songCollectDelegate: SongCollectDelegate,
+    private val loadLikedSongIdsUseCase: LoadLikedSongIdsUseCase,
     private val userPreferences: UserPreferences,
     val playerManager: PlayerManager,
     private val resourceProvider: ResourceProvider
@@ -46,10 +52,21 @@ class CloudViewModel(
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
+    private val _likedSongIds = MutableStateFlow<Set<Long>>(emptySet())
+
+    val collectState: StateFlow<PlaylistCollectState> = songCollectDelegate.state
+
     private var matchSearchJob: Job? = null
 
     init {
         load()
+        loadLikedSongIds()
+    }
+
+    private fun loadLikedSongIds() {
+        viewModelScope.launch {
+            loadLikedSongIdsUseCase()?.let { _likedSongIds.value = it }
+        }
     }
 
     fun load() {
@@ -218,6 +235,34 @@ class CloudViewModel(
                     _overlay.value = current.copy(isMatching = false)
                     _toastEvent.emit(e.toUserMessage(resourceProvider))
                 }
+        }
+    }
+
+    // ======================= 添加到歌单 =======================
+
+    fun openAddToPlaylist() {
+        val song = (_overlay.value as? CloudOverlay.Options)?.song ?: return
+        _overlay.value = CloudOverlay.AddToPlaylist(song)
+        viewModelScope.launch {
+            songCollectDelegate.prepare(song.songId, _likedSongIds.value) { _toastEvent.emit(it) }
+        }
+    }
+
+    fun saveAddToPlaylist(songId: Long, items: List<PlaylistCollectItem>) {
+        viewModelScope.launch {
+            songCollectDelegate.save(
+                songId = songId,
+                items = items,
+                likedSongIds = _likedSongIds.value,
+                onToast = { _toastEvent.emit(it) },
+                onLikedChanged = { _likedSongIds.value = it }
+            )
+        }
+    }
+
+    fun createPlaylistAndAddSong(name: String, songId: Long) {
+        viewModelScope.launch {
+            songCollectDelegate.createAndAdd(name, songId, _likedSongIds.value) { _toastEvent.emit(it) }
         }
     }
 

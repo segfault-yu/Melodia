@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lin0721.linmusic.LocalBottomOverlayInset
 import com.lin0721.linmusic.core.ui.components.ErrorState
+import com.lin0721.linmusic.core.ui.components.PlaylistCollectSheet
 import com.lin0721.linmusic.core.ui.components.SearchResultRowSkeleton
 import com.lin0721.linmusic.core.ui.components.SecondaryScreenScaffold
 import com.lin0721.linmusic.core.ui.components.ToastManager
@@ -40,6 +41,7 @@ fun CloudScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val overlay by viewModel.overlay.collectAsStateWithLifecycle()
+    val collectState by viewModel.collectState.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel) {
         viewModel.toastEvent.collect { ToastManager.showToast(it) }
@@ -121,8 +123,19 @@ fun CloudScreen(
             CloudSongOptionsSheet(
                 song = current.song,
                 onDismiss = { viewModel.dismissOverlay() },
+                onAddToPlaylistClick = { viewModel.openAddToPlaylist() },
                 onMatchClick = { viewModel.openMatch() },
                 onDeleteClick = { viewModel.requestDelete() }
+            )
+        }
+
+        is CloudOverlay.AddToPlaylist -> {
+            PlaylistCollectSheet(
+                songId = current.song.songId,
+                collectState = collectState,
+                onDismiss = { viewModel.dismissOverlay() },
+                onSaveCollection = { songId, items -> viewModel.saveAddToPlaylist(songId, items) },
+                onSaveNewCollection = { name, songId -> viewModel.createPlaylistAndAddSong(name, songId) }
             )
         }
 

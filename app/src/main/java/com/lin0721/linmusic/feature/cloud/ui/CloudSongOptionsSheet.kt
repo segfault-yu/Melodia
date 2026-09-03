@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +49,7 @@ import kotlinx.coroutines.launch
 fun CloudSongOptionsSheet(
     song: CloudSong,
     onDismiss: () -> Unit,
+    onAddToPlaylistClick: () -> Unit,
     onMatchClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
@@ -106,6 +108,27 @@ fun CloudSongOptionsSheet(
                 color = Color.White.copy(alpha = 0.08f),
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm)
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        scope.launch {
+                            sheetState.hide()
+                            onAddToPlaylistClick()
+                        }
+                    }
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, contentDescription = null, tint = Color.White.copy(alpha = 0.7f))
+                Text(
+                    text = "添加到歌单",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
 
             Row(
                 modifier = Modifier
