@@ -6,6 +6,7 @@ import com.lin0721.linmusic.core.network.EmptyBodyInterceptor
 import com.lin0721.linmusic.core.network.HeaderInterceptor
 import com.lin0721.linmusic.core.network.NeteaseEndpoints
 import com.lin0721.linmusic.feature.artist.data.ArtistApi
+import com.lin0721.linmusic.feature.cloud.data.CloudApi
 import com.lin0721.linmusic.core.comment.data.CommentApi
 import com.lin0721.linmusic.core.player.data.PlaybackApi
 import com.lin0721.linmusic.core.songlike.SongLikeApi
@@ -142,6 +143,7 @@ val networkModule = module {
     single<SearchApi> { get<Retrofit>().create(SearchApi::class.java) }
     single<LibraryApi> { get<Retrofit>().create(LibraryApi::class.java) }
     single<RecentApi> { get<Retrofit>().create(RecentApi::class.java) }
+    single<CloudApi> { get<Retrofit>().create(CloudApi::class.java) }
     single<ListenDataApi> { get<Retrofit>().create(ListenDataApi::class.java) }
     single<NewWorksApi> { get<Retrofit>().create(NewWorksApi::class.java) }
     single<CommentApi> { get<Retrofit>().create(CommentApi::class.java) }

@@ -40,6 +40,8 @@ import com.lin0721.linmusic.feature.settings.data.SettingsRepositoryImpl
 import com.lin0721.linmusic.feature.playlist.data.PlaylistRepositoryImpl
 import com.lin0721.linmusic.feature.recent.data.RecentRepository
 import com.lin0721.linmusic.feature.recent.data.RecentRepositoryImpl
+import com.lin0721.linmusic.feature.cloud.data.CloudRepository
+import com.lin0721.linmusic.feature.cloud.data.CloudRepositoryImpl
 import com.lin0721.linmusic.feature.search.data.SearchRepository
 import com.lin0721.linmusic.feature.search.data.SearchRepositoryImpl
 import org.koin.core.module.dsl.bind
@@ -68,6 +70,9 @@ val repositoryModule = module {
 
     // 最近播放数据仓储（feature/recent，首页区块与侧边栏二级页共用）
     singleOf(::RecentRepositoryImpl) { bind<RecentRepository>() }
+
+    // 我的云盘数据仓储（feature/cloud）
+    singleOf(::CloudRepositoryImpl) { bind<CloudRepository>() }
 
     // 听歌数据仓储（feature/listendata）
     singleOf(::ListenDataRepositoryImpl) { bind<ListenDataRepository>() }
