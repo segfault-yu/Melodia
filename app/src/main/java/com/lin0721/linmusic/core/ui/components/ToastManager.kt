@@ -1,23 +1,23 @@
 package com.lin0721.linmusic.core.ui.components
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lin0721.linmusic.core.ui.theme.NeteaseRed
+import com.lin0721.linmusic.R
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import com.lin0721.linmusic.core.ui.theme.ToastBackground
@@ -46,12 +46,22 @@ fun CustomToast(message: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Info,
-            contentDescription = null,
-            tint = NeteaseRed,
-            modifier = Modifier.size(16.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(16.dp)
+                .clip(CircleShape)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_background),
+                contentDescription = null,
+                modifier = Modifier.matchParentSize()
+            )
+            Image(
+                painter = painterResource(id = R.drawable.ic_notification),
+                contentDescription = null,
+                modifier = Modifier.matchParentSize()
+            )
+        }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = message,
