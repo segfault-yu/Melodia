@@ -37,12 +37,20 @@ app/src/main/java/com/lin0721/linmusic/
 ├── di/                          # Koin 依赖注入模块
 │
 └── feature/                     # 业务域，各自含 data/domain/ui
+    ├── account/                 # 账号中心
     ├── artist/                  # 歌手详情
+    ├── cloud/                   # 云盘音乐
     ├── create/                  # 新建歌单等快捷操作
     ├── home/                    # 首页聚合（推荐、日推、排行榜、关注艺人）
     ├── library/                 # 音乐库（歌单/专辑/歌手聚合与检索）
+    ├── listendata/              # 听歌数据统计
+    ├── message/                 # 消息中心
+    ├── music/                   # 音乐 Tab（曲风画像、个性化推荐）
+    ├── newworks/                # 新歌首发/新作品推荐
     ├── player/                  # 播放器页面（全屏播放器、歌词、队列、详情）
     ├── playlist/                # 歌单与专辑详情
+    ├── podcast/                 # 播客/电台
+    ├── recent/                  # 最近播放
     ├── search/                  # 搜索与发现
     └── settings/                # 设置
 ```
@@ -97,8 +105,16 @@ CI 在推送到 `main` 与 PR 时运行单元测试与 release 构建，产物�
 
 ---
 
+## 非常感谢以下开源项目给我灵感
+
+- [NeteaseCloudMusicApi](https://github.com/binaryify/NeteaseCloudMusicApi)
+- [api-enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)
+- [SPlayer](https://github.com/SPlayer-Dev/SPlayer)
+
+---
+
 ## ⚠️ 免责声明
 
 1. 本项目为个人技术研究与 Android 原生架构练手项目。
 2. 本项目仅供技术交流与学习使用，不提供任何形式的商业变现。
-3. 软件内相关数据接口均来自互联网公开抓包分析，请在下载后 24 小时内删除，严禁用于任何商业用途。
+3. 软件内相关数据接口均来自互联网公开的抓包分析，请在下载后 24 小时内删除，严禁用于任何商业用途。

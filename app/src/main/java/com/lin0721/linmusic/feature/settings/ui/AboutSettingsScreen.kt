@@ -185,10 +185,12 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
         }
 
         item {
-            SettingsGroupCard("特别鸣谢") {
+            SettingsGroupCard("特别感谢") {
                 Text(
-                    text = "本项目的开发与运行离不开以下优秀开源项目的支持：\n\n" +
-                            "• NeteaseCloudMusicApiEnhanced (api-enhanced 引擎)\n" +
+                    text = "本项目的开发与运行离不开以下优秀开源项目：\n\n" +
+                            "• NeteaseCloudMusicApi\n"
+                            "• NeteaseCloudMusicApiEnhanced\n"
+                            "• SPlayer\n"
                             "• Jetpack Compose & Media3\n" +
                             "• Retrofit & OkHttp\n" +
                             "• Koin\n" +
@@ -207,7 +209,7 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
 
 private const val TAG = "AboutSettingsScreen"
 
-// tag 里的 -beta.N/-rc.N 后缀原样带进 versionName，这里额外加中文标注避免用户误当正式版反馈问题
+// tag 里的 -beta.N/-rc.N 后缀原样带进 versionName
 private fun appVersionLabel(): String {
     val name = BuildConfig.VERSION_NAME
     val isPrerelease = name.contains("beta", ignoreCase = true) || name.contains("rc", ignoreCase = true)
