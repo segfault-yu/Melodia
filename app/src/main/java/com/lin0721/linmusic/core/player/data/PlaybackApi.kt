@@ -29,6 +29,13 @@ interface PlaybackApi {
     suspend fun getIntelligenceSongs(
         @Body body: IntelligenceSongsRequest
     ): IntelligenceSongsResponse
+
+    // ================== 播放行为上报（打卡） ==================
+    // 走 /eapi/feedback/weblog，需分别上报 startplay/play 两条日志
+    @POST("/eapi/feedback/weblog")
+    suspend fun reportWeblog(
+        @Body body: WeblogRequest
+    ): WeblogResponse
 }
 
 // ======================= 播放链接 DTO =======================
@@ -140,4 +147,56 @@ data class IntelligenceItem(
     val id: Long = 0,
     val recommended: Boolean = false,
     val songInfo: Track? = null
+)
+
+// ======================= 播放打卡上报 DTO =======================
+
+// logs 是数组序列化后的 JSON 字符串（网易服务端约定），不是嵌套对象，需在 Repository 层手动编码
+@Serializable
+data class WeblogRequest(
+    val logs: String
+)
+
+@Serializable
+data class WeblogResponse(
+    val code: Int = 0,
+    val data: String? = null
+) {
+    val isSuccess: Boolean get() = code == 200
+}
+
+@Serializable
+data class StartPlayLogEntry(
+    val action: String = "startplay",
+    val json: StartPlayLogJson
+)
+
+@Serializable
+data class StartPlayLogJson(
+    val id: Long,
+    val type: String = "song",
+    val mainsite: String = "1",
+    val mainsiteWeb: String = "1",
+    val content: String
+)
+
+@Serializable
+data class PlayLogEntry(
+    val action: String = "play",
+    val json: PlayLogJson
+)
+
+@Serializable
+data class PlayLogJson(
+    val download: Int = 0,
+    val end: String = "playend",
+    val id: Long,
+    val sourceId: Long,
+    val time: Long,
+    val type: String = "song",
+    val wifi: Int = 0,
+    val source: String = "list",
+    val mainsite: String = "1",
+    val mainsiteWeb: String = "1",
+    val content: String
 )

@@ -87,8 +87,13 @@ class HeaderInterceptor(
             
             val cookiesStr = requestCookies.joinToString("; ")
             val filteredCookies = cookiesStr.split("; ").filterNot { it.trim().startsWith("os=") }.joinToString("; ")
-            val mobileCookies = "os=android; appver=9.0.90; osver=${android.os.Build.VERSION.RELEASE}"
-            newRequestBuilder.header("Cookie", if (filteredCookies.isEmpty()) mobileCookies else "$filteredCookies; $mobileCookies")
+            // 打卡上报（weblog）专用伪装：参考 scrobble.js 强制 os=osx，否则最近播放/听歌排行聚合层疑似只认桌面端来源
+            val osCookie = if (urlString.contains("/eapi/feedback/weblog")) {
+                "os=osx"
+            } else {
+                "os=android; appver=9.0.90; osver=${android.os.Build.VERSION.RELEASE}"
+            }
+            newRequestBuilder.header("Cookie", if (filteredCookies.isEmpty()) osCookie else "$filteredCookies; $osCookie")
         } else {
             newRequestBuilder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
             newRequestBuilder.header("Referer", NeteaseEndpoints.WEB_BASE_URL)

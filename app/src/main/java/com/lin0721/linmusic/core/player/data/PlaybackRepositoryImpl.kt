@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private const val TAG = "PlaybackRepositoryImpl"
 
@@ -22,7 +24,8 @@ class PlaybackRepositoryImpl(
     private val settingsPreferences: SettingsPreferences,
     private val userPreferences: UserPreferences,
     private val contentFilter: ContentFilter,
-    private val context: android.content.Context
+    private val context: android.content.Context,
+    private val json: Json
 ) : PlaybackRepository {
 
     private fun isWifiConnected(): Boolean {
@@ -162,6 +165,51 @@ class PlaybackRepositoryImpl(
         }
     }.catch { e ->
         AppLogger.e(TAG, "getIntelligenceSongs 请求异常", e)
+        emit(Result.failure(mapToAppError(e)))
+    }
+
+    // 歌曲开始播放时立即上报，进「最近播放」；sourceId 暂用 songId 本身代替（缺少真实来源容器映射）
+    override fun reportStartPlay(songId: Long): Flow<Result<Unit>> = flow {
+        val startplayLogs = json.encodeToString(
+            listOf(StartPlayLogEntry(json = StartPlayLogJson(id = songId, content = "id=$songId")))
+        )
+        val startRes = apiService.reportWeblog(WeblogRequest(logs = startplayLogs))
+        AppLogger.i(TAG, "打卡上报 startplay 返回: songId=$songId code=${startRes.code} data=${startRes.data}")
+
+        if (startRes.isSuccess) {
+            emit(Result.success(Unit))
+        } else {
+            emit(Result.failure(AppError.BizError(startRes.code, startRes.data)))
+        }
+    }.catch { e ->
+        AppLogger.e(TAG, "打卡上报 startplay 请求异常", e)
+        emit(Result.failure(mapToAppError(e)))
+    }
+
+    // 离开歌曲（切歌/退出播放器）时上报实际播放时长，涨「听歌排行」计数
+    override fun reportPlayEnd(songId: Long, playedSeconds: Long): Flow<Result<Unit>> = flow {
+        val playLogs = json.encodeToString(
+            listOf(
+                PlayLogEntry(
+                    json = PlayLogJson(
+                        id = songId,
+                        sourceId = songId,
+                        time = playedSeconds,
+                        content = "id=$songId"
+                    )
+                )
+            )
+        )
+        val playRes = apiService.reportWeblog(WeblogRequest(logs = playLogs))
+        AppLogger.i(TAG, "打卡上报 play 返回: songId=$songId time=$playedSeconds code=${playRes.code} data=${playRes.data}")
+
+        if (playRes.isSuccess) {
+            emit(Result.success(Unit))
+        } else {
+            emit(Result.failure(AppError.BizError(playRes.code, playRes.data)))
+        }
+    }.catch { e ->
+        AppLogger.e(TAG, "打卡上报 play 请求异常", e)
         emit(Result.failure(mapToAppError(e)))
     }
 }

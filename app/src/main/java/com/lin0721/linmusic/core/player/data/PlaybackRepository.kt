@@ -16,4 +16,10 @@ interface PlaybackRepository {
     fun getSimilarSongs(songId: Long): Flow<Result<List<Track>>>
 
     fun getIntelligenceSongs(songId: Long, playlistId: Long): Flow<Result<List<Track>>>
+
+    // 打卡上报，sourceId 暂用 songId 本身代替；开始播放时报，进「最近播放」
+    fun reportStartPlay(songId: Long): Flow<Result<Unit>>
+
+    // 打卡上报：离开歌曲时报实际播放时长，涨「听歌排行」计数
+    fun reportPlayEnd(songId: Long, playedSeconds: Long): Flow<Result<Unit>>
 }

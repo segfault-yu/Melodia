@@ -1,6 +1,7 @@
 package com.lin0721.linmusic.core.player
 
 import android.content.Context
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -82,6 +83,11 @@ class PlayerManager(
     private var prefetchedNextUrl: PrefetchedUrl? = null
     private var prefetchTriggeredForSongId: Long = -1L
 
+    // 打卡上报用的挂钟计时：轮询到的播放位置在后台/锁屏场景下不可靠（真机验证过，间歇性追不上进度），改用挂钟时间差，不依赖控制器状态同步
+    private var trackStartElapsedMs: Long = 0L
+    private var trackPausedAccumMs: Long = 0L
+    private var trackLastPauseElapsedMs: Long? = null
+
     init {
         AppLogger.i(TAG, "PlayerManager 初始化 instanceId=${System.identityHashCode(this)}")
         networkGuard.register()
@@ -131,6 +137,7 @@ class PlayerManager(
         if (lastTrack != null && _currentTrack.value == null) {
             _currentTrack.value = lastTrack.mediaItem
             progress.setPosition(lastTrack.positionMs)
+            resetTrackTiming(startPlaying = false)
         }
 
         controllerHolder.connect(this) { mediaController ->
@@ -139,6 +146,7 @@ class PlayerManager(
                 _isPlaying.value = mediaController.isPlaying
                 progress.setPosition(mediaController.currentPosition)
                 progress.setDuration(mediaController.duration)
+                resetTrackTiming(startPlaying = mediaController.isPlaying)
             }
 
             mediaController.repeatMode = if (playbackQueue.playMode.value == PlayMode.SINGLE_LOOP)
@@ -444,11 +452,52 @@ class PlayerManager(
     }
 
     fun release() {
+        reportPlayedTrack()
         networkGuard.unregister()
         sleepTimer.cancel()
         activePlayJob?.cancel()
         prefetchJob?.cancel()
         roaming.cancel()
+    }
+
+    // 歌曲一开始播放就立即打卡（进「最近播放」），跟切歌时补报的时长上报分开、各自独立失败互不影响
+    private fun reportStartPlay(mediaItem: MediaItem) {
+        val songId = mediaItem.mediaId.toLongOrNull() ?: return
+        scope.launch {
+            repository.reportStartPlay(songId).collect { result ->
+                result.onFailure { AppLogger.w(TAG, "打卡上报 startplay 失败 songId=$songId", it) }
+            }
+        }
+    }
+
+    // 切歌/退出播放时把刚播完的这首上报播放时长打卡（用挂钟时间差算出的播放时长）；听不满 5 秒的跳过不算
+    private fun reportPlayedTrack() {
+        val songId = _currentTrack.value?.mediaId?.toLongOrNull() ?: return
+        val playedSeconds = currentTrackPlayedMs() / 1000
+        if (playedSeconds < 5) {
+            AppLogger.i(TAG, "打卡上报跳过（未满5秒）songId=$songId playedSeconds=$playedSeconds")
+            return
+        }
+        AppLogger.i(TAG, "打卡上报触发 songId=$songId playedSeconds=$playedSeconds")
+        scope.launch {
+            repository.reportPlayEnd(songId, playedSeconds).collect { result ->
+                result.onFailure { AppLogger.w(TAG, "打卡上报 play 失败 songId=$songId", it) }
+            }
+        }
+    }
+
+    // 当前曲目从开始播放到现在的挂钟时长，扣掉暂停期间（含正在暂停中的这一段）
+    private fun currentTrackPlayedMs(): Long {
+        val now = SystemClock.elapsedRealtime()
+        val ongoingPauseMs = trackLastPauseElapsedMs?.let { now - it } ?: 0L
+        return (now - trackStartElapsedMs - trackPausedAccumMs - ongoingPauseMs).coerceAtLeast(0L)
+    }
+
+    // 切换到新曲目/从持久化状态恢复播放进度时，重置计时基准
+    private fun resetTrackTiming(startPlaying: Boolean = _isPlaying.value) {
+        trackStartElapsedMs = SystemClock.elapsedRealtime()
+        trackPausedAccumMs = 0L
+        trackLastPauseElapsedMs = if (startPlaying) null else trackStartElapsedMs
     }
 
     private fun skipToNextOnError(failedIndex: Int) {
@@ -479,15 +528,24 @@ class PlayerManager(
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         _isPlaying.value = isPlaying
-        if (isPlaying) consecutiveErrors = 0
-        if (!isPlaying) saveState()
+        if (isPlaying) {
+            consecutiveErrors = 0
+            trackLastPauseElapsedMs?.let { trackPausedAccumMs += SystemClock.elapsedRealtime() - it }
+            trackLastPauseElapsedMs = null
+        } else {
+            saveState()
+            trackLastPauseElapsedMs = SystemClock.elapsedRealtime()
+        }
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
         AppLogger.i(TAG, "切歌: songId=${mediaItem?.mediaId} reason=${transitionReasonName(reason)}")
+        reportPlayedTrack()
+        resetTrackTiming()
         _currentTrack.value = mediaItem
         playbackQueue.setPlayContext(mediaItem?.mediaMetadata?.extras?.getString("playContext"))
         if (mediaItem != null) {
+            reportStartPlay(mediaItem)
             // 切歌过渡时，应当立即将当前进度重置，防止读取上一首残留位置或缓冲位置
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
                 progress.setPosition(0L)
