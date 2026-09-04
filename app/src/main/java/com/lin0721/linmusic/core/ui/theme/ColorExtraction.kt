@@ -1,9 +1,12 @@
 package com.lin0721.linmusic.core.ui.theme
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.palette.graphics.Palette
+import coil.imageLoader
+import coil.request.ImageRequest
 import com.lin0721.linmusic.core.log.AppLogger
 
 private const val TAG = "ColorExtraction"
@@ -20,14 +23,40 @@ private const val MEANINGFUL_SATURATION = 0.08f
 // 缓存未命中或取色异常时的兜底色板，迷你播放器与全屏播放器共用以保证配色一致
 val FallbackBackdropPalette = PlayerBackdropPalette(FallbackBase, lerp(FallbackBase, Color.White, 0.85f))
 
-fun extractBaseColor(drawable: android.graphics.drawable.Drawable): Color {
-    return extractBackdropPalette(drawable).base
+// 取色统一缩放到的边长
+private const val EXTRACTION_BITMAP_SIZE = 300
+
+// 取色专用的独立解码请求，跟各处 UI 实际显示尺寸完全脱钩。
+suspend fun extractBackdropPaletteFromUrl(context: Context, url: String): PlayerBackdropPalette {
+    val canonicalUrl = url.substringBefore("?param=")
+    if (canonicalUrl.isBlank()) return FallbackBackdropPalette
+    return try {
+        val request = ImageRequest.Builder(context)
+            .data(canonicalUrl)
+            .size(EXTRACTION_BITMAP_SIZE, EXTRACTION_BITMAP_SIZE)
+            .allowHardware(false)
+            .build()
+        val drawable = context.imageLoader.execute(request).drawable ?: return FallbackBackdropPalette
+        extractBackdropPalette(drawable)
+    } catch (e: Exception) {
+        AppLogger.d(TAG, "取色请求失败，使用默认深灰色板", e)
+        FallbackBackdropPalette
+    }
 }
 
-fun extractBackdropPalette(drawable: android.graphics.drawable.Drawable): PlayerBackdropPalette {
+suspend fun extractBaseColorFromUrl(context: Context, url: String): Color {
+    return extractBackdropPaletteFromUrl(context, url).base
+}
+
+// 内部核心逻辑：给定已经解码好的位图统一缩放后取色。只应由上面的 *FromUrl 系列调用，
+// 不要在业务代码里直接复用某个显示用 AsyncImage 的解码结果——那正是取色不一致的根源
+private fun extractBackdropPalette(drawable: android.graphics.drawable.Drawable): PlayerBackdropPalette {
     return try {
         val bitmap = drawable.toBitmap()
-        val palette = Palette.from(bitmap).generate()
+        val normalized = android.graphics.Bitmap.createScaledBitmap(
+            bitmap, EXTRACTION_BITMAP_SIZE, EXTRACTION_BITMAP_SIZE, true
+        )
+        val palette = Palette.from(normalized).generate()
         val base = pickBaseColor(palette)
         PlayerBackdropPalette(base, lerp(base, Color.White, 0.85f))
     } catch (e: Exception) {

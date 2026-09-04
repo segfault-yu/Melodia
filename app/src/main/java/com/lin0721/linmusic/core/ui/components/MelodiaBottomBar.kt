@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +45,7 @@ import com.lin0721.linmusic.Screen
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.TextGray
-import com.lin0721.linmusic.core.ui.theme.extractBackdropPalette
+import com.lin0721.linmusic.core.ui.theme.extractBackdropPaletteFromUrl
 import com.lin0721.linmusic.core.ui.theme.PaletteMemoryCache
 import dev.chrisbanes.haze.HazeState
 import androidx.compose.ui.platform.LocalContext
@@ -87,20 +88,14 @@ fun MiniPlayerCard(
     if (currentTrack == null) return
 
     val context = LocalContext.current
-    val artworkRequest = remember(currentTrack.mediaMetadata.artworkUri) {
-        val cleanUrl = currentTrack.mediaMetadata.artworkUri?.toString()
-            ?.replace("?param=130y130", "")
-            ?.replace("?param=200y200", "")
-            ?.replace("?param=300y300", "")
-            ?: ""
+    val cleanCoverUrl = remember(currentTrack.mediaMetadata.artworkUri) {
+        currentTrack.mediaMetadata.artworkUri?.toString() ?: ""
+    }
+    val artworkRequest = remember(cleanCoverUrl) {
         ImageRequest.Builder(context)
-            .data(cleanUrl.ifEmpty { null })
+            .data(cleanCoverUrl.ifEmpty { null })
             .allowHardware(false)
             .crossfade(true)
-            // 封面显示尺寸只有 44dp，Coil 默认按控件尺寸解码位图，喂给 Palette 的像素太少，
-            // 跟全屏播放器（封面接近整屏宽度）解码出来的位图不是一回事，取色结果会不一致。
-            // 固定一个跟显示尺寸无关的解码尺寸，两边取色才可比
-            .size(coil.size.Size(300, 300))
             .build()
     }
 
@@ -109,6 +104,15 @@ fun MiniPlayerCard(
         mutableStateOf(
             PaletteMemoryCache.get(currentTrack.mediaId) ?: FallbackBackdropPalette
         )
+    }
+
+    // 取色跟显示解码完全脱钩，单独发请求；缓存命中就不用再取一次
+    LaunchedEffect(currentTrack.mediaId, cleanCoverUrl) {
+        if (PaletteMemoryCache.get(currentTrack.mediaId) == null && cleanCoverUrl.isNotEmpty()) {
+            val palette = extractBackdropPaletteFromUrl(context, cleanCoverUrl)
+            colorPalette = palette
+            PaletteMemoryCache.put(currentTrack.mediaId, palette)
+        }
     }
 
     // 平滑过渡背景色变化；base 取自 Vibrant，本身偏亮，卡片背景需要压暗一档才不会太扎眼
@@ -169,11 +173,6 @@ fun MiniPlayerCard(
                 AsyncImage(
                     model = artworkRequest,
                     contentDescription = null,
-                    onSuccess = { state ->
-                        val palette = extractBackdropPalette(state.result.drawable)
-                        colorPalette = palette
-                        PaletteMemoryCache.put(currentTrack.mediaId, palette)
-                    },
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(RadiusCompact)),

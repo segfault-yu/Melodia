@@ -25,7 +25,7 @@ import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.PlayerBackdropPalette
 import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
-import com.lin0721.linmusic.core.ui.theme.extractBackdropPalette
+import com.lin0721.linmusic.core.ui.theme.extractBackdropPaletteFromUrl
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 封面区：播放来源标题栏 + 方形封面，加载成功后回传取色结果
@@ -40,6 +40,13 @@ fun FullPlayerCoverArt(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    // 取色跟封面显示解码完全脱钩，单独发一次固定尺寸的请求
+    LaunchedEffect(coverUrl) {
+        if (coverUrl.isNotEmpty()) {
+            onPaletteExtracted(extractBackdropPaletteFromUrl(context, coverUrl))
+        }
+    }
 
     Column(
         modifier = modifier
@@ -122,9 +129,6 @@ fun FullPlayerCoverArt(
                 .build(),
             contentDescription = title,
             contentScale = ContentScale.Crop,
-            onSuccess = { state ->
-                onPaletteExtracted(extractBackdropPalette(state.result.drawable))
-            },
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
