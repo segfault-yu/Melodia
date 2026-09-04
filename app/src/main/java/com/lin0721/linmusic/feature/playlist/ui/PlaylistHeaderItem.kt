@@ -35,7 +35,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
-import com.lin0721.linmusic.core.ui.theme.extractDominantColor
+import com.lin0721.linmusic.core.ui.theme.extractBaseColor
 import com.lin0721.linmusic.core.model.PlaylistDetail
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ fun PlaylistHeaderItem(
                 contentDescription = playlist.name,
                 contentScale       = ContentScale.Crop,
                 onSuccess          = { state ->
-                    onColorCalculated(extractDominantColor(state.result.drawable))
+                    onColorCalculated(extractBaseColor(state.result.drawable))
                 },
                 modifier           = Modifier
                     .size(coverSize)

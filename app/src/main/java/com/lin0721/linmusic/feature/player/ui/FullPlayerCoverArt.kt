@@ -22,10 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.lin0721.linmusic.core.ui.theme.ColorPalette
+import com.lin0721.linmusic.core.ui.theme.PlayerBackdropPalette
 import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
-import com.lin0721.linmusic.core.ui.theme.extractColorPalette
+import com.lin0721.linmusic.core.ui.theme.extractBackdropPalette
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 封面区：播放来源标题栏 + 方形封面，加载成功后回传取色结果
@@ -35,7 +35,7 @@ fun FullPlayerCoverArt(
     title: String,
     playContext: String?,
     onClose: () -> Unit,
-    onPaletteExtracted: (ColorPalette) -> Unit,
+    onPaletteExtracted: (PlayerBackdropPalette) -> Unit,
     onMoreClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -123,7 +123,7 @@ fun FullPlayerCoverArt(
             contentDescription = title,
             contentScale = ContentScale.Crop,
             onSuccess = { state ->
-                onPaletteExtracted(extractColorPalette(state.result.drawable))
+                onPaletteExtracted(extractBackdropPalette(state.result.drawable))
             },
             modifier = Modifier
                 .fillMaxWidth()

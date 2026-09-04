@@ -1,0 +1,191 @@
+package com.lin0721.linmusic.feature.player.ui
+
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import com.lin0721.linmusic.core.ui.theme.darken
+import com.lin0721.linmusic.core.ui.theme.lighten
+
+enum class BackdropMode { Collapsed, Immersive }
+
+// 用原生 Modifier.blur 软化渐变/光斑
+// 依赖 RenderEffect，只有 API 31（Android 12）以上才有实际效果，31 以下这行代码不生效但不报错
+private val BACKDROP_BLUR_RADIUS = 60.dp
+
+// 单一色相的两枚模糊光斑：深色底 + lighten/darken 变体，Immersive 背景与歌词预览卡共用
+// fill 必须是明显压暗过的变体，不能直接传未处理的 base——base 现在取自 Vibrant，
+// 亮度本身就不低，直接铺满整块背景会显得又亮又平，没有层次
+internal fun DrawScope.drawSingleHueMesh(
+    fill: Color,
+    lightBlob: Color,
+    lightCenter: Offset,
+    lightRadius: Float,
+    darkBlob: Color,
+    darkCenter: Offset,
+    darkRadius: Float
+) {
+    drawRect(color = fill)
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(lightBlob.copy(alpha = 0.5f), Color.Transparent),
+            center = lightCenter,
+            radius = lightRadius
+        ),
+        center = lightCenter,
+        radius = lightRadius
+    )
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(darkBlob.copy(alpha = 0.6f), Color.Transparent),
+            center = darkCenter,
+            radius = darkRadius
+        ),
+        center = darkCenter,
+        radius = darkRadius
+    )
+}
+
+// 全屏播放器背景：Collapsed（Hero）单色 alpha 渐隐，Immersive（歌词全屏）单色相双光斑游走，两者都做模糊处理
+// 背景绘制和 content 拆成两个子 Box：只模糊背景层，content（Immersive 态下是实际歌词内容）保持清晰
+@Composable
+fun PlayerBackdrop(
+    base: Color,
+    mode: BackdropMode,
+    modifier: Modifier = Modifier,
+    translationYProvider: () -> Float = { 0f },
+    content: @Composable BoxScope.() -> Unit = {}
+) {
+    when (mode) {
+        BackdropMode.Collapsed -> {
+            val density = LocalDensity.current
+            val infiniteTransition = rememberInfiniteTransition(label = "bg_breathe")
+            val gradientEndYDp by infiniteTransition.animateFloat(
+                initialValue = 1050f,
+                targetValue = 1150f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(8000, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "gradient_end"
+            )
+            val gradientEndY = with(density) { gradientEndYDp.dp.toPx() }
+
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(1200.dp)
+                    .graphicsLayer { translationY = translationYProvider() }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .blur(BACKDROP_BLUR_RADIUS)
+                        .drawBehind {
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    // 显式指定每档的位置：76% 处就已经完全透明，在 endY 与容器底部之间
+                                    // 留出一段纯透明缓冲区，避免残留的低 alpha 色调跟下方评论卡片的实色背景撞出一条边界线
+                                    0.0f to base,
+                                    0.2f to base.copy(alpha = 0.75f),
+                                    0.45f to base.copy(alpha = 0.45f),
+                                    0.62f to base.copy(alpha = 0.08f),
+                                    0.76f to Color.Transparent,
+                                    startY = 0f,
+                                    endY = gradientEndY
+                                )
+                            )
+                        }
+                )
+                content()
+            }
+        }
+
+        BackdropMode.Immersive -> {
+            val infiniteTransition = rememberInfiniteTransition(label = "fluid_mesh_fullscreen")
+
+            val lightCenterX by infiniteTransition.animateFloat(
+                initialValue = 0.0f,
+                targetValue = 0.5f,
+                animationSpec = infiniteRepeatable(tween(15000, easing = LinearEasing), RepeatMode.Reverse),
+                label = "light_x"
+            )
+            val lightCenterY by infiniteTransition.animateFloat(
+                initialValue = 0.0f,
+                targetValue = 0.6f,
+                animationSpec = infiniteRepeatable(tween(18000, easing = LinearEasing), RepeatMode.Reverse),
+                label = "light_y"
+            )
+            val lightRadiusScale by infiniteTransition.animateFloat(
+                initialValue = 0.8f,
+                targetValue = 1.1f,
+                animationSpec = infiniteRepeatable(tween(10000, easing = LinearEasing), RepeatMode.Reverse),
+                label = "light_radius"
+            )
+
+            val darkCenterX by infiniteTransition.animateFloat(
+                initialValue = 1.0f,
+                targetValue = 1.4f,
+                animationSpec = infiniteRepeatable(tween(20000, easing = LinearEasing), RepeatMode.Reverse),
+                label = "dark_x"
+            )
+            val darkCenterY by infiniteTransition.animateFloat(
+                initialValue = 1.0f,
+                targetValue = 1.5f,
+                animationSpec = infiniteRepeatable(tween(16000, easing = LinearEasing), RepeatMode.Reverse),
+                label = "dark_y"
+            )
+            val darkRadiusScale by infiniteTransition.animateFloat(
+                initialValue = 0.5f,
+                targetValue = 0.7f,
+                animationSpec = infiniteRepeatable(tween(12000, easing = LinearEasing), RepeatMode.Reverse),
+                label = "dark_radius"
+            )
+
+            val fillColor = remember(base) { base.darken(0.35f) }
+            val lightBlob = remember(base) { base.lighten(0.05f) }
+            val darkBlob = remember(base) { base.darken(0.15f) }
+
+            Box(modifier = modifier) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .blur(BACKDROP_BLUR_RADIUS)
+                        .drawBehind {
+                            val baseSize = size.minDimension
+                            drawSingleHueMesh(
+                                fill = fillColor,
+                                lightBlob = lightBlob,
+                                lightCenter = Offset(size.width * lightCenterX, size.height * lightCenterY),
+                                lightRadius = baseSize * lightRadiusScale,
+                                darkBlob = darkBlob,
+                                darkCenter = Offset(size.width * darkCenterX, size.height * darkCenterY),
+                                darkRadius = baseSize * darkRadiusScale
+                            )
+                        }
+                )
+                content()
+            }
+        }
+    }
+}

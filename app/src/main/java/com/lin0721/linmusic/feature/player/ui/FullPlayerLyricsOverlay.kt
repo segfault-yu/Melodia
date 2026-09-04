@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.lin0721.linmusic.core.player.PlayMode
+import com.lin0721.linmusic.core.ui.theme.PlayerBackdropPalette
 import dev.chrisbanes.haze.HazeState
 
 // 全屏歌词覆盖层，从底部滑入滑出
@@ -16,7 +17,7 @@ import dev.chrisbanes.haze.HazeState
 fun FullPlayerLyricsOverlay(
     visible: Boolean,
     songState: PlayerSongDetailState,
-    colors: FullPlayerColors,
+    colors: PlayerBackdropPalette,
     currentLyricIndex: Int,
     title: String,
     artist: String,
@@ -58,10 +59,8 @@ fun FullPlayerLyricsOverlay(
             isLoading = songState.isLyricsLoading,
             title = title,
             artist = artist,
-            gradientStart = colors.gradientStart,
-            gradientEnd = colors.gradientEnd,
-            accentColor = colors.accent,
-            highlightColor = colors.lyricsHighlight,
+            base = colors.base,
+            highlightColor = colors.textHighlight,
             onSeek = onSeek,
             hazeState = hazeState,
             onClose = onClose,

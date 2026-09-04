@@ -3,7 +3,6 @@ package com.lin0721.linmusic.feature.player.ui
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -50,9 +49,7 @@ fun FullScreenLyricsView(
     isLoading: Boolean,
     title: String,
     artist: String,
-    gradientStart: Color,
-    gradientEnd: Color,
-    accentColor: Color,
+    base: Color,
     highlightColor: Color,
     onSeek: (Long) -> Unit,
     hazeState: HazeState,
@@ -122,7 +119,9 @@ fun FullScreenLyricsView(
         }
     }
 
-    Box(
+    PlayerBackdrop(
+        base = base,
+        mode = BackdropMode.Immersive,
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(dragState.nestedScrollConnection)
@@ -130,11 +129,6 @@ fun FullScreenLyricsView(
                 translationY = dragState.offsetY
             }
             .clip(RoundedCornerShape(topStart = topCornerRadius, topEnd = topCornerRadius))
-            .fullScreenLyricsBackground(
-                gradientStart = gradientStart,
-                gradientEnd = gradientEnd,
-                accentColor = accentColor
-            )
     ) {
 
         Column(

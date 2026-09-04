@@ -4,11 +4,12 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.MaterialTheme
 import com.lin0721.linmusic.core.comment.ui.CommentsPreviewCard
 import com.lin0721.linmusic.core.comment.ui.CommentsState
+import com.lin0721.linmusic.core.ui.theme.PlayerBackdropPalette
 
 // 播放器信息区：歌词卡、评论预览、歌曲详情、歌手简介、相似歌手、歌手专辑
 fun LazyListScope.fullPlayerInfoSection(
     songState: PlayerSongDetailState,
-    colors: FullPlayerColors,
+    colors: PlayerBackdropPalette,
     commentsState: CommentsState,
     currentLyricIndex: Int,
     onOpenFullScreenLyrics: () -> Unit,
@@ -26,10 +27,8 @@ fun LazyListScope.fullPlayerInfoSection(
                 lyrics = lyrics,
                 currentIndex = currentLyricIndex,
                 isLoading = songState.isLyricsLoading,
-                gradientStart = colors.gradientStart,
-                gradientEnd = colors.gradientEnd,
-                accentColor = colors.accent,
-                highlightColor = colors.lyricsHighlight,
+                base = colors.base,
+                highlightColor = colors.textHighlight,
                 onOpenFullScreen = onOpenFullScreenLyrics
             )
         }

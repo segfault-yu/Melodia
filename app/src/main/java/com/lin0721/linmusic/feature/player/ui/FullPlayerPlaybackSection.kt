@@ -3,12 +3,12 @@ package com.lin0721.linmusic.feature.player.ui
 import android.media.AudioDeviceInfo
 import androidx.compose.foundation.lazy.LazyListScope
 import com.lin0721.linmusic.core.player.PlayMode
-import com.lin0721.linmusic.core.ui.theme.ColorPalette
+import com.lin0721.linmusic.core.ui.theme.PlayerBackdropPalette
 
 // 播放器主区：封面、歌名歌手、单行歌词、进度条、播放控制、快捷操作
 fun LazyListScope.fullPlayerPlaybackSection(
     songState: PlayerSongDetailState,
-    colors: FullPlayerColors,
+    colors: PlayerBackdropPalette,
     coverUrl: String,
     title: String,
     artist: String,
@@ -19,7 +19,7 @@ fun LazyListScope.fullPlayerPlaybackSection(
     duration: Long,
     playMode: PlayMode,
     onClose: () -> Unit,
-    onPaletteExtracted: (ColorPalette) -> Unit,
+    onPaletteExtracted: (PlayerBackdropPalette) -> Unit,
     onMoreClick: () -> Unit,
     onToggleLike: () -> Unit,
     onArtistClick: () -> Unit,

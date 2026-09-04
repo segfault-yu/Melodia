@@ -20,7 +20,7 @@ import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectSheet
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.core.model.PlaylistDetail
-import com.lin0721.linmusic.core.ui.theme.FallbackDominant
+import com.lin0721.linmusic.core.ui.theme.FallbackBase
 import kotlin.math.max
 
 // TopBar 操作区高度（不含状态栏）
@@ -80,7 +80,7 @@ fun PlaylistContent(
     val sortedTracks = remember(playlist.tracks, sortOption) { sortOption.sort(playlist.tracks) }
 
     // 从封面提取的主色调，默认为深灰色
-    var dominantColor by remember { mutableStateOf(FallbackDominant) }
+    var dominantColor by remember { mutableStateOf(FallbackBase) }
 
     // 获取系统状态栏高度
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()

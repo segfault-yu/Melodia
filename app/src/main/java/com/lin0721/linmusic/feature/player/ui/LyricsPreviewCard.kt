@@ -17,10 +17,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -33,7 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
+import com.lin0721.linmusic.core.ui.theme.darken
+import com.lin0721.linmusic.core.ui.theme.lighten
 import com.lin0721.linmusic.core.player.domain.LyricLine
+
+// 卡片尺寸比全屏背景小得多，模糊半径按比例调小，避免整块糊成一片看不出光斑层次
+private val LYRICS_CARD_BLUR_RADIUS = 32.dp
 
 // ────────────────────────────────────────────────────────────────────────────
 // 折叠播放页的歌词预览卡（流体光雾背景 + 自动滚动预览列表）
@@ -43,71 +48,73 @@ fun LyricsCard(
     lyrics: List<LyricLine>,
     currentIndex: Int,
     isLoading: Boolean,
-    gradientStart: Color,
-    gradientEnd: Color,
-    accentColor: Color,
+    base: Color,
     highlightColor: Color,
     onOpenFullScreen: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "fluid_mesh")
 
-    // 左上角光源动画
-    val accentCenterX by infiniteTransition.animateFloat(
+    // 左上角光斑动画
+    val lightCenterX by infiniteTransition.animateFloat(
         initialValue = 0.05f,
         targetValue = 0.35f,
         animationSpec = infiniteRepeatable(
             animation = tween(12000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "accent_x"
+        label = "light_x"
     )
-    val accentCenterY by infiniteTransition.animateFloat(
+    val lightCenterY by infiniteTransition.animateFloat(
         initialValue = 0.1f,
         targetValue = 0.35f,
         animationSpec = infiniteRepeatable(
             animation = tween(14000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "accent_y"
+        label = "light_y"
     )
-    val accentRadiusScale by infiniteTransition.animateFloat(
+    val lightRadiusScale by infiniteTransition.animateFloat(
         initialValue = 0.75f,
         targetValue = 0.90f,
         animationSpec = infiniteRepeatable(
             animation = tween(8000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "accent_radius"
+        label = "light_radius"
     )
 
-    // 右下角光源动画
-    val whiteCenterX by infiniteTransition.animateFloat(
+    // 右下角光斑动画
+    val darkCenterX by infiniteTransition.animateFloat(
         initialValue = 1.20f,
         targetValue = 1.35f,
         animationSpec = infiniteRepeatable(
             animation = tween(15000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "white_x"
+        label = "dark_x"
     )
-    val whiteCenterY by infiniteTransition.animateFloat(
+    val darkCenterY by infiniteTransition.animateFloat(
         initialValue = 1.20f,
         targetValue = 1.35f,
         animationSpec = infiniteRepeatable(
             animation = tween(13000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "white_y"
+        label = "dark_y"
     )
-    val whiteRadiusScale by infiniteTransition.animateFloat(
+    val darkRadiusScale by infiniteTransition.animateFloat(
         initialValue = 0.40f,
         targetValue = 0.50f,
         animationSpec = infiniteRepeatable(
             animation = tween(10000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "white_radius"
+        label = "dark_radius"
     )
+
+    val fillColor = remember(base) { base.darken(0.35f) }
+    val lightBlob = remember(base) { base.lighten(0.05f) }
+    val darkBlob = remember(base) { base.darken(0.15f) }
 
     val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
     val cardHeight = cardWidth * 0.88f
@@ -118,38 +125,24 @@ fun LyricsCard(
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
             .height(cardHeight)
             .clip(RoundedCornerShape(InfoCardRadius))
-            .drawBehind {
-                val baseSize = size.minDimension
-                // 1. 填充基底
-                drawRect(color = gradientEnd)
-
-                // 2. 左上角光雾
-                val accentRadius = baseSize * accentRadiusScale
-                val accentCenter = Offset(size.width * accentCenterX, size.height * accentCenterY)
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(accentColor.copy(alpha = 0.8f), Color.Transparent),
-                        center = accentCenter,
-                        radius = accentRadius
-                    ),
-                    center = accentCenter,
-                    radius = accentRadius
-                )
-
-                // 3. 右下角光雾
-                val whiteRadius = baseSize * whiteRadiusScale
-                val whiteCenter = Offset(size.width * whiteCenterX, size.height * whiteCenterY)
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(gradientStart.copy(alpha = 0.7f), Color.Transparent),
-                        center = whiteCenter,
-                        radius = whiteRadius
-                    ),
-                    center = whiteCenter,
-                    radius = whiteRadius
-                )
-            }
     ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .blur(LYRICS_CARD_BLUR_RADIUS)
+                .drawBehind {
+                    val baseSize = size.minDimension
+                    drawSingleHueMesh(
+                        fill = fillColor,
+                        lightBlob = lightBlob,
+                        lightCenter = Offset(size.width * lightCenterX, size.height * lightCenterY),
+                        lightRadius = baseSize * lightRadiusScale,
+                        darkBlob = darkBlob,
+                        darkCenter = Offset(size.width * darkCenterX, size.height * darkCenterY),
+                        darkRadius = baseSize * darkRadiusScale
+                    )
+                }
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()

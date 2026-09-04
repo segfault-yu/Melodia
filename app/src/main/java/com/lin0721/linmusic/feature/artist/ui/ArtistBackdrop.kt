@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
-import com.lin0721.linmusic.core.ui.theme.extractDominantColor
+import com.lin0721.linmusic.core.ui.theme.extractBaseColor
 
 // 顶部大图背景层：固定不动，由上层滚动列表的不透明内容自然覆盖，并回传封面主色
 @Composable
@@ -36,7 +36,7 @@ fun BoxScope.ArtistBackdrop(
             contentDescription = artist.name,
             contentScale = ContentScale.Crop,
             onSuccess = { state ->
-                onDominantColorChange(extractDominantColor(state.result.drawable))
+                onDominantColorChange(extractBaseColor(state.result.drawable))
             },
             modifier = Modifier.fillMaxSize()
         )
