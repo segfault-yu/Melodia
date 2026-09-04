@@ -23,10 +23,10 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
 import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
-import com.lin0721.linmusic.core.ui.theme.ColorPalette
+import com.lin0721.linmusic.core.ui.theme.PlayerBackdropPalette
 import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
-import com.lin0721.linmusic.core.ui.theme.extractColorPalette
+import com.lin0721.linmusic.core.ui.theme.extractBackdropPaletteFromUrl
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 
 // 封面区：播放来源标题栏 + 方形封面，加载成功后回传取色结果
@@ -36,11 +36,18 @@ fun FullPlayerCoverArt(
     title: String,
     playContext: String?,
     onClose: () -> Unit,
-    onPaletteExtracted: (ColorPalette) -> Unit,
+    onPaletteExtracted: (PlayerBackdropPalette) -> Unit,
     onMoreClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    // 取色跟封面显示解码完全脱钩，单独发一次固定尺寸的请求
+    LaunchedEffect(coverUrl) {
+        if (coverUrl.isNotEmpty()) {
+            onPaletteExtracted(extractBackdropPaletteFromUrl(context, coverUrl))
+        }
+    }
 
     Column(
         modifier = modifier
@@ -123,9 +130,6 @@ fun FullPlayerCoverArt(
                 .build(),
             contentDescription = title,
             contentScale = ContentScale.Crop,
-            onSuccess = { state ->
-                onPaletteExtracted(extractColorPalette(state.result.drawable))
-            },
             loading = { CoverPlaceholder() },
             error = { CoverPlaceholder() },
             modifier = Modifier

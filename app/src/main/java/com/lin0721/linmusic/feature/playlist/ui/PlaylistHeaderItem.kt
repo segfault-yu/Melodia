@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,7 +40,7 @@ import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
 import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
-import com.lin0721.linmusic.core.ui.theme.extractDominantColor
+import com.lin0721.linmusic.core.ui.theme.extractBaseColorFromUrl
 import com.lin0721.linmusic.core.model.PlaylistDetail
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -108,13 +109,16 @@ fun PlaylistHeaderItem(
                     .crossfade(true)
                     .build()
             }
+            // 取色跟封面显示解码完全脱钩，单独发一次固定尺寸的请求
+            LaunchedEffect(playlist.coverImgUrl) {
+                if (playlist.coverImgUrl.isNotEmpty()) {
+                    onColorCalculated(extractBaseColorFromUrl(context, playlist.coverImgUrl))
+                }
+            }
             SubcomposeAsyncImage(
                 model              = coverRequest,
                 contentDescription = playlist.name,
                 contentScale       = ContentScale.Crop,
-                onSuccess          = { state ->
-                    onColorCalculated(extractDominantColor(state.result.drawable))
-                },
                 loading            = { CoverPlaceholder() },
                 error              = { CoverPlaceholder() },
                 modifier           = Modifier

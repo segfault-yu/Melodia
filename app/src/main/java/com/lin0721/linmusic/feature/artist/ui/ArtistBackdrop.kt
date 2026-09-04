@@ -3,6 +3,7 @@ package com.lin0721.linmusic.feature.artist.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -13,7 +14,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.lin0721.linmusic.core.model.ArtistDetailInfo
 import com.lin0721.linmusic.core.ui.components.CoverPlaceholder
-import com.lin0721.linmusic.core.ui.theme.extractDominantColor
+import com.lin0721.linmusic.core.ui.theme.extractBaseColorFromUrl
 
 // 顶部大图背景层：固定不动，由上层滚动列表的不透明内容自然覆盖，并回传封面主色
 @Composable
@@ -22,23 +23,29 @@ fun BoxScope.ArtistBackdrop(
     dominantColor: Color,
     onDominantColorChange: (Color) -> Unit
 ) {
+    val context = LocalContext.current
+    val bgUrl = artist.cover.ifEmpty { artist.avatar }
+
+    // 取色跟背景图显示解码完全脱钩，单独发一次固定尺寸的请求
+    LaunchedEffect(bgUrl) {
+        if (bgUrl.isNotEmpty()) {
+            onDominantColorChange(extractBaseColorFromUrl(context, bgUrl))
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(380.dp)
     ) {
-        val bgUrl = artist.cover.ifEmpty { artist.avatar }
         SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
+            model = ImageRequest.Builder(context)
                 .data(if (bgUrl.isNotEmpty()) "$bgUrl?param=640y640" else "")
                 .allowHardware(false)
                 .crossfade(true)
                 .build(),
             contentDescription = artist.name,
             contentScale = ContentScale.Crop,
-            onSuccess = { state ->
-                onDominantColorChange(extractDominantColor(state.result.drawable))
-            },
             loading = { CoverPlaceholder() },
             error = { CoverPlaceholder() },
             modifier = Modifier.fillMaxSize()

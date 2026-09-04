@@ -26,15 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import com.lin0721.linmusic.core.ui.components.ToastManager
-import com.lin0721.linmusic.core.ui.theme.ColorPalette
+import com.lin0721.linmusic.core.ui.theme.FallbackBackdropPalette
 import com.lin0721.linmusic.core.ui.theme.PaletteMemoryCache
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import com.lin0721.linmusic.core.ui.theme.FallbackDominant
-import com.lin0721.linmusic.core.ui.theme.FallbackSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,7 +117,7 @@ fun FullPlayerScreen(
 
     var colorPalette by remember(currentTrack.mediaId) {
         mutableStateOf(
-            PaletteMemoryCache.get(currentTrack.mediaId) ?: ColorPalette(FallbackDominant, FallbackSecondary)
+            PaletteMemoryCache.get(currentTrack.mediaId) ?: FallbackBackdropPalette
         )
     }
     val colors = rememberFullPlayerColors(colorPalette)
@@ -217,8 +215,9 @@ fun FullPlayerScreen(
             .clip(RoundedCornerShape(topStart = topCornerRadius, topEnd = topCornerRadius))
             .background(MaterialTheme.colorScheme.background)
     ) {
-        FullPlayerBackground(
-            dominant = colors.dominant,
+        PlayerBackdrop(
+            base = colors.base,
+            mode = BackdropMode.Collapsed,
             translationYProvider = { scrollMetrics.backgroundTranslationY }
         )
 
@@ -290,7 +289,7 @@ fun FullPlayerScreen(
             onTogglePlay = onTogglePlay,
             isLiked = songDetailState.isLiked,
             onToggleLike = viewModel::toggleLike,
-            backgroundColor = colors.dominant,
+            backgroundColor = colors.base,
             onArtistClick = {
                 songDetail?.ar?.firstOrNull()?.id?.let { id ->
                     onClose()

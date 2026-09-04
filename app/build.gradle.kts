@@ -127,6 +127,7 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.haze)
+    implementation(libs.androidx.palette)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

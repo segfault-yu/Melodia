@@ -17,10 +17,14 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.PlatformTextStyle
@@ -42,8 +46,7 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.ui.theme.NeteaseRed
 import com.lin0721.linmusic.core.ui.theme.TextGray
-import com.lin0721.linmusic.core.ui.theme.ColorPalette
-import com.lin0721.linmusic.core.ui.theme.extractColorPalette
+import com.lin0721.linmusic.core.ui.theme.extractBackdropPaletteFromUrl
 import com.lin0721.linmusic.core.ui.theme.PaletteMemoryCache
 import dev.chrisbanes.haze.HazeState
 import androidx.compose.ui.platform.LocalContext
@@ -51,15 +54,21 @@ import coil.request.ImageRequest
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import com.lin0721.linmusic.core.ui.theme.FallbackDominant
-import com.lin0721.linmusic.core.ui.theme.FallbackSecondary
+import com.lin0721.linmusic.core.ui.theme.FallbackBackdropPalette
 import com.lin0721.linmusic.core.ui.theme.NavPillSelected
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 import com.lin0721.linmusic.core.ui.theme.InfoCardRadius
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
+import com.lin0721.linmusic.core.ui.theme.darken
+import com.lin0721.linmusic.core.ui.theme.lighten
 import com.lin0721.linmusic.feature.player.ui.deviceIcon
 import com.lin0721.linmusic.feature.player.ui.deviceLabel
+import com.lin0721.linmusic.feature.player.ui.drawSingleHueMesh
 import com.lin0721.linmusic.feature.player.ui.rememberCurrentOutputDevice
+
+// 光斑位置固定不做动画，跟大卡片/全屏背景那种游走效果区分开，
+// 避免小尺寸下持续重绘、观感也容易显得杂
+private val MINI_PLAYER_BLUR_RADIUS = 28.dp
 
 //悬浮播放控制卡片
 
@@ -80,57 +89,47 @@ fun MiniPlayerCard(
     if (currentTrack == null) return
 
     val context = LocalContext.current
-    val artworkRequest = remember(currentTrack.mediaMetadata.artworkUri) {
-        val cleanUrl = currentTrack.mediaMetadata.artworkUri?.toString()
-            ?.replace("?param=130y130", "")
-            ?.replace("?param=200y200", "")
-            ?.replace("?param=300y300", "")
-            ?: ""
+    val cleanCoverUrl = remember(currentTrack.mediaMetadata.artworkUri) {
+        currentTrack.mediaMetadata.artworkUri?.toString() ?: ""
+    }
+    val artworkRequest = remember(cleanCoverUrl) {
         ImageRequest.Builder(context)
-            .data(cleanUrl.ifEmpty { null })
+            .data(cleanCoverUrl.ifEmpty { null })
             .allowHardware(false)
             .crossfade(true)
             .build()
     }
 
-    // 缓存并提取主色调，优先从缓存中获取，无缓存则默认为深灰色
+    // 缓存并提取背景色，优先从缓存中获取，无缓存则默认为深灰色
     var colorPalette by remember(currentTrack.mediaId) {
         mutableStateOf(
-            PaletteMemoryCache.get(currentTrack.mediaId) ?: ColorPalette(FallbackDominant, FallbackSecondary)
+            PaletteMemoryCache.get(currentTrack.mediaId) ?: FallbackBackdropPalette
         )
     }
-    
-    // 平滑过渡主色调变化
-    val animatedDominant by animateColorAsState(
-        targetValue = colorPalette.dominant,
-        animationSpec = tween(800),
-        label = "mini_player_dominant"
-    )
 
-    val cardBackgroundColor = remember(animatedDominant) {
-        val hsv = FloatArray(3)
-        android.graphics.Color.RGBToHSV(
-            (animatedDominant.red * 255).toInt(),
-            (animatedDominant.green * 255).toInt(),
-            (animatedDominant.blue * 255).toInt(),
-            hsv
-        )
-        if (hsv[1] < 0.05f) {
-            // 如果是灰度中性色，保持灰度，亮度设为适合底栏的深色
-            hsv[1] = 0f
-            hsv[2] = 0.15f
-        } else {
-            hsv[1] = (hsv[1] + 0.35f).coerceIn(0.75f, 1f)
-            hsv[2] = 0.3f
+    // 取色跟显示解码完全脱钩，单独发请求；缓存命中就不用再取一次
+    LaunchedEffect(currentTrack.mediaId, cleanCoverUrl) {
+        if (PaletteMemoryCache.get(currentTrack.mediaId) == null && cleanCoverUrl.isNotEmpty()) {
+            val palette = extractBackdropPaletteFromUrl(context, cleanCoverUrl)
+            colorPalette = palette
+            PaletteMemoryCache.put(currentTrack.mediaId, palette)
         }
-        Color(android.graphics.Color.HSVToColor(hsv))
     }
+
+    // 平滑过渡背景色变化；base 取自 Vibrant，本身偏亮，卡片背景需要压暗一档才不会太扎眼
+    val animatedBase by animateColorAsState(
+        targetValue = colorPalette.base,
+        animationSpec = tween(800),
+        label = "mini_player_base"
+    )
+    val fillColor = remember(animatedBase) { animatedBase.darken(0.35f) }
+    val lightBlob = remember(animatedBase) { animatedBase.lighten(0.05f) }
+    val darkBlob = remember(animatedBase) { animatedBase.darken(0.15f) }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(InfoCardRadius))
-            .background(cardBackgroundColor)
             .border(0.5.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(InfoCardRadius))
             .draggable(
                 orientation = Orientation.Vertical,
@@ -143,6 +142,23 @@ fun MiniPlayerCard(
             )
             .clickable(onClick = onClick)
     ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .blur(MINI_PLAYER_BLUR_RADIUS)
+                .drawBehind {
+                    val baseSize = size.minDimension
+                    drawSingleHueMesh(
+                        fill = fillColor,
+                        lightBlob = lightBlob,
+                        lightCenter = Offset(size.width * 0.15f, size.height * 0.2f),
+                        lightRadius = baseSize * 0.9f,
+                        darkBlob = darkBlob,
+                        darkCenter = Offset(size.width * 0.95f, size.height * 1.0f),
+                        darkRadius = baseSize * 0.6f
+                    )
+                }
+        )
         Column {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -154,11 +170,6 @@ fun MiniPlayerCard(
                 SubcomposeAsyncImage(
                     model = artworkRequest,
                     contentDescription = null,
-                    onSuccess = { state ->
-                        val palette = extractColorPalette(state.result.drawable)
-                        colorPalette = palette
-                        PaletteMemoryCache.put(currentTrack.mediaId, palette)
-                    },
                     loading = { CoverPlaceholder() },
                     error = { CoverPlaceholder() },
                     modifier = Modifier

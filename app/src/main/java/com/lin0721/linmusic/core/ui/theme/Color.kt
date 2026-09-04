@@ -2,6 +2,16 @@ package com.lin0721.linmusic.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// HSV 明度偏移，供取色/背景渲染各处按需现算深浅变体，不落地成持久字段
+fun Color.lighten(amount: Float): Color {
+    val hsv = FloatArray(3)
+    android.graphics.Color.RGBToHSV((red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt(), hsv)
+    hsv[2] = (hsv[2] + amount).coerceIn(0f, 1f)
+    return Color(android.graphics.Color.HSVToColor(hsv))
+}
+
+fun Color.darken(amount: Float): Color = lighten(-amount)
+
 val BackgroundDark = Color(0xFF121212)
 val SurfaceDark = Color(0xFF282828)
 val SurfaceLight = Color(0xFF3E3E3E)
@@ -23,9 +33,8 @@ val ToastBackground = Color(0xFF2E2E2E)
 // 网页登录容器底色，与网页自身背景一致以避免键盘弹出时闪屏
 val WebLoginBackground = Color(0xFFF5F5F7)
 
-// 封面取色未命中缓存时的兜底主色，迷你播放器与全屏播放器共用以保证配色一致
-val FallbackDominant = Color(0xFF333333)
-val FallbackSecondary = Color(0xFF222222)
+// 封面取色未命中缓存时的兜底背景色，迷你播放器与全屏播放器共用以保证配色一致
+val FallbackBase = Color(0xFF333333)
 
 // 歌单/歌手页在取色完成前的初始底色
 val CoverPlaceholderDark = Color(0xFF2C2C2C)
