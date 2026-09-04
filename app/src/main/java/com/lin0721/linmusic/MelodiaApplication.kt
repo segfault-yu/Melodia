@@ -7,18 +7,26 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import com.lin0721.linmusic.core.log.AppLogger
 import com.lin0721.linmusic.core.log.CrashHandler
+import com.lin0721.linmusic.core.update.UpdateManager
 import com.lin0721.linmusic.di.localModule
 import com.lin0721.linmusic.di.networkModule
 import com.lin0721.linmusic.di.playerModule
 import com.lin0721.linmusic.di.repositoryModule
+import com.lin0721.linmusic.di.updateModule
 import com.lin0721.linmusic.di.viewModelModule
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.android.ext.android.inject
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 
 class MelodiaApplication : Application() {
+
+    private val updateManager: UpdateManager by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -49,7 +57,13 @@ class MelodiaApplication : Application() {
         startKoin {
             androidLogger(if (BuildConfig.DEBUG) Level.DEBUG else Level.ERROR)
             androidContext(this@MelodiaApplication)
-            modules(networkModule, repositoryModule, viewModelModule, playerModule, localModule)
+            modules(networkModule, repositoryModule, viewModelModule, playerModule, localModule, updateModule)
+        }
+
+        // 延迟几秒后台检查更新，避开启动关键路径；进程生命周期内只检查这一次
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(3000)
+            updateManager.checkForUpdate(manual = false)
         }
     }
 }

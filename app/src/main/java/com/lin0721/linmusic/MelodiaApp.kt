@@ -34,10 +34,14 @@ import com.lin0721.linmusic.core.ui.components.ToastManager
 import com.lin0721.linmusic.core.ui.interaction.pressable
 import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
+import com.lin0721.linmusic.core.update.UpdateManager
+import com.lin0721.linmusic.core.update.UpdateUiState
 import com.lin0721.linmusic.feature.home.ui.HomeViewModel
+import com.lin0721.linmusic.feature.settings.ui.UpdateDialog
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 private val SidebarWidth = 310.dp
 
@@ -256,6 +260,19 @@ fun MelodiaApp() {
 
         // 4. 全局自定义 Toast 提示
         MelodiaToastHost(toastMessage = toastMessage)
+
+        // 5. 全局更新弹窗，任意页面均可弹出
+        val updateManager: UpdateManager = koinInject()
+        val updateState by updateManager.uiState.collectAsStateWithLifecycle()
+        if (updateState !is UpdateUiState.Idle) {
+            UpdateDialog(
+                state = updateState,
+                onDismiss = { updateManager.dismiss() },
+                onIgnore = { updateManager.ignoreCurrentVersion() },
+                onStartDownload = { updateManager.startDownload() },
+                onInstall = { updateManager.retryInstall() }
+            )
+        }
     }
 }
 

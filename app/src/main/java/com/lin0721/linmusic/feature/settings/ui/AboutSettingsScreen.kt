@@ -42,6 +42,8 @@ import com.lin0721.linmusic.core.ui.theme.SurfaceDark
 import com.lin0721.linmusic.core.ui.theme.SurfaceLight
 import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
+import com.lin0721.linmusic.core.update.UpdateManager
+import org.koin.compose.koinInject
 
 @Composable
 fun AboutSettingsView(viewModel: SettingsViewModel) {
@@ -75,6 +77,34 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
             Text("Melodia Player", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text(appVersionLabel(), color = TextGray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        item {
+            val updateManager: UpdateManager = koinInject()
+            val autoCheckUpdateEnabled by viewModel.autoCheckUpdateEnabled.collectAsStateWithLifecycle()
+            val allowPrereleaseChannel by viewModel.allowPrereleaseChannel.collectAsStateWithLifecycle()
+
+            SettingsGroupCard("版本更新") {
+                SettingsRow(
+                    title = "检查更新",
+                    subtitle = "前往 GitHub 获取最新安装包",
+                    onClick = { updateManager.checkForUpdate(manual = true) }
+                )
+                HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+                SettingsSwitchRow(
+                    title = "自动检查更新",
+                    subtitle = "启动应用时后台检查一次更新",
+                    checked = autoCheckUpdateEnabled,
+                    onCheckedChange = { viewModel.updateAutoCheckUpdateEnabled(it) }
+                )
+                HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+                SettingsSwitchRow(
+                    title = "接收测试版更新",
+                    subtitle = "包含 beta/rc 预览版本，可能不稳定",
+                    checked = allowPrereleaseChannel,
+                    onCheckedChange = { viewModel.updateAllowPrereleaseChannel(it) }
+                )
+            }
         }
 
         item {
@@ -188,9 +218,9 @@ fun AboutSettingsView(viewModel: SettingsViewModel) {
             SettingsGroupCard("特别感谢") {
                 Text(
                     text = "本项目的开发与运行离不开以下优秀开源项目：\n\n" +
-                            "• NeteaseCloudMusicApi\n"
-                            "• NeteaseCloudMusicApiEnhanced\n"
-                            "• SPlayer\n"
+                            "• NeteaseCloudMusicApi\n" +
+                            "• NeteaseCloudMusicApiEnhanced\n" +
+                            "• SPlayer\n" +
                             "• Jetpack Compose & Media3\n" +
                             "• Retrofit & OkHttp\n" +
                             "• Koin\n" +

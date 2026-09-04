@@ -55,6 +55,12 @@ class SettingsPreferences(private val context: Context) {
         private val KEY_LYRIC_TEXT_COLOR = stringPreferencesKey("lyric_text_color")
         // 日志级别 KEY，默认 debug 包 "DEBUG"、release 包 "WARN"
         private val KEY_LOG_LEVEL = stringPreferencesKey("log_level")
+        // 启动时自动检查更新，默认 true
+        private val KEY_AUTO_CHECK_UPDATE = booleanPreferencesKey("auto_check_update")
+        // 是否接收测试版（beta/rc）更新推送，默认 false 只接收正式版
+        private val KEY_ALLOW_PRERELEASE_CHANNEL = booleanPreferencesKey("allow_prerelease_channel")
+        // 用户主动忽略的更新版本 tag，默认空串表示未忽略任何版本
+        private val KEY_IGNORED_UPDATE_TAG = stringPreferencesKey("ignored_update_tag")
     }
 
     // Wi-Fi 音质设置 Flow
@@ -252,6 +258,39 @@ class SettingsPreferences(private val context: Context) {
     suspend fun saveLogLevel(level: String) {
         context.settingsDataStore.edit { prefs ->
             prefs[KEY_LOG_LEVEL] = level
+        }
+    }
+
+    // 启动时自动检查更新 Flow
+    val autoCheckUpdateEnabled: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_AUTO_CHECK_UPDATE] ?: true
+    }
+
+    suspend fun saveAutoCheckUpdateEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { prefs ->
+            prefs[KEY_AUTO_CHECK_UPDATE] = enabled
+        }
+    }
+
+    // 接收测试版更新通道 Flow
+    val allowPrereleaseChannel: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_ALLOW_PRERELEASE_CHANNEL] ?: false
+    }
+
+    suspend fun saveAllowPrereleaseChannel(enabled: Boolean) {
+        context.settingsDataStore.edit { prefs ->
+            prefs[KEY_ALLOW_PRERELEASE_CHANNEL] = enabled
+        }
+    }
+
+    // 被用户忽略的更新版本 tag Flow
+    val ignoredUpdateTag: Flow<String> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_IGNORED_UPDATE_TAG] ?: ""
+    }
+
+    suspend fun saveIgnoredUpdateTag(tag: String) {
+        context.settingsDataStore.edit { prefs ->
+            prefs[KEY_IGNORED_UPDATE_TAG] = tag
         }
     }
 }

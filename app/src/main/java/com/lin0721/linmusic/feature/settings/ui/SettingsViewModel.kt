@@ -78,6 +78,10 @@ class SettingsViewModel(
 
     val logLevel = settingsPreferences.logLevel.asState(if (BuildConfig.DEBUG) "DEBUG" else "WARN")
 
+    val autoCheckUpdateEnabled = settingsPreferences.autoCheckUpdateEnabled.asState(true)
+
+    val allowPrereleaseChannel = settingsPreferences.allowPrereleaseChannel.asState(false)
+
     // ─── 服务端拉取数据状态 ───
     private val _userLevel = MutableStateFlow<UserLevelData?>(null)
     val userLevel = _userLevel.asStateFlow()
@@ -174,6 +178,10 @@ class SettingsViewModel(
     fun updateLyricTextSize(size: Int) = launchSave { settingsPreferences.saveLyricTextSize(size) }
 
     fun updateLyricTextColor(color: String) = launchSave { settingsPreferences.saveLyricTextColor(color) }
+
+    fun updateAutoCheckUpdateEnabled(enabled: Boolean) = launchSave { settingsPreferences.saveAutoCheckUpdateEnabled(enabled) }
+
+    fun updateAllowPrereleaseChannel(enabled: Boolean) = launchSave { settingsPreferences.saveAllowPrereleaseChannel(enabled) }
 
     fun onNicknameInputChanged(name: String) {
         _nicknameInput.value = name
