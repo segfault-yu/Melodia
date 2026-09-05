@@ -4,10 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Comment
 import androidx.compose.material.icons.rounded.ThumbUp
@@ -18,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,14 +42,11 @@ fun CommentsPreviewCard(
     onClick: () -> Unit,
     onRetry: () -> Unit
 ) {
-    val cardWidth = (LocalConfiguration.current.screenWidthDp - 32).dp
-    val cardHeight = cardWidth * 0.88f
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MelodiaSpacing.md, vertical = MelodiaSpacing.sm)
-            .pressable(MelodiaPress.Card, onClick = onClick)
-            .height(cardHeight),
+            .pressable(MelodiaPress.Card, onClick = onClick),
         shape = RoundedCornerShape(InfoCardRadius),
         color = cardColor
     ) {
@@ -96,7 +90,7 @@ fun CommentsPreviewCard(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp),
+                            .padding(vertical = MelodiaSpacing.lg),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(
@@ -141,25 +135,25 @@ fun CommentsPreviewCard(
                             modifier = Modifier.padding(vertical = MelodiaSpacing.md)
                         )
                     } else {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .verticalScroll(rememberScrollState()),
-                                verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)
-                            ) {
-                                allComments.forEachIndexed { index, comment ->
-                                    CommentRowItem(comment = comment)
-                                    if (index < allComments.size - 1) {
-                                        HorizontalDivider(
-                                            color = Color.White.copy(alpha = 0.08f),
-                                            thickness = 0.5.dp
-                                        )
-                                    }
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(MelodiaSpacing.md)
+                        ) {
+                            allComments.forEachIndexed { index, comment ->
+                                CommentRowItem(
+                                    comment = comment,
+                                    contentMaxLines = 3,
+                                    isLikeClickable = false
+                                )
+                                if (index < allComments.size - 1) {
+                                    HorizontalDivider(
+                                        color = Color.White.copy(alpha = 0.08f),
+                                        thickness = 0.5.dp
+                                    )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(2.dp))
 
                             Text(
                                 text = "查看全部 ${commentsState.total} 条评论",
@@ -181,10 +175,13 @@ fun CommentsPreviewCard(
 @Composable
 fun CommentRowItem(
     comment: CommentItem,
+    modifier: Modifier = Modifier,
+    contentMaxLines: Int = Int.MAX_VALUE,
+    isLikeClickable: Boolean = true,
     onLikeClick: () -> Unit = {}
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         AsyncImage(
@@ -219,13 +216,19 @@ fun CommentRowItem(
                     )
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.xs),
-                    modifier = Modifier
+                val likeModifier = if (isLikeClickable) {
+                    Modifier
                         .clip(CircleShape)
                         .clickable { onLikeClick() }
                         .padding(horizontal = MelodiaSpacing.sm, vertical = 6.dp)
+                } else {
+                    Modifier.padding(horizontal = MelodiaSpacing.sm, vertical = 6.dp)
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MelodiaSpacing.xs),
+                    modifier = likeModifier
                 ) {
                     Text(
                         text = formatLikedCount(comment.likedCount),
@@ -247,7 +250,9 @@ fun CommentRowItem(
                 text = comment.content,
                 color = Color.White.copy(alpha = 0.95f),
                 fontSize = 13.sp,
-                lineHeight = 18.sp
+                lineHeight = 18.sp,
+                maxLines = contentMaxLines,
+                overflow = if (contentMaxLines < Int.MAX_VALUE) TextOverflow.Ellipsis else TextOverflow.Clip
             )
         }
     }
