@@ -72,9 +72,31 @@ fun PlaylistCollectSheet(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                val localItems = remember(collectState.collectItems) {
+                val localItems = remember(collectState.songId) {
                     collectState.collectItems.map { it.copy() }.toMutableStateList()
                 }
+                // 记录主动勾选修改过的歌单 ID，避免被后台异步更新覆盖
+                val userModifiedIds = remember(collectState.songId) { mutableSetOf<Long>() }
+
+                LaunchedEffect(collectState.collectItems) {
+                    collectState.collectItems.forEach { remoteItem ->
+                        val localIndex = localItems.indexOfFirst { it.playlistId == remoteItem.playlistId }
+                        if (localIndex != -1) {
+                            val local = localItems[localIndex]
+                            if (!userModifiedIds.contains(remoteItem.playlistId)) {
+                                if (local.isContains != remoteItem.isContains || local.isInitiallyContains != remoteItem.isInitiallyContains) {
+                                    localItems[localIndex] = local.copy(
+                                        isInitiallyContains = remoteItem.isInitiallyContains,
+                                        isContains = remoteItem.isContains
+                                    )
+                                }
+                            }
+                        } else {
+                            localItems.add(remoteItem.copy())
+                        }
+                    }
+                }
+
                 var showCreatePlaylistDialog by remember { mutableStateOf(false) }
 
                 LazyColumn(
@@ -134,6 +156,7 @@ fun PlaylistCollectSheet(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
+                                        userModifiedIds.add(item.playlistId)
                                         localItems[index] = item.copy(isContains = !item.isContains)
                                     }
                                     .padding(vertical = MelodiaSpacing.sm),
@@ -166,6 +189,7 @@ fun PlaylistCollectSheet(
                                 Checkbox(
                                     checked = item.isContains,
                                     onCheckedChange = { checked ->
+                                        userModifiedIds.add(item.playlistId)
                                         localItems[index] = item.copy(isContains = checked)
                                     },
                                     colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
