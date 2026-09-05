@@ -61,11 +61,12 @@ class ArtistRepositoryImpl(
         transform = { Unit }
     )
 
+    // 真机抓包确认：关注状态在 follow/count/get 接口的 data.isFollow 里返回，与 getArtistFansCount 复用同一接口
     override fun checkArtistFollowed(artistId: Long): Flow<Result<Boolean>> = apiFlow(
-        request = { apiService.getArtistDetailDynamic(ArtistFollowCountRequest(id = artistId)) },
+        request = { apiService.getArtistFollowCount(ArtistFollowCountRequest(id = artistId)) },
         isSuccess = { it.isSuccess },
         code = { it.code },
-        transform = { it.isFollow }
+        transform = { it.data?.isFollow ?: false }
     )
 
     override fun getSimilarArtists(artistId: Long): Flow<Result<List<ArtistInfo>>> = apiFlow(

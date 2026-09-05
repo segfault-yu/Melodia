@@ -26,13 +26,7 @@ interface ArtistApi {
         @Body body: ArtistDetailRequest
     ): ArtistDetailResponse
 
-    // ================== 艺人动态信息（粉丝数等） ==================
-    @POST("/eapi/artist/detail/dynamic")
-    suspend fun getArtistDetailDynamic(
-        @Body body: ArtistFollowCountRequest
-    ): ArtistFollowCountResponse
-
-    // 获取歌手粉丝数量
+    // 获取歌手粉丝数量与关注状态
     @POST("/weapi/artist/follow/count/get")
     suspend fun getArtistFollowCount(
         @Body body: ArtistFollowCountRequest
@@ -137,23 +131,14 @@ data class ArtistDetailData(
 @Serializable
 data class ArtistFollowCountRequest(val id: Long)
 
-@Serializable
-data class ArtistFollowCountResponse(
-    val code: Int = 0,
-    val message: String? = null,
-    val fansCount: Long = 0,
-    val isFollow: Boolean = false,
-    val followCount: Int = 0
-) {
-    val isSuccess: Boolean get() = code == 200
-}
 // 歌手关注与粉丝数详细数据
 @Serializable
 data class ArtistFollowCountData(
     @SerialName("fans") val fans: Long? = null,             // 粉丝数
     @SerialName("fansCnt") val fansCnt: Long? = null,       // 粉丝计数 (EAPI返回)
     @SerialName("fansCount") val fansCount: Long? = null,   // 粉丝总数
-    @SerialName("followCount") val followCount: Long? = null // 关注数
+    @SerialName("followCount") val followCount: Long? = null, // 关注数
+    @SerialName("isFollow") val isFollow: Boolean = false    // 当前登录用户是否已关注
 )
 
 // 歌手关注数获取响应体 ( concrete 实体类，避免泛型反序列化问题 )
