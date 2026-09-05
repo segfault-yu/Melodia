@@ -121,12 +121,12 @@ CI 在推送到 `main` 与 PR 时运行单元测试与 release 构建，产物�
 
 ---
 
-## 非常感谢以下开源项目给我灵感
+## 非常感谢以下项目给我灵感
 
 - [NeteaseCloudMusicApi](https://github.com/binaryify/NeteaseCloudMusicApi)
 - [api-enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)
 - [SPlayer](https://github.com/SPlayer-Dev/SPlayer)
-
+- [Spotify](https://spotify.com) - 优秀的流媒体交互范式与现代 UI/UX 设计灵感
 ---
 
 ## ⚠️ 免责声明
