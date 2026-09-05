@@ -3,7 +3,7 @@
 
   # Melodia
 
-  轻量级第三方网易云音乐客户端 · Kotlin + Jetpack Compose
+  轻量级简单的第三方网易云音乐客户端 · Kotlin + Jetpack Compose
 </div>
 
 ---
