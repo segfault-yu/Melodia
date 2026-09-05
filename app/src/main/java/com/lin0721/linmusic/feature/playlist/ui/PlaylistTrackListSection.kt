@@ -26,7 +26,6 @@ fun LazyListScope.playlistTrackItems(
     currentTrackId: String?,
     isPlaying: Boolean,
     onPlaySong: (Track) -> Unit,
-    onArtistClick: (Long) -> Unit,
     onMoreClick: (Track) -> Unit
 ) {
     val filtered = if (searchQuery.isBlank()) tracks
@@ -46,7 +45,6 @@ fun LazyListScope.playlistTrackItems(
             isActive = currentTrackId == track.id.toString(),
             isPlaying = isPlaying,
             onClick = { onPlaySong(track) },
-            onArtistClick = { track.ar.firstOrNull()?.id?.let(onArtistClick) },
             trailingSlot = {
                 MelodiaIconButton(
                     onClick = { onMoreClick(track) },

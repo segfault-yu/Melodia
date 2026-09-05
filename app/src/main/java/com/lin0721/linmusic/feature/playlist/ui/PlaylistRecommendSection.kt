@@ -35,7 +35,6 @@ fun LazyListScope.playlistRecommendItems(
     isPlaying: Boolean,
     onRefreshRecommendations: () -> Unit,
     onPlaySong: (Track) -> Unit,
-    onArtistClick: (Long) -> Unit,
     onAddRecommendSong: (Track) -> Unit
 ) {
     item(key = "recommendation_header") {
@@ -55,7 +54,6 @@ fun LazyListScope.playlistRecommendItems(
             isActive = currentTrackId == track.id.toString(),
             isPlaying = isPlaying,
             onClick = { onPlaySong(track) },
-            onArtistClick = { track.ar.firstOrNull()?.id?.let(onArtistClick) },
             trailingSlot = {
                 MelodiaIconButton(
                     onClick = { onAddRecommendSong(track) },

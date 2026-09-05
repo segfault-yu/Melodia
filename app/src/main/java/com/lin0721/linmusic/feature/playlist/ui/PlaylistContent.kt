@@ -199,7 +199,6 @@ fun PlaylistContent(
                     currentTrackId = currentTrackId,
                     isPlaying      = isPlaying,
                     onPlaySong     = onPlaySong,
-                    onArtistClick  = onArtistClick,
                     onMoreClick    = { activeSongMoreOptions = it }
                 )
             }
@@ -212,7 +211,6 @@ fun PlaylistContent(
                     isPlaying                = isPlaying,
                     onRefreshRecommendations = onRefreshRecommendations,
                     onPlaySong               = onPlaySong,
-                    onArtistClick            = onArtistClick,
                     onAddRecommendSong       = onAddRecommendSong
                 )
             }
