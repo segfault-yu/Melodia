@@ -49,6 +49,8 @@ class SettingsPreferences(private val context: Context) {
         private val KEY_SHOW_LOCKSCREEN = booleanPreferencesKey("show_lockscreen")
         // 车载模式蓝牙自动启动，默认 false
         private val KEY_CAR_MODE = booleanPreferencesKey("car_mode")
+        // 底栏是否显示创建歌单快捷入口，默认 true
+        private val KEY_SHOW_CREATE_ENTRY = booleanPreferencesKey("show_create_entry")
         // 悬浮歌词字体大小，默认 14sp
         private val KEY_LYRIC_TEXT_SIZE = intPreferencesKey("lyric_text_size")
         // 悬浮歌词颜色，默认 "#FFFFFF"
@@ -225,6 +227,17 @@ class SettingsPreferences(private val context: Context) {
     suspend fun saveCarMode(enabled: Boolean) {
         context.settingsDataStore.edit { prefs ->
             prefs[KEY_CAR_MODE] = enabled
+        }
+    }
+
+    // 底栏创建歌单快捷入口 Flow
+    val showCreateEntry: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_SHOW_CREATE_ENTRY] ?: true
+    }
+
+    suspend fun saveShowCreateEntry(enabled: Boolean) {
+        context.settingsDataStore.edit { prefs ->
+            prefs[KEY_SHOW_CREATE_ENTRY] = enabled
         }
     }
 

@@ -36,6 +36,7 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaPress
 import com.lin0721.linmusic.core.ui.theme.BackgroundDark
 import com.lin0721.linmusic.core.update.UpdateManager
 import com.lin0721.linmusic.core.update.UpdateUiState
+import com.lin0721.linmusic.core.preferences.SettingsPreferences
 import com.lin0721.linmusic.feature.home.ui.HomeViewModel
 import com.lin0721.linmusic.feature.settings.ui.UpdateDialog
 import dev.chrisbanes.haze.HazeState
@@ -49,6 +50,8 @@ private val SidebarWidth = 310.dp
 @Composable
 fun MelodiaApp() {
     val viewModel: HomeViewModel = koinViewModel()
+    val settingsPreferences: SettingsPreferences = koinInject()
+    val showCreateEntry by settingsPreferences.showCreateEntry.collectAsStateWithLifecycle(initialValue = true)
     val currentTrack by viewModel.playerManager.currentTrack.collectAsStateWithLifecycle()
     val isPlaying by viewModel.playerManager.isPlaying.collectAsStateWithLifecycle()
     val currentPositionState = viewModel.playerManager.currentPosition.collectAsStateWithLifecycle()
@@ -216,6 +219,7 @@ fun MelodiaApp() {
                         onCreateDismiss = { showCreateSheet = false },
                         onNavigate = { navigation.openTab(it) },
                         onCreateClick = { showCreateSheet = !showCreateSheet },
+                        showCreateEntry = showCreateEntry,
                         onOverlayHeightChanged = { bottomOverlayHeight = it }
                     )
 

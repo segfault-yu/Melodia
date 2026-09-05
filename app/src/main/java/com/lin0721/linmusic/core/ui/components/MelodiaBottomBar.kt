@@ -298,6 +298,7 @@ fun MelodiaNavigationBar(
     onNavigate: (Screen) -> Unit,
     onCreateClick: () -> Unit,
     isCreateMenuOpen: Boolean,
+    showCreateEntry: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -312,12 +313,14 @@ fun MelodiaNavigationBar(
                 .padding(top = 12.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val navItems = listOf(
-                Triple("主页", Icons.Default.Home, Screen.Home),
-                Triple("搜索", Icons.Default.Search, Screen.Search),
-                Triple("音乐库", Icons.Default.LibraryMusic, Screen.Library),
-                Triple("创建", if (isCreateMenuOpen) Icons.Rounded.Close else Icons.Default.AddBox, null)
-            )
+            val navItems = buildList {
+                add(Triple("主页", Icons.Default.Home, Screen.Home))
+                add(Triple("搜索", Icons.Default.Search, Screen.Search))
+                add(Triple("音乐库", Icons.Default.LibraryMusic, Screen.Library))
+                if (showCreateEntry) {
+                    add(Triple("创建", if (isCreateMenuOpen) Icons.Rounded.Close else Icons.Default.AddBox, null))
+                }
+            }
 
             navItems.forEach { (label, icon, targetScreen) ->
                 val isSelected = targetScreen != null && currentScreen == targetScreen

@@ -16,6 +16,7 @@ import com.lin0721.linmusic.core.ui.theme.MelodiaSpacing
 fun ExtensionsSettingsView(viewModel: SettingsViewModel) {
     val showLockscreen by viewModel.showLockscreen.collectAsStateWithLifecycle()
     val carMode by viewModel.carMode.collectAsStateWithLifecycle()
+    val showCreateEntry by viewModel.showCreateEntry.collectAsStateWithLifecycle()
 
     // 渲染扩展模块的子设置项
     LazyColumn(
@@ -40,6 +41,17 @@ fun ExtensionsSettingsView(viewModel: SettingsViewModel) {
                     subtitle = "连接车载蓝牙设备时自动恢复媒体播放",
                     checked = carMode,
                     onCheckedChange = { viewModel.updateCarMode(it) }
+                )
+            }
+        }
+
+        item {
+            SettingsGroupCard("底部导航栏") {
+                SettingsSwitchRow(
+                    title = "显示底栏创建入口",
+                    subtitle = "关闭后可在音乐库页面通过右上角按钮创建歌单",
+                    checked = showCreateEntry,
+                    onCheckedChange = { viewModel.updateShowCreateEntry(it) }
                 )
             }
         }
