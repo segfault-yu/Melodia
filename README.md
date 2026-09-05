@@ -1,6 +1,22 @@
-# Melodia
+<div align="center">
+  <img src="docs/images/app_icon.png" width="96" height="96" alt="Melodia 图标" />
 
-Melodia 是一款基于 Kotlin + Jetpack Compose 构建的轻量级第三方网易云音乐客户端。
+  # Melodia
+
+  轻量级第三方网易云音乐客户端 · Kotlin + Jetpack Compose
+</div>
+
+---
+
+## 截图
+
+<div align="center">
+  <img src="docs/screenshots/home.png" width="19%" alt="首页" />
+  <img src="docs/screenshots/search.png" width="19%" alt="搜索" />
+  <img src="docs/screenshots/library.png" width="19%" alt="音乐库" />
+  <img src="docs/screenshots/player.png" width="19%" alt="播放器" />
+  <img src="docs/screenshots/lyrics.png" width="19%" alt="歌词" />
+</div>
 
 ---
 
