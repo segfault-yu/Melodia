@@ -194,12 +194,16 @@ fun PlaylistContent(
                 }
             } else {
                 playlistTrackItems(
-                    tracks         = sortedTracks,
-                    searchQuery    = searchQuery,
-                    currentTrackId = currentTrackId,
-                    isPlaying      = isPlaying,
-                    onPlaySong     = onPlaySong,
-                    onMoreClick    = { activeSongMoreOptions = it }
+                    tracks             = sortedTracks,
+                    searchQuery        = searchQuery,
+                    currentTrackId     = currentTrackId,
+                    isPlaying          = isPlaying,
+                    likedSongIds       = likedSongIds,
+                    isLoggedIn         = isLoggedIn,
+                    onPlaySong         = onPlaySong,
+                    onLikeClick        = onLikeClick,
+                    onOpenCollectSheet = { collectSongId = it },
+                    onMoreClick        = { activeSongMoreOptions = it }
                 )
             }
 

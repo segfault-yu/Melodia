@@ -1,11 +1,11 @@
 package com.lin0721.linmusic.feature.playlist.ui
 
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +25,11 @@ fun LazyListScope.playlistTrackItems(
     searchQuery: String,
     currentTrackId: String?,
     isPlaying: Boolean,
+    likedSongIds: Set<Long> = emptySet(),
+    isLoggedIn: Boolean = false,
     onPlaySong: (Track) -> Unit,
+    onLikeClick: (Long) -> Unit = {},
+    onOpenCollectSheet: (Long) -> Unit = {},
     onMoreClick: (Track) -> Unit
 ) {
     val filtered = if (searchQuery.isBlank()) tracks
@@ -46,18 +50,33 @@ fun LazyListScope.playlistTrackItems(
             isPlaying = isPlaying,
             onClick = { onPlaySong(track) },
             trailingSlot = {
+                if (isLoggedIn && track.id in likedSongIds) {
+                    MelodiaIconButton(
+                        onClick = {
+                            onOpenCollectSheet(track.id)
+                            onLikeClick(track.id)
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = "已收藏歌曲",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
                 MelodiaIconButton(
                     onClick = { onMoreClick(track) },
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(32.dp).padding(end = MelodiaSpacing.xs)
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "更多",
+                        contentDescription = "更多操作",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                Spacer(Modifier.width(MelodiaSpacing.sm))
             }
         )
     }
