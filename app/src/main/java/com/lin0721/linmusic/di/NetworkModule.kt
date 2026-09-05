@@ -7,6 +7,9 @@ import com.lin0721.linmusic.core.network.HeaderInterceptor
 import com.lin0721.linmusic.core.network.NeteaseEndpoints
 import com.lin0721.linmusic.feature.artist.data.ArtistApi
 import com.lin0721.linmusic.feature.cloud.data.CloudApi
+import com.lin0721.linmusic.feature.cloud.data.CloudUploadApi
+import com.lin0721.linmusic.feature.cloud.upload.CloudUploadManager
+import com.lin0721.linmusic.feature.cloud.upload.NosUploadClient
 import com.lin0721.linmusic.core.comment.data.CommentApi
 import com.lin0721.linmusic.core.player.data.PlaybackApi
 import com.lin0721.linmusic.core.songlike.SongLikeApi
@@ -144,6 +147,11 @@ val networkModule = module {
     single<LibraryApi> { get<Retrofit>().create(LibraryApi::class.java) }
     single<RecentApi> { get<Retrofit>().create(RecentApi::class.java) }
     single<CloudApi> { get<Retrofit>().create(CloudApi::class.java) }
+    single<CloudUploadApi> { get<Retrofit>().create(CloudUploadApi::class.java) }
+
+    // 云盘上传：跨域裸传输客户端与队列状态源，均不依赖上面这套挂了拦截器的共享 OkHttpClient/Retrofit
+    single { NosUploadClient() }
+    single { CloudUploadManager() }
     single<ListenDataApi> { get<Retrofit>().create(ListenDataApi::class.java) }
     single<NewWorksApi> { get<Retrofit>().create(NewWorksApi::class.java) }
     single<CommentApi> { get<Retrofit>().create(CommentApi::class.java) }

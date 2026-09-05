@@ -1,5 +1,9 @@
 package com.lin0721.linmusic.feature.cloud.ui
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lin0721.linmusic.core.auth.UserPreferences
@@ -10,10 +14,18 @@ import com.lin0721.linmusic.core.network.toUserMessage
 import com.lin0721.linmusic.core.player.PlayerManager
 import com.lin0721.linmusic.core.player.QueueItem
 import com.lin0721.linmusic.core.songlike.LoadLikedSongIdsUseCase
+import com.lin0721.linmusic.core.songlike.SongLikeRepository
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectItem
 import com.lin0721.linmusic.core.ui.components.PlaylistCollectState
 import com.lin0721.linmusic.feature.cloud.data.CloudRepository
 import com.lin0721.linmusic.feature.cloud.domain.CloudSong
+import com.lin0721.linmusic.feature.cloud.upload.ACTION_CLOUD_UPLOAD_ENQUEUE
+import com.lin0721.linmusic.feature.cloud.upload.ACTION_CLOUD_UPLOAD_RETRY
+import com.lin0721.linmusic.feature.cloud.upload.CloudUploadManager
+import com.lin0721.linmusic.feature.cloud.upload.CloudUploadService
+import com.lin0721.linmusic.feature.cloud.upload.EXTRA_CLOUD_UPLOAD_TASK_ID
+import com.lin0721.linmusic.feature.cloud.upload.EXTRA_CLOUD_UPLOAD_URIS
+import com.lin0721.linmusic.feature.cloud.upload.UploadTask
 import com.lin0721.linmusic.feature.playlist.domain.SongCollectDelegate
 import com.lin0721.linmusic.feature.search.data.SearchRepository
 import com.lin0721.linmusic.feature.search.domain.SearchResultItem
@@ -38,9 +50,12 @@ class CloudViewModel(
     private val searchRepository: SearchRepository,
     private val songCollectDelegate: SongCollectDelegate,
     private val loadLikedSongIdsUseCase: LoadLikedSongIdsUseCase,
+    private val songLikeRepository: SongLikeRepository,
+    private val uploadManager: CloudUploadManager,
     private val userPreferences: UserPreferences,
     val playerManager: PlayerManager,
-    private val resourceProvider: ResourceProvider
+    private val resourceProvider: ResourceProvider,
+    private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CloudUiState>(CloudUiState.Loading)
@@ -53,14 +68,44 @@ class CloudViewModel(
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
     private val _likedSongIds = MutableStateFlow<Set<Long>>(emptySet())
+    val likedSongIds: StateFlow<Set<Long>> = _likedSongIds.asStateFlow()
 
     val collectState: StateFlow<PlaylistCollectState> = songCollectDelegate.state
+    val uploadTasks: StateFlow<List<UploadTask>> = uploadManager.state
 
     private var matchSearchJob: Job? = null
 
     init {
         load()
         loadLikedSongIds()
+        // 每个文件发布成功就立刻刷一次列表第一页，不等整批上传结束
+        viewModelScope.launch {
+            uploadManager.publishedEvent.collect { load() }
+        }
+    }
+
+    // ======================= 上传 =======================
+
+    fun startUpload(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        uris.forEach { uri ->
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        }
+        val intent = Intent(context, CloudUploadService::class.java).apply {
+            action = ACTION_CLOUD_UPLOAD_ENQUEUE
+            putParcelableArrayListExtra(EXTRA_CLOUD_UPLOAD_URIS, ArrayList(uris))
+        }
+        ContextCompat.startForegroundService(context, intent)
+    }
+
+    fun retryUpload(taskId: String) {
+        val intent = Intent(context, CloudUploadService::class.java).apply {
+            action = ACTION_CLOUD_UPLOAD_RETRY
+            putExtra(EXTRA_CLOUD_UPLOAD_TASK_ID, taskId)
+        }
+        ContextCompat.startForegroundService(context, intent)
     }
 
     private fun loadLikedSongIds() {
@@ -133,6 +178,29 @@ class CloudViewModel(
     fun dismissOverlay() {
         matchSearchJob?.cancel()
         _overlay.value = CloudOverlay.Hidden
+    }
+
+    // 喜欢是即时切换，不像添加到歌单/重新匹配那样需要跳到下一个浮层，直接收起面板
+    fun toggleLike() {
+        val song = (_overlay.value as? CloudOverlay.Options)?.song ?: return
+        val isLike = song.songId !in _likedSongIds.value
+        _overlay.value = CloudOverlay.Hidden
+
+        viewModelScope.launch {
+            songLikeRepository.likeSong(song.songId, isLike).first()
+                .onSuccess {
+                    _likedSongIds.value = if (isLike) {
+                        _likedSongIds.value + song.songId
+                    } else {
+                        _likedSongIds.value - song.songId
+                    }
+                    _toastEvent.emit(if (isLike) "已添加到我喜欢的音乐" else "已从我喜欢的音乐中移除")
+                }
+                .onFailure { e ->
+                    AppLogger.w(TAG, "切换喜欢状态失败", e)
+                    _toastEvent.emit(e.toUserMessage(resourceProvider))
+                }
+        }
     }
 
     fun requestDelete() {

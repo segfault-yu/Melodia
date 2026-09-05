@@ -13,10 +13,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -43,12 +46,14 @@ import com.lin0721.linmusic.core.ui.theme.TextGray
 import com.lin0721.linmusic.feature.cloud.domain.CloudSong
 import kotlinx.coroutines.launch
 
-// 云盘歌曲的「更多操作」面板，视觉范式对齐 SongMoreOptionsSheet
+// 云盘歌曲的「更多操作」面板
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CloudSongOptionsSheet(
     song: CloudSong,
+    isLiked: Boolean,
     onDismiss: () -> Unit,
+    onToggleLikeClick: () -> Unit,
     onAddToPlaylistClick: () -> Unit,
     onMatchClick: () -> Unit,
     onDeleteClick: () -> Unit
@@ -108,6 +113,31 @@ fun CloudSongOptionsSheet(
                 color = Color.White.copy(alpha = 0.08f),
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm)
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        scope.launch {
+                            sheetState.hide()
+                            onToggleLikeClick()
+                        }
+                    }
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (isLiked) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = if (isLiked) "取消喜欢" else "喜欢",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
 
             Row(
                 modifier = Modifier
