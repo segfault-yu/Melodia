@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 private const val TAG = "LibraryViewModel"
 
 enum class LibraryItemType {
-    PLAYLIST, ARTIST, ALBUM
+    PLAYLIST, ARTIST, ALBUM, MV
 }
 
 data class LibraryItem(
@@ -34,11 +34,17 @@ data class LibraryItem(
     val updateTime: Long = 0,
     val trackCount: Int = 0,
     val playCount: Long = 0,
-    val isLikedSongs: Boolean = false
+    val isLikedSongs: Boolean = false,
+    val isOwnedByMe: Boolean = false
 )
 
 enum class LibraryFilter {
-    ALL, PLAYLIST, ALBUM, ARTIST
+    PLAYLIST, ALBUM, ARTIST, MV
+}
+
+// 歌单二级筛选：仅在 LibraryFilter.PLAYLIST 生效，区分自建歌单与收藏他人歌单
+enum class LibraryPlaylistOwnerFilter {
+    MINE, OTHERS
 }
 
 enum class LibrarySortOrder {
@@ -72,8 +78,13 @@ class LibraryViewModel(
         initialValue = null
     )
 
-    private val _selectedFilter = MutableStateFlow(LibraryFilter.ALL)
-    val selectedFilter: StateFlow<LibraryFilter> = _selectedFilter.asStateFlow()
+    // null 表示未筛选（默认展示全部），仅在用户点击某个分类胶囊后才收窄为对应类型
+    private val _selectedFilter = MutableStateFlow<LibraryFilter?>(null)
+    val selectedFilter: StateFlow<LibraryFilter?> = _selectedFilter.asStateFlow()
+
+    // 歌单二级筛选状态，切换/清除主筛选时一并重置
+    private val _selectedPlaylistOwnerFilter = MutableStateFlow<LibraryPlaylistOwnerFilter?>(null)
+    val selectedPlaylistOwnerFilter: StateFlow<LibraryPlaylistOwnerFilter?> = _selectedPlaylistOwnerFilter.asStateFlow()
 
     private val _sortOrder = MutableStateFlow(LibrarySortOrder.RECENTLY_PLAYED)
     val sortOrder: StateFlow<LibrarySortOrder> = _sortOrder.asStateFlow()
@@ -168,7 +179,8 @@ class LibraryViewModel(
                         updateTime = playlist.updateTime,
                         trackCount = playlist.trackCount,
                         playCount = playlist.playCount,
-                        isLikedSongs = index == 0 && playlist.creator?.userId == profile.uid
+                        isLikedSongs = index == 0 && playlist.creator?.userId == profile.uid,
+                        isOwnedByMe = playlist.creator?.userId == profile.uid
                     )
                 }.toMutableList()
 
@@ -181,7 +193,8 @@ class LibraryViewModel(
                     updateTime = System.currentTimeMillis(),
                     trackCount = 0,
                     playCount = 0,
-                    isLikedSongs = false
+                    isLikedSongs = false,
+                    isOwnedByMe = true
                 )
                 if (mappedPlaylists.isNotEmpty()) {
                     mappedPlaylists.add(1, recordPlaylist)
@@ -240,6 +253,7 @@ class LibraryViewModel(
         val state = _uiState.value as? LibraryUiState.Success ?: return
         val pinned = _pinnedIds.value
         val filter = _selectedFilter.value
+        val ownerFilter = _selectedPlaylistOwnerFilter.value
         val sort = _sortOrder.value
         val query = _searchQuery.value
 
@@ -255,10 +269,19 @@ class LibraryViewModel(
         }
 
         list = when (filter) {
-            LibraryFilter.ALL -> list
+            null -> list
             LibraryFilter.PLAYLIST -> list.filter { it.type == LibraryItemType.PLAYLIST }
             LibraryFilter.ALBUM -> list.filter { it.type == LibraryItemType.ALBUM }
             LibraryFilter.ARTIST -> list.filter { it.type == LibraryItemType.ARTIST }
+            LibraryFilter.MV -> list.filter { it.type == LibraryItemType.MV }
+        }
+
+        // 歌单二级筛选：我创建的 / 他人创建的（"我喜欢的音乐"与"听歌排行"视为我的）
+        if (filter == LibraryFilter.PLAYLIST && ownerFilter != null) {
+            list = list.filter { item ->
+                val ownedByMe = item.isOwnedByMe || item.isLikedSongs || item.id == "-2"
+                if (ownerFilter == LibraryPlaylistOwnerFilter.MINE) ownedByMe else !ownedByMe
+            }
         }
 
         val pinnedItems = list.filter { it.isPinned }
@@ -329,8 +352,22 @@ class LibraryViewModel(
         }
     }
 
-    fun updateFilter(filter: LibraryFilter) {
-        _selectedFilter.value = filter
+    // 点击胶囊：再次点击已选中的胶囊会取消筛选，回到展示全部；切换主筛选时重置歌单二级筛选
+    fun toggleFilter(filter: LibraryFilter) {
+        _selectedFilter.value = if (_selectedFilter.value == filter) null else filter
+        _selectedPlaylistOwnerFilter.value = null
+        applyFilterAndSort()
+    }
+
+    fun clearFilter() {
+        _selectedFilter.value = null
+        _selectedPlaylistOwnerFilter.value = null
+        applyFilterAndSort()
+    }
+
+    // 歌单二级筛选：再次点击已选中的胶囊会取消，恢复展示全部歌单
+    fun togglePlaylistOwnerFilter(filter: LibraryPlaylistOwnerFilter) {
+        _selectedPlaylistOwnerFilter.value = if (_selectedPlaylistOwnerFilter.value == filter) null else filter
         applyFilterAndSort()
     }
 

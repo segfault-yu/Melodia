@@ -1,12 +1,20 @@
 package com.lin0721.linmusic.feature.library.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.TrendingUp
@@ -16,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +46,132 @@ import com.lin0721.linmusic.core.ui.theme.LibraryVioletGradient
 import com.lin0721.linmusic.core.ui.theme.LibraryBlueGreenGradient
 import com.lin0721.linmusic.core.ui.theme.DownloadedGreen
 import com.lin0721.linmusic.core.ui.theme.RadiusCompact
+import com.lin0721.linmusic.core.ui.theme.PillRadius
+
+// ────────────────────────────────────────────────────────────────────────────
+// 分类筛选胶囊行：默认（未筛选）展示全部胶囊；选中某个胶囊后仅保留该胶囊，
+// 并在最前面追加一个"×"胶囊用于取消筛选、恢复展示全部
+// ────────────────────────────────────────────────────────────────────────────
+@Composable
+fun LibraryFilterPillsRow(
+    selectedFilter: LibraryFilter?,
+    playlistCount: Int,
+    albumCount: Int,
+    artistCount: Int,
+    onSelect: (LibraryFilter) -> Unit,
+    onClear: () -> Unit,
+    selectedPlaylistOwnerFilter: LibraryPlaylistOwnerFilter? = null,
+    onSelectPlaylistOwnerFilter: (LibraryPlaylistOwnerFilter) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val filters = listOf(
+        LibraryFilter.PLAYLIST to "歌单${if (playlistCount > 0) " $playlistCount" else ""}",
+        LibraryFilter.ALBUM to "专辑${if (albumCount > 0) " $albumCount" else ""}",
+        LibraryFilter.ARTIST to "歌手${if (artistCount > 0) " $artistCount" else ""}",
+        LibraryFilter.MV to "MV"
+    )
+    val visibleFilters = if (selectedFilter == null) filters else filters.filter { it.first == selectedFilter }
+    val ownerFilters = listOf(
+        LibraryPlaylistOwnerFilter.MINE to "我创建的",
+        LibraryPlaylistOwnerFilter.OTHERS to "其他"
+    )
+
+    // 增删胶囊时的位移动画：略带回弹但不过冲
+    val placementSpec = spring<androidx.compose.ui.unit.IntOffset>(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow
+    )
+    val fadeInSpec = spring<Float>(stiffness = Spring.StiffnessMedium)
+    val fadeOutSpec = spring<Float>(stiffness = Spring.StiffnessMedium)
+
+    LazyRow(
+        modifier = modifier.padding(top = MelodiaSpacing.sm),
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (selectedFilter != null) {
+            item(key = "clear_filter") {
+                Box(
+                    modifier = Modifier
+                        .animateItem(fadeInSpec, placementSpec, fadeOutSpec)
+                        .pressable(MelodiaPress.Pill) { onClear() }
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.1f))
+                        .size(36.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "清除筛选",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+        items(visibleFilters, key = { it.first }) { (filter, label) ->
+            val isSelected = filter == selectedFilter
+            val bgColor by animateColorAsState(
+                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f),
+                animationSpec = tween(220),
+                label = "pill_bg"
+            )
+            val contentColor by animateColorAsState(
+                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.LightGray,
+                animationSpec = tween(220),
+                label = "pill_content"
+            )
+            Box(
+                modifier = Modifier
+                    .animateItem(fadeInSpec, placementSpec, fadeOutSpec)
+                    .pressable(MelodiaPress.Pill) { onSelect(filter) }
+                    .clip(RoundedCornerShape(PillRadius))
+                    .background(bgColor)
+                    .animateContentSize(spring(stiffness = Spring.StiffnessMedium))
+                    .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label,
+                    color = contentColor,
+                    fontSize = 14.sp
+                )
+            }
+        }
+        // 歌单二级筛选：选中"歌单"时才在其后追加扩展胶囊
+        if (selectedFilter == LibraryFilter.PLAYLIST) {
+            items(ownerFilters, key = { "owner_${it.first}" }) { (ownerFilter, label) ->
+                val isSelected = ownerFilter == selectedPlaylistOwnerFilter
+                val bgColor by animateColorAsState(
+                    targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f),
+                    animationSpec = tween(220),
+                    label = "owner_pill_bg"
+                )
+                val contentColor by animateColorAsState(
+                    targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.LightGray,
+                    animationSpec = tween(220),
+                    label = "owner_pill_content"
+                )
+                Box(
+                    modifier = Modifier
+                        .animateItem(fadeInSpec, placementSpec, fadeOutSpec)
+                        .pressable(MelodiaPress.Pill) { onSelectPlaylistOwnerFilter(ownerFilter) }
+                        .clip(RoundedCornerShape(PillRadius))
+                        .background(bgColor)
+                        .padding(horizontal = 20.dp, vertical = MelodiaSpacing.sm),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        color = contentColor,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // 未登录占位页

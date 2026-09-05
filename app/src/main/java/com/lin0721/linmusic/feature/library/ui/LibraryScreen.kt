@@ -46,7 +46,6 @@ import coil.compose.AsyncImage
 import com.lin0721.linmusic.core.ui.components.MelodiaIconButton
 import com.lin0721.linmusic.core.ui.components.MelodiaButton
 import com.lin0721.linmusic.LocalBottomOverlayInset
-import com.lin0721.linmusic.core.ui.components.FilterChipsRow
 import com.lin0721.linmusic.core.ui.components.LoginBottomSheet
 import com.lin0721.linmusic.core.ui.components.MelodiaDragHandle
 import com.lin0721.linmusic.core.ui.components.WebViewLoginScreen
@@ -78,6 +77,7 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
+    val selectedPlaylistOwnerFilter by viewModel.selectedPlaylistOwnerFilter.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val isGridView by viewModel.isGridView.collectAsStateWithLifecycle()
@@ -242,15 +242,15 @@ fun LibraryScreen(
             } else {
                 val successState = uiState as? LibraryUiState.Success
                 // 2. 分类过滤器横向滚动列表
-                FilterChipsRow(
-                    items = listOf(
-                        "全部",
-                        "歌单${if ((successState?.playlistCount ?: 0) > 0) " ${successState?.playlistCount}" else ""}",
-                        "专辑${if ((successState?.albumCount ?: 0) > 0) " ${successState?.albumCount}" else ""}",
-                        "歌手${if ((successState?.artistCount ?: 0) > 0) " ${successState?.artistCount}" else ""}"
-                    ),
-                    selectedIndex = selectedFilter.ordinal,
-                    onSelected = { index -> viewModel.updateFilter(LibraryFilter.entries[index]) }
+                LibraryFilterPillsRow(
+                    selectedFilter = selectedFilter,
+                    playlistCount = successState?.playlistCount ?: 0,
+                    albumCount = successState?.albumCount ?: 0,
+                    artistCount = successState?.artistCount ?: 0,
+                    onSelect = { viewModel.toggleFilter(it) },
+                    onClear = { viewModel.clearFilter() },
+                    selectedPlaylistOwnerFilter = selectedPlaylistOwnerFilter,
+                    onSelectPlaylistOwnerFilter = { viewModel.togglePlaylistOwnerFilter(it) }
                 )
 
                 // 3. 排序与视图展示状态栏
